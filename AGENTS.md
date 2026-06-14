@@ -404,3 +404,14 @@ The BGA Modern framework uses PHP Reflection to automatically map JSON keys from
   }
   ```
 - **Parameter Naming**: The keys in the JS payload must exactly match the PHP parameter names. If you rename a parameter in PHP to avoid conflicts, you must also update the JS key. Re-assigning to the argument variable internally in PHP avoids this coupling issue.
+
+---
+
+## End-Game Triggering Pattern
+
+When an end-game condition can be triggered mid-round (e.g., a player achieves a winning threshold during their turn), but the rules state the current round or phase must be completed before the game ends:
+
+1. **Global State Flag**: Initialize a global state variable (e.g., `endgame_triggered = 0`) in `setupNewGame()`.
+2. **Conditional Check**: At the natural conclusion of the required round/phase (e.g., in the `onEnteringState` of the final resolution step like `WeatherPhaseGrow`), check if the condition is met.
+3. **Set Flag**: If the condition is met and the flag is `0`, set the flag to `1` using `$this->game->setGameStateValue()`. This guarantees the flag persists across page reloads.
+4. **Transition**: After completing all logic for that final resolution state, check the flag. If it is `1`, return the final state class (`return EndScore::class;`). If `0`, return the normal next phase class.
