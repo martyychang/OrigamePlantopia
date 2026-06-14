@@ -44,8 +44,6 @@ class SetupDecisions extends GameState
             "player_id" => $activePlayerId,
         ]);
 
-        $this->bga->notify->player($activePlayerId, "mulliganDone", '', []);
-
         $this->checkIfAllPlayersReady();
     }
 
@@ -74,8 +72,6 @@ class SetupDecisions extends GameState
         $this->bga->notify->all("playerRedrewCards", clienttranslate('${player_name} redrew their starting hand.'), [
             "player_id" => $activePlayerId,
         ]);
-
-        $this->bga->notify->player($activePlayerId, "mulliganDone", '', []);
 
         $this->checkIfAllPlayersReady();
     }

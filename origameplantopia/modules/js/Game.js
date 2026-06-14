@@ -239,9 +239,17 @@ export class Game {
     ///////////////////////////////////////////////////
     //// Utility methods
     
-    async notif_mulliganDone(args) {
-        this.gamedatas.players[this.bga.players.getCurrentPlayerId()].score_aux = 1;
-        if (this.bga.states.currentStateName === 'SetupDecisions') {
+    async notif_playerKeptCards(args) {
+        this.gamedatas.players[args.player_id].score_aux = 1;
+        if (this.bga.states.currentStateName === 'SetupDecisions' && args.player_id == this.bga.players.getCurrentPlayerId()) {
+            this.bga.statusBar.clear();
+            this.setupDecisions.onEnteringState(null, true);
+        }
+    }
+
+    async notif_playerRedrewCards(args) {
+        this.gamedatas.players[args.player_id].score_aux = 1;
+        if (this.bga.states.currentStateName === 'SetupDecisions' && args.player_id == this.bga.players.getCurrentPlayerId()) {
             this.bga.statusBar.clear();
             this.setupDecisions.onEnteringState(null, true);
         }
