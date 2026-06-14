@@ -32,3 +32,16 @@ CREATE TABLE IF NOT EXISTS `weather_card` (
   `card_location_arg` INT NOT NULL,
   PRIMARY KEY (`card_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=1;
+
+-- Character cards deck (5 cards)
+-- card_type = character name (e.g. 'banana', 'tomato')
+-- card_location = zone string (e.g. 'deck', 'player_12345')
+CREATE TABLE IF NOT EXISTS `character_card` (
+  `card_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `card_type` VARCHAR(32) NOT NULL,
+  `card_type_arg` INT NOT NULL,
+  `card_location` VARCHAR(32) NOT NULL,
+  `card_location_arg` INT NOT NULL,
+  PRIMARY KEY (`card_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=1;
+

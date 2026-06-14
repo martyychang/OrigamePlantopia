@@ -10,7 +10,7 @@
  *
  * WeatherCards.php
  *
- * Material data for all 15 Character Weather Cards.
+ * Material data for all Character Weather Cards and Bonus Weather Cards.
  * Array keys match the Deck component's card_type values.
  */
 declare(strict_types=1);
@@ -65,6 +65,14 @@ class WeatherCards
                     self::CONDITION_SUN  => ['name' => clienttranslate('Carrot Sun'), 'num_cards' => 1],
                     self::CONDITION_RAIN => ['name' => clienttranslate('Carrot Rain'), 'num_cards' => 1],
                     self::CONDITION_WIND => ['name' => clienttranslate('Carrot Wind'), 'num_cards' => 1],
+                ]
+            ],
+            'bonus' => [
+                'name' => clienttranslate('Bonus'),
+                'cards' => [
+                    self::CONDITION_SUN  => ['name' => clienttranslate('Bonus Sun'), 'num_cards' => 3],
+                    self::CONDITION_RAIN => ['name' => clienttranslate('Bonus Rain'), 'num_cards' => 3],
+                    self::CONDITION_WIND => ['name' => clienttranslate('Bonus Wind'), 'num_cards' => 3],
                 ]
             ],
         ];

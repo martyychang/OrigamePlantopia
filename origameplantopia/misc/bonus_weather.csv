@@ -1,0 +1,4 @@
+type,type_arg,Bonus Weather Card Name,Num Cards in Deck
+bonus,0,Bonus Sun,3
+bonus,1,Bonus Rain,3
+bonus,2,Bonus Wind,3
