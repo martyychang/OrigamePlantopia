@@ -23,6 +23,12 @@ class SetupDecisions {
     }
 
     onEnteringState(args, isCurrentPlayerActive) {
+        this.onPlayerActivationChange(args, isCurrentPlayerActive);
+    }
+
+    onPlayerActivationChange(args, isCurrentPlayerActive) {
+        this.bga.statusBar.removeActionButtons();
+        
         if (!isCurrentPlayerActive) {
             this.bga.statusBar.setTitle(_('${actplayer} is making setup decisions'));
             return;
@@ -99,6 +105,10 @@ class PlantingPhase {
     }
 
     onEnteringState(args, isCurrentPlayerActive) {
+        this.onPlayerActivationChange(args, isCurrentPlayerActive);
+    }
+
+    onPlayerActivationChange(args, isCurrentPlayerActive) {
         if (!isCurrentPlayerActive) {
             this.bga.statusBar.setTitle(_('Waiting for other players to finish Planting...'));
             return;
@@ -145,9 +155,9 @@ class PlantingPhase {
 
         if (!this.selectedAction) {
             this.bga.statusBar.setTitle(_('${you} must choose a planting action'));
-            this.bga.statusBar.addActionButton(_('Plant a Card'), () => this.startAction('plant'), { color: 'blue' });
-            this.bga.statusBar.addActionButton(_('Grow a Plant'), () => this.startAction('grow'), { color: 'green' });
-            this.bga.statusBar.addActionButton(_('Draw 5, Keep 1'), () => this.startAction('draw5'), { color: 'red' });
+            this.bga.statusBar.addActionButton(_('Plant'), () => this.startAction('plant'), { color: 'blue' });
+            this.bga.statusBar.addActionButton(_('Grow'), () => this.startAction('grow'), { color: 'green' });
+            this.bga.statusBar.addActionButton(_('Draw 5 (Keep 1)'), () => this.startAction('draw5'), { color: 'red' });
         } else if (this.selectedAction === 'plant') {
             this.bga.statusBar.addActionButton(_('Cancel'), () => { this.resetSelection(); this.updateStatusBar(); }, { color: 'gray' });
             
