@@ -366,4 +366,7 @@ Use reverse-DNS-style naming: `meeple_ff0000_7`, `card_yellow_magic_2`
 
 **State Machine**:
 - Use `#[PossibleAction]` in the state class to handle choices.
-- In a `MULTIPLE_ACTIVE_PLAYER` state, call `$this->bga->gamestate->setPlayerNonMultiactive($activePlayerId, NextState::class)` when a player completes their choice.
+- In a `MULTIPLE_ACTIVE_PLAYER` state, call `$this->bga->gamestate->setPlayerNonMultiactive($activePlayerId, NextState::class)` when a player completes *all* their required choices for that state.
+- **Multi-Step Decisions**: If players must perform multiple actions before they are completely done with the state (e.g., both keeping/redrawing their hand AND selecting a character), DO NOT call `setPlayerNonMultiactive` early. Let the player remain active until they have fulfilled all requirements, so they can undo or change their choices if the game rules allow it before advancing.
+- **Recording Temporary State**: If you need to keep track of a player's choices during a `MULTIPLE_ACTIVE_PLAYER` phase (like recording whether they chose Keep or Redraw), use `ALTER TABLE player ADD ...` in `dbmodel.sql` to add custom columns. Do NOT repurpose standard BGA framework columns like `player_score_aux`, as these are required for end-game tiebreakers.
+- **Exposing Temporary State**: Remember that custom columns in the `player` table are not automatically passed to the client. You must explicitly select them in the SQL query inside `Game.php`'s `getAllDatas()` method to make them accessible in `Game.js` via `gamedatas.players[playerId].your_custom_column`.
