@@ -16,49 +16,29 @@
  * onEnteringState, onLeavingState and onPlayerActivationChange are predefined names that will be called by the framework.
  * When executing code in this state, you can access the args using this.args
  */
-class InitialMulligan {
+class SetupDecisions {
     constructor(game, bga) {
         this.game = game;
         this.bga = bga;
     }
 
     onEnteringState(args, isCurrentPlayerActive) {
-        this.bga.statusBar.setTitle(isCurrentPlayerActive ? 
-            _('${you} may keep your starting hand or redraw once') :
-            _('${actplayer} is deciding to keep or redraw')
-        );
-      
-        if (isCurrentPlayerActive) {
+        if (!isCurrentPlayerActive) {
+            this.bga.statusBar.setTitle(_('${actplayer} is making setup decisions'));
+            return;
+        }
+
+        const isMulliganDone = this.game.gamedatas.players[this.bga.player_id].score_aux == 1;
+
+        if (!isMulliganDone) {
+            this.bga.statusBar.setTitle(_('${you} may keep your starting hand or redraw once'));
             this.bga.statusBar.addActionButton(_('Keep Hand'), () => this.onKeepHand(), { color: 'blue' }); 
             this.bga.statusBar.addActionButton(_('Redraw (Once)'), () => this.onRedrawHand(), { color: 'red' }); 
-        }
-    }
+            document.getElementById('characters-panel').style.display = 'none';
+        } else {
+            this.bga.statusBar.setTitle(_('${you} must select a character'));
+            document.getElementById('characters-panel').style.display = 'block';
 
-    onLeavingState(args, isCurrentPlayerActive) {
-    }
-
-    onKeepHand() {
-        this.bga.actions.performAction("actKeep");
-    }
-
-    onRedrawHand() {
-        this.bga.actions.performAction("actRedraw");
-    }
-}
-
-class CharacterSelection {
-    constructor(game, bga) {
-        this.game = game;
-        this.bga = bga;
-    }
-
-    onEnteringState(args, isCurrentPlayerActive) {
-        this.bga.statusBar.setTitle(isCurrentPlayerActive ? 
-            _('${you} must select a character') :
-            _('${actplayer} is selecting a character')
-        );
-
-        if (isCurrentPlayerActive) {
             // Highlight clickable characters in the Characters panel
             document.querySelectorAll('#characters-panel .character-card').forEach(el => {
                 el.classList.add('bga-cards_selectable-card');
@@ -88,6 +68,14 @@ class CharacterSelection {
             el.style.boxShadow = 'none';
             el.onclick = null;
         });
+    }
+
+    onKeepHand() {
+        this.bga.actions.performAction("actKeep");
+    }
+
+    onRedrawHand() {
+        this.bga.actions.performAction("actRedraw");
     }
 
     onClaimCharacter(cardId) {
@@ -159,11 +147,8 @@ export class Game {
         this.bga = bga;
 
         // Declare the State classes
-        this.initialMulligan = new InitialMulligan(this, bga);
-        this.bga.states.register('InitialMulligan', this.initialMulligan);
-
-        this.characterSelection = new CharacterSelection(this, bga);
-        this.bga.states.register('CharacterSelection', this.characterSelection);
+        this.setupDecisions = new SetupDecisions(this, bga);
+        this.bga.states.register('SetupDecisions', this.setupDecisions);
 
         this.playerTurn = new PlayerTurn(this, bga);
         this.bga.states.register('PlayerTurn', this.playerTurn);
@@ -195,7 +180,7 @@ export class Game {
 
         // Example to add a div on the game area
         this.bga.gameArea.getElement().insertAdjacentHTML('beforeend', `
-            <div id="characters-panel" style="margin-bottom: 20px; border: 2px solid #8e44ad; border-radius: 8px; background: rgba(255, 255, 255, 0.9); padding: 15px;">
+            <div id="characters-panel" style="display: none; margin-bottom: 20px; border: 2px solid #8e44ad; border-radius: 8px; background: rgba(255, 255, 255, 0.9); padding: 15px;">
                 <h3 style="color: #8e44ad; margin-top: 0;">Characters</h3>
                 <div id="available-characters-container" style="display: flex; flex-wrap: wrap; gap: 15px;"></div>
             </div>
@@ -254,8 +239,16 @@ export class Game {
     ///////////////////////////////////////////////////
     //// Utility methods
     
+    async notif_mulliganDone(args) {
+        this.gamedatas.players[this.bga.player_id].score_aux = 1;
+        if (this.bga.states.currentStateName === 'SetupDecisions') {
+            this.bga.statusBar.clear();
+            this.setupDecisions.onEnteringState(null, true);
+        }
+    }
+    
     /*
-        Here, you can defines some utility methods that you can use everywhere in your javascript
+        You can add other notif_xxx methods here...that you can use everywhere in your javascript
         script. Typically, functions that are used in multiple state classes or outside a state class.
     */
 
@@ -362,8 +355,8 @@ export class Game {
                 garden.appendChild(cardEl);
                 
                 // Re-evaluate current state handlers (adds clickable return if it's ours)
-                if (this.bga.states.currentStateName === 'CharacterSelection') {
-                    this.characterSelection.onEnteringState(null, this.bga.player_id === args.player_id);
+                if (this.bga.states.currentStateName === 'SetupDecisions') {
+                    this.setupDecisions.onEnteringState(null, this.bga.player_id === args.player_id);
                 }
             }
         }
@@ -378,8 +371,8 @@ export class Game {
                 container.appendChild(cardEl);
 
                 // Re-evaluate current state handlers (adds clickable claim)
-                if (this.bga.states.currentStateName === 'CharacterSelection') {
-                    this.characterSelection.onEnteringState(null, true);
+                if (this.bga.states.currentStateName === 'SetupDecisions') {
+                    this.setupDecisions.onEnteringState(null, true);
                 }
             }
         }

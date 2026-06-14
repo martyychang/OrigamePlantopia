@@ -21,7 +21,7 @@ namespace Bga\Games\OrigamePlantopia;
 use Bga\Games\OrigamePlantopia\PlantCards;
 use Bga\Games\OrigamePlantopia\WeatherCards;
 use Bga\Games\OrigamePlantopia\CharacterCards;
-use Bga\Games\OrigamePlantopia\States\InitialMulligan;
+use Bga\Games\OrigamePlantopia\States\SetupDecisions;
 use Bga\Games\OrigamePlantopia\States\PlayerTurn;
 use Bga\GameFramework\Components\Counters\PlayerCounter;
 
@@ -147,7 +147,7 @@ class Game extends \Bga\GameFramework\Table
 
         // Get information about players.
         $result["players"] = $this->getCollectionFromDb(
-            "SELECT `player_id` AS `id`, `player_score` AS `score` FROM `player`"
+            "SELECT `player_id` AS `id`, `player_score` AS `score`, `player_score_aux` AS `score_aux` FROM `player`"
         );
         $this->playerEnergy->fillResult($result);
 
@@ -224,10 +224,11 @@ class Game extends \Bga\GameFramework\Table
         // TODO: Init game statistics.
         // TODO: Create weather card deck once inventory is ready.
 
-        // Activate first player once everything has been initialized and ready.
+        // Activate first player (once setup logic is fully complete)
         $this->activeNextPlayer();
 
-        return InitialMulligan::class;
+        // Start the game in SetupDecisions
+        return SetupDecisions::class;
     }
 
     /**
