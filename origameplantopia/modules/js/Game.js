@@ -27,8 +27,8 @@ class PlayerTurn {
      */
     onEnteringState(args, isCurrentPlayerActive) {
         this.bga.statusBar.setTitle(isCurrentPlayerActive ? 
-            _('${you} must play a card or pass') :
-            _('${actplayer} must play a card or pass')
+            _('${you} must choose an option') :
+            _('${actplayer} must choose an option')
         );
       
         if (isCurrentPlayerActive) {
