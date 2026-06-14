@@ -387,3 +387,20 @@ Both methods return an array of the picked cards, which is safe to check with `c
 - **UI Gotcha (Duplicate Buttons)**: In `MULTIPLE_ACTIVE_PLAYER` states, when transitioning sequentially, `onEnteringState` fires while `isCurrentPlayerActive` is still `false`. BGA then fires a separate packet that triggers `onPlayerActivationChange(args, true)`. 
   - *Best Practice*: Call `this.onPlayerActivationChange(args, isCurrentPlayerActive)` from inside `onEnteringState` to handle both initial refresh states and live transitions.
   - *Critical*: Always start `onPlayerActivationChange` with `this.bga.statusBar.removeActionButtons();` before rendering buttons. Otherwise, BGA's dual-triggering (once from your manual call, and once from the framework's native call upon activation) will spawn duplicate action buttons in the status bar!
+
+---
+
+## Action Parameters & Autowiring Gotchas
+
+The BGA Modern framework uses PHP Reflection to automatically map JSON keys from the frontend `bga.actions.performAction()` call to the PHP method parameters in the state class. 
+
+- **Array Typing Issue**: You **cannot** use the `array` type hint directly for method parameters in a `#[PossibleAction]` (e.g., `public function actPlant(array $cardIds)`) without specific attributes like `#[JsonParam]` or `#[IntArrayParam]`. Doing so will throw a `BadMethodCallException: parameter type array is not supported by action autowiring function`.
+- **Workaround Strategy**: The simplest and most robust way to send arrays (like a list of card IDs) from the frontend is to send a delimited string (e.g., `paymentCardIds.join(';')`) and type the PHP parameter as `string`. Inside the PHP method, you can decode it and safely re-assign it to the same variable to keep logic clean:
+  ```php
+  #[PossibleAction]
+  public function actPlant(string $cardIds) {
+      $cardIds = $cardIds === '' ? [] : array_map('intval', explode(';', $cardIds));
+      // Now $cardIds is a typed integer array.
+  }
+  ```
+- **Parameter Naming**: The keys in the JS payload must exactly match the PHP parameter names. If you rename a parameter in PHP to avoid conflicts, you must also update the JS key. Re-assigning to the argument variable internally in PHP avoids this coupling issue.
