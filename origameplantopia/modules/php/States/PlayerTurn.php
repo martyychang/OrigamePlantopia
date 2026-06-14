@@ -53,15 +53,14 @@ class PlayerTurn extends GameState
         }
 
         // Add your game logic to play a card here.
-        $card_name = Game::$CARD_TYPES[$card_id]['card_name'];
+        $card_name = Game::$PLANT_CARD_TYPES[$card_id]['name'] ?? "Card #$card_id";
 
         // Notify all players about the card played.
         $this->bga->notify->all("cardPlayed", clienttranslate('${player_name} plays ${card_name}'), [
             "player_id" => $activePlayerId,
-            "player_name" => $this->game->getPlayerNameById($activePlayerId), // remove this line if you uncomment notification decorator
-            "card_name" => $card_name, // remove this line if you uncomment notification decorator
+            "card_name" => $card_name,
             "card_id" => $card_id,
-            "i18n" => ['card_name'], // remove this line if you uncomment notification decorator
+            "i18n" => ['card_name'],
         ]);
 
         // in this example, the player gains 1 points each time he plays a card
@@ -81,9 +80,8 @@ class PlayerTurn extends GameState
     public function actPass(int $activePlayerId)
     {
         // Notify all players about the choice to pass.
-        $this->notify->all("pass", clienttranslate('${player_name} passes'), [
+        $this->bga->notify->all("pass", clienttranslate('${player_name} passes'), [
             "player_id" => $activePlayerId,
-            "player_name" => $this->game->getPlayerNameById($activePlayerId), // remove this line if you uncomment notification decorator
         ]);
 
         // in this example, the player gains 1 energy each time he passes

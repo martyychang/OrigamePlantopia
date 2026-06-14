@@ -18,12 +18,20 @@ declare(strict_types=1);
 
 namespace Bga\Games\OrigamePlantopia;
 
+use Bga\Games\OrigamePlantopia\PlantCards;
 use Bga\Games\OrigamePlantopia\States\PlayerTurn;
 use Bga\GameFramework\Components\Counters\PlayerCounter;
 
 class Game extends \Bga\GameFramework\Table
 {
-    public static array $CARD_TYPES;
+    /**
+     * Material data for all plant card types.
+     * Keyed by card name (= Deck card_type), populated in __construct().
+     */
+    public static array $PLANT_CARD_TYPES;
+
+    /** BGA Deck component for the 102 plant cards. */
+    public \Bga\GameFramework\Components\Deck $plantCards;
 
     public PlayerCounter $playerEnergy;
 
@@ -42,30 +50,19 @@ class Game extends \Bga\GameFramework\Table
 
         $this->playerEnergy = $this->bga->counterFactory->createPlayerCounter('energy');
 
-        self::$CARD_TYPES = [
-            1 => [
-                "card_name" => clienttranslate('Troll'), // ...
-            ],
-            2 => [
-                "card_name" => clienttranslate('Goblin'), // ...
-            ],
-            // ...
-        ];
+        // Plant cards Deck component — backed by 'plant_card' DB table
+        $this->plantCards = $this->deckFactory->createDeck('plant_card');
 
-        /* example of notification decorator.
-        // automatically complete notification args when needed
+        // Load material data for all 32 plant card types
+        self::$PLANT_CARD_TYPES = PlantCards::getTypes();
+
+        // Auto-complete player_name in notifications
         $this->bga->notify->addDecorator(function(string $message, array $args) {
             if (isset($args['player_id']) && !isset($args['player_name']) && str_contains($message, '${player_name}')) {
                 $args['player_name'] = $this->getPlayerNameById($args['player_id']);
             }
-        
-            if (isset($args['card_id']) && !isset($args['card_name']) && str_contains($message, '${card_name}')) {
-                $args['card_name'] = self::$CARD_TYPES[$args['card_id']]['card_name'];
-                $args['i18n'][] = ['card_name'];
-            }
-            
             return $args;
-        });*/
+        });
     }
 
     /**
@@ -128,13 +125,20 @@ class Game extends \Bga\GameFramework\Table
         // WARNING: We must only return information visible by the current player (using $currentPlayerId).
 
         // Get information about players.
-        // NOTE: you can retrieve some extra field you added for "player" table in `dbmodel.sql` if you need it.
         $result["players"] = $this->getCollectionFromDb(
             "SELECT `player_id` AS `id`, `player_score` AS `score` FROM `player`"
         );
         $this->playerEnergy->fillResult($result);
 
-        // TODO: Gather all information about current game situation (visible by player $currentPlayerId).
+        // Material data — card type definitions (static, same for all players)
+        $result['plantCardTypes'] = self::$PLANT_CARD_TYPES;
+
+        // Current player's hand (private info)
+        $result['hand'] = $this->plantCards->getCardsInLocation('hand', $currentPlayerId);
+
+        // Deck and discard counts (public info, not the actual cards)
+        $result['plantDeckCount'] = $this->plantCards->countCardInLocation('deck');
+        $result['plantDiscardCount'] = $this->plantCards->countCardInLocation('discard');
 
         return $result;
     }
@@ -147,13 +151,11 @@ class Game extends \Bga\GameFramework\Table
     {
         $this->playerEnergy->initDb(array_keys($players), initialValue: 2);
 
-        // Set the colors of the players with HTML color code. The default below is red/green/blue/orange/brown. The
-        // number of colors defined here must correspond to the maximum number of players allowed for the gams.
+        // Set the colors of the players with HTML color code.
         $gameinfos = $this->getGameinfos();
         $default_colors = $gameinfos['player_colors'];
 
         foreach ($players as $player_id => $player) {
-            // Now you can access both $player_id and $player array
             $query_values[] = vsprintf("(%s, '%s', '%s')", [
                 $player_id,
                 array_shift($default_colors),
@@ -161,10 +163,6 @@ class Game extends \Bga\GameFramework\Table
             ]);
         }
 
-        // Create players based on generic information.
-        //
-        // NOTE: You can add extra field on player table in the database (see dbmodel.sql) and initialize
-        // additional fields directly here.
         static::DbQuery(
             sprintf(
                 "INSERT INTO `player` (`player_id`, `player_color`, `player_name`) VALUES %s",
@@ -175,17 +173,18 @@ class Game extends \Bga\GameFramework\Table
         $this->reattributeColorsBasedOnPreferences($players, $gameinfos["player_colors"]);
         $this->reloadPlayersBasicInfos();
 
-        // Init global values with their initial values.
+        // ── Create and shuffle the plant card deck (102 cards) ──────
+        $this->plantCards->createCards(PlantCards::getDeckCards(), 'deck');
+        $this->plantCards->shuffle('deck');
 
-        // Init game statistics.
-        //
-        // NOTE: statistics used in this file must be defined in your `stats.inc.php` file.
+        // Deal initial hand of 5 plant cards to each player
+        $playerList = $this->loadPlayersBasicInfos();
+        foreach ($playerList as $player_id => $player_info) {
+            $this->plantCards->pickCards(5, 'deck', $player_id);
+        }
 
-        // Dummy content.
-        // $this->tableStats->init('table_teststat1', 0);
-        // $this->playerStats->init('player_teststat1', 0);
-
-        // TODO: Setup the initial game situation here.
+        // TODO: Init game statistics.
+        // TODO: Create weather card deck once inventory is ready.
 
         // Activate first player once everything has been initialized and ready.
         $this->activeNextPlayer();
