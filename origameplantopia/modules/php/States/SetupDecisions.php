@@ -32,8 +32,10 @@ class SetupDecisions extends GameState
     }
 
     #[PossibleAction]
-    public function actKeep(int $activePlayerId)
+    public function actKeep()
     {
+        $activePlayerId = (int)$this->game->getCurrentPlayerId();
+
         if ($this->hasMulliganed($activePlayerId)) {
             throw new UserException(clienttranslate("You have already made your mulligan decision."));
         }
@@ -48,8 +50,10 @@ class SetupDecisions extends GameState
     }
 
     #[PossibleAction]
-    public function actRedraw(int $activePlayerId)
+    public function actRedraw()
     {
+        $activePlayerId = (int)$this->game->getCurrentPlayerId();
+
         if ($this->hasMulliganed($activePlayerId)) {
             throw new UserException(clienttranslate("You have already made your mulligan decision."));
         }
@@ -77,8 +81,10 @@ class SetupDecisions extends GameState
     }
 
     #[PossibleAction]
-    public function actClaimCharacter(int $cardId, int $activePlayerId)
+    public function actClaimCharacter(int $cardId)
     {
+        $activePlayerId = (int)$this->game->getCurrentPlayerId();
+
         if (!$this->hasMulliganed($activePlayerId)) {
             throw new UserException(clienttranslate("You must keep or redraw your hand first."));
         }
@@ -106,8 +112,10 @@ class SetupDecisions extends GameState
     }
 
     #[PossibleAction]
-    public function actReturnCharacter(int $cardId, int $activePlayerId)
+    public function actReturnCharacter(int $cardId)
     {
+        $activePlayerId = (int)$this->game->getCurrentPlayerId();
+
         $card = $this->game->characterCards->getCard($cardId);
         if ($card['location'] !== 'garden' || (int)$card['location_arg'] !== $activePlayerId) {
             throw new UserException(clienttranslate("You can only return a character you have claimed."));
