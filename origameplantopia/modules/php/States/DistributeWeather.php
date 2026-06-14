@@ -7,7 +7,6 @@ namespace Bga\Games\OrigamePlantopia\States;
 use Bga\GameFramework\StateType;
 use Bga\GameFramework\States\GameState;
 use Bga\Games\OrigamePlantopia\Game;
-use Bga\Games\OrigamePlantopia\States\NextPlayer;
 
 class DistributeWeather extends GameState
 {
@@ -76,6 +75,6 @@ class DistributeWeather extends GameState
         // Shuffle the remaining weather cards
         $this->game->weatherCards->shuffle('deck');
 
-        return NextPlayer::class;
+        return PlantingPhaseDraw::class;
     }
 }

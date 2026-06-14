@@ -87,57 +87,287 @@ class SetupDecisions {
     }
 }
 
-class PlayerTurn {
+class PlantingPhase {
     constructor(game, bga) {
         this.game = game;
         this.bga = bga;
+        this.selectedAction = null;
+        this.selectedCardToPlant = null;
+        this.selectedPlanter = null;
+        this.selectedPaymentCards = [];
+        this.selectedPlantToGrow = null;
     }
 
-    /**
-     * This method is called each time we are entering the game state. You can use this method to perform some user interface changes at this moment.
-     */
     onEnteringState(args, isCurrentPlayerActive) {
-        this.bga.statusBar.setTitle(isCurrentPlayerActive ? 
-            _('${you} must choose an option') :
-            _('${actplayer} must choose an option')
-        );
-      
-        if (isCurrentPlayerActive) {
-            const playableCardsIds = args.playableCardsIds; // returned by the PlayerTurn::getArgs
+        if (!isCurrentPlayerActive) {
+            this.bga.statusBar.setTitle(_('Waiting for other players to finish Planting...'));
+            return;
+        }
 
-            // Add test action buttons in the action status bar, simulating a card click:
-            playableCardsIds.forEach(
-                cardId => this.bga.statusBar.addActionButton(_('Play card with id ${card_id}').replace('${card_id}', cardId), () => this.onCardClick(cardId))
-            ); 
-
-            this.bga.statusBar.addActionButton(_('Pass'), () => this.bga.actions.performAction("actPass"), { color: 'secondary' }); 
+        const status = this.game.gamedatas.players[this.bga.players.getCurrentPlayerId()].planting_status;
+        
+        if (status == 1) {
+            this.bga.statusBar.setTitle(_('Waiting for other players to finish Planting...'));
+        } else if (status == 2) {
+            this.bga.statusBar.setTitle(_('${you} must choose 1 card to keep'));
+            this.renderDraftModal();
+        } else {
+            this.resetSelection();
+            this.updateStatusBar();
         }
     }
 
-    /**
-     * This method is called each time we are leaving the game state. You can use this method to perform some user interface changes at this moment.
-     */
     onLeavingState(args, isCurrentPlayerActive) {
+        this.cleanupUI();
     }
 
-    /**
-     * This method is called each time the current player becomes active or inactive in a MULTIPLE_ACTIVE_PLAYER state. You can use this method to perform some user interface changes at this moment.
-     * on MULTIPLE_ACTIVE_PLAYER states, you may want to call this function in onEnteringState using `this.onPlayerActivationChange(args, isCurrentPlayerActive)` at the end of onEnteringState.
-     * If your state is not a MULTIPLE_ACTIVE_PLAYER one, you can delete this function.
-     */
-    onPlayerActivationChange(args, isCurrentPlayerActive) {
+    resetSelection() {
+        this.selectedAction = null;
+        this.selectedCardToPlant = null;
+        this.selectedPlanter = null;
+        this.selectedPaymentCards = [];
+        this.selectedPlantToGrow = null;
+        this.cleanupUI();
     }
 
-    
-    onCardClick(card_id) {
-        console.log( 'onCardClick', card_id );
+    cleanupUI() {
+        document.querySelectorAll('.bga-cards_selectable-card').forEach(el => {
+            el.classList.remove('bga-cards_selectable-card');
+            el.style.boxShadow = 'none';
+            el.onclick = null;
+        });
+        const draftContainer = document.getElementById('draft-container');
+        if (draftContainer) draftContainer.remove();
+    }
 
-        this.bga.actions.performAction("actPlayCard", { 
-            card_id,
-        }).then(() =>  {                
-            // What to do after the server call if it succeeded
-            // (most of the time, nothing, as the game will react to notifs / change of state instead, so you can delete the `then`)
-        });        
+    updateStatusBar() {
+        this.bga.statusBar.removeActionButtons();
+
+        if (!this.selectedAction) {
+            this.bga.statusBar.setTitle(_('${you} must choose a planting action'));
+            this.bga.statusBar.addActionButton(_('Plant a Card'), () => this.startAction('plant'), { color: 'blue' });
+            this.bga.statusBar.addActionButton(_('Grow a Plant'), () => this.startAction('grow'), { color: 'green' });
+            this.bga.statusBar.addActionButton(_('Draw 5, Keep 1'), () => this.startAction('draw5'), { color: 'red' });
+        } else if (this.selectedAction === 'plant') {
+            this.bga.statusBar.addActionButton(_('Cancel'), () => { this.resetSelection(); this.updateStatusBar(); }, { color: 'gray' });
+            
+            if (!this.selectedCardToPlant) {
+                this.bga.statusBar.setTitle(_('Select a plant card from your hand to plant'));
+                this.highlightHandCardsForSelection(id => {
+                    this.selectedCardToPlant = id;
+                    this.updateStatusBar();
+                });
+            } else if (!this.selectedPlanter) {
+                this.bga.statusBar.setTitle(_('Select an empty planter in your garden'));
+                this.highlightEmptyPlanters(id => {
+                    this.selectedPlanter = id;
+                    this.updateStatusBar();
+                });
+            } else {
+                const cardInfo = this.game.gamedatas.plantCardTypes[this.game.gamedatas.hand[this.selectedCardToPlant].type];
+                const cost = cardInfo.cost;
+                
+                if (this.isBaby(cardInfo.plant_type)) {
+                    if (this.selectedPaymentCards.length < cost) {
+                        this.bga.statusBar.setTitle(_('Select ${cost} more card(s) to discard as cost').replace('${cost}', cost - this.selectedPaymentCards.length));
+                        this.highlightHandCardsForCost(id => {
+                            if (!this.selectedPaymentCards.includes(id)) {
+                                this.selectedPaymentCards.push(id);
+                                this.updateStatusBar();
+                            }
+                        });
+                    } else {
+                        this.bga.statusBar.setTitle(_('Confirm Planting'));
+                        this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmPlant(), { color: 'blue' });
+                    }
+                } else {
+                    // Treevolved plant - need to select a plant to sacrifice
+                    if (this.selectedPaymentCards.length < 1) {
+                        this.bga.statusBar.setTitle(_('Select a plant in your garden to treevolve (sacrifice)'));
+                        this.highlightGardenPlantsForCost(id => {
+                            this.selectedPaymentCards = [id];
+                            this.updateStatusBar();
+                        }, cardInfo);
+                    } else {
+                        this.bga.statusBar.setTitle(_('Confirm Treevolution'));
+                        this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmPlant(), { color: 'blue' });
+                    }
+                }
+            }
+        } else if (this.selectedAction === 'grow') {
+            this.bga.statusBar.addActionButton(_('Cancel'), () => { this.resetSelection(); this.updateStatusBar(); }, { color: 'gray' });
+            
+            if (!this.selectedPlantToGrow) {
+                this.bga.statusBar.setTitle(_('Select a plant in your garden to grow'));
+                this.highlightPlantsToGrow(id => {
+                    this.selectedPlantToGrow = id;
+                    this.updateStatusBar();
+                });
+            } else {
+                let pCardInfo = this.game.getPlantCard(this.selectedPlantToGrow);
+                const cost = this.game.gamedatas.plantCardTypes[pCardInfo.type].cost;
+                
+                if (this.selectedPaymentCards.length < cost) {
+                    this.bga.statusBar.setTitle(_('Select ${cost} more card(s) to discard as fertilizer').replace('${cost}', cost - this.selectedPaymentCards.length));
+                    this.highlightHandCardsForCost(id => {
+                        if (!this.selectedPaymentCards.includes(id)) {
+                            this.selectedPaymentCards.push(id);
+                            this.updateStatusBar();
+                        }
+                    });
+                } else {
+                    this.bga.statusBar.setTitle(_('Confirm Growth'));
+                    this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmGrow(), { color: 'green' });
+                }
+            }
+        }
+    }
+
+    startAction(action) {
+        if (action === 'draw5') {
+            this.bga.actions.performAction("actRequestDraw5");
+        } else {
+            this.selectedAction = action;
+            this.updateStatusBar();
+        }
+    }
+
+    highlightHandCardsForSelection(callback) {
+        this.cleanupUI();
+        const hand = this.game.gamedatas.hand;
+        Object.values(hand).forEach(c => {
+            const el = document.getElementById(`card_${c.id}`);
+            if (el) {
+                el.classList.add('bga-cards_selectable-card');
+                el.style.boxShadow = '0 0 10px #27ae60';
+                el.onclick = () => callback(c.id);
+            }
+        });
+    }
+
+    highlightEmptyPlanters(callback) {
+        this.cleanupUI();
+        const pId = this.bga.players.getCurrentPlayerId();
+        const planters = Object.values(this.game.gamedatas.planters).filter(p => p.location_arg == pId);
+        
+        planters.forEach(p => {
+            // Check if empty
+            const plantsOnIt = Object.values(this.game.gamedatas.plantsOnPlanters || {}).filter(pl => pl.location_arg == p.id);
+            if (plantsOnIt.length === 0) {
+                const el = document.getElementById(`planter_${p.id}`);
+                if (el) {
+                    el.classList.add('bga-cards_selectable-card');
+                    el.style.boxShadow = '0 0 10px #f1c40f';
+                    el.onclick = () => callback(p.id);
+                }
+            }
+        });
+    }
+
+    highlightHandCardsForCost(callback) {
+        this.cleanupUI();
+        const hand = this.game.gamedatas.hand;
+        Object.values(hand).forEach(c => {
+            if (c.id != this.selectedCardToPlant && !this.selectedPaymentCards.includes(c.id)) {
+                const el = document.getElementById(`card_${c.id}`);
+                if (el) {
+                    el.classList.add('bga-cards_selectable-card');
+                    el.style.boxShadow = '0 0 10px #e74c3c';
+                    el.onclick = () => callback(c.id);
+                }
+            }
+        });
+    }
+
+    highlightGardenPlantsForCost(callback, trvCardInfo) {
+        this.cleanupUI();
+        const pId = this.bga.players.getCurrentPlayerId();
+        const allPlants = [
+            ...Object.values(this.game.gamedatas.plantsOnPlanters || {}).filter(pl => {
+                const planter = this.game.gamedatas.planters[pl.location_arg];
+                return planter && planter.location_arg == pId;
+            }),
+            ...Object.values(this.game.gamedatas.plantsLevel3 || {}).filter(pl => pl.location_arg == pId)
+        ];
+
+        allPlants.forEach(pl => {
+            const typeInfo = this.game.gamedatas.plantCardTypes[pl.type];
+            if (pl.type_arg >= trvCardInfo.cost && this.game.getFamily(typeInfo.plant_type) === this.game.getFamily(trvCardInfo.cost_unit)) {
+                const el = document.getElementById(`garden_plant_${pl.id}`);
+                if (el) {
+                    el.classList.add('bga-cards_selectable-card');
+                    el.style.boxShadow = '0 0 10px #e74c3c';
+                    el.onclick = () => callback(pl.id);
+                }
+            }
+        });
+    }
+
+    highlightPlantsToGrow(callback) {
+        this.cleanupUI();
+        const pId = this.bga.players.getCurrentPlayerId();
+        const plants = Object.values(this.game.gamedatas.plantsOnPlanters || {}).filter(pl => {
+            const planter = this.game.gamedatas.planters[pl.location_arg];
+            return planter && planter.location_arg == pId && pl.type_arg < 3;
+        });
+
+        plants.forEach(pl => {
+            const el = document.getElementById(`garden_plant_${pl.id}`);
+            if (el) {
+                el.classList.add('bga-cards_selectable-card');
+                el.style.boxShadow = '0 0 10px #27ae60';
+                el.onclick = () => callback(pl.id);
+            }
+        });
+    }
+
+    isBaby(plantType) {
+        return ['baby_cactus', 'baby_flower', 'baby_tree'].includes(plantType);
+    }
+
+    confirmPlant() {
+        this.bga.actions.performAction("actPlant", { 
+            cardId: this.selectedCardToPlant,
+            planterCardId: this.selectedPlanter,
+            paymentCardIds: this.selectedPaymentCards.join(';')
+        });
+    }
+
+    confirmGrow() {
+        this.bga.actions.performAction("actGrow", {
+            plantCardId: this.selectedPlantToGrow,
+            paymentCardIds: this.selectedPaymentCards.join(';')
+        });
+    }
+
+    renderDraftModal() {
+        this.cleanupUI();
+        const pId = this.bga.players.getCurrentPlayerId();
+        const draftCards = this.game.gamedatas.draftCards;
+        if (!draftCards || Object.keys(draftCards).length === 0) return;
+
+        this.bga.gameArea.getElement().insertAdjacentHTML('afterbegin', `
+            <div id="draft-container" style="padding: 20px; background: rgba(0,0,0,0.8); border-radius: 10px; margin-bottom: 20px; text-align: center; color: white;">
+                <h2>Choose 1 Card to Keep</h2>
+                <div style="display: flex; justify-content: center; gap: 15px; margin-top: 15px;" id="draft-cards-list"></div>
+            </div>
+        `);
+
+        const list = document.getElementById('draft-cards-list');
+        Object.values(draftCards).forEach(c => {
+            const cardInfo = this.game.gamedatas.plantCardTypes[c.type];
+            list.insertAdjacentHTML('beforeend', `
+                <div id="draft_${c.id}" class="bga-cards_selectable-card plant-card" style="width: 120px; height: 180px; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer; box-shadow: 0 0 10px #27ae60;">
+                    <strong style="color: #27ae60; font-size: 1.1em;">${cardInfo.name}</strong>
+                    <div style="margin-top: 10px; font-size: 0.8em; color: #7f8c8d;">Cost: ${cardInfo.cost}</div>
+                </div>
+            `);
+            
+            document.getElementById(`draft_${c.id}`).onclick = () => {
+                this.bga.actions.performAction("actKeepFromDraw5", { cardId: c.id });
+                document.getElementById('draft-container').remove();
+            };
+        });
     }
 }
 
@@ -150,15 +380,11 @@ export class Game {
         this.setupDecisions = new SetupDecisions(this, bga);
         this.bga.states.register('SetupDecisions', this.setupDecisions);
 
-        this.playerTurn = new PlayerTurn(this, bga);
-        this.bga.states.register('PlayerTurn', this.playerTurn);
+        this.plantingPhase = new PlantingPhase(this, bga);
+        this.bga.states.register('PlantingPhase', this.plantingPhase);
 
         // Uncomment the next line to show debug informations about state changes in the console. Remove before going to production!
         // this.bga.states.logger = console.log;
-            
-        // Here, you can init the global variables of your user interface
-        // Example:
-        // this.myGlobalValue = 0;
     }
     
     /*
@@ -218,6 +444,23 @@ export class Game {
             // Render planters for this player
             const planters = Object.values(gamedatas.planters || {}).filter(c => c.location_arg == player.id);
             this.renderPlanters(planters, `player-garden-${player.id}`);
+            
+            // Render Level 3 plants for this player (rendered just directly in the garden container alongside planters)
+            const level3Plants = Object.values(gamedatas.plantsLevel3 || {}).filter(c => c.location_arg == player.id);
+            level3Plants.forEach(card => {
+                const cardInfo = this.gamedatas.plantCardTypes[card.type];
+                document.getElementById(`player-garden-${player.id}`).insertAdjacentHTML('beforeend', `
+                    <div id="garden_plant_${card.id}" class="level3-tilted" data-id="${card.id}" style="width: 120px; height: 180px; border: 2px solid #2ecc71; border-radius: 5px; background: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <strong style="color: #27ae60; font-size: 0.9em;">${cardInfo.name}</strong>
+                        <div class="plant-level-indicator" style="margin-top: 5px; font-size: 0.8em; color: #7f8c8d; font-weight: bold;">Level: ${card.type_arg}</div>
+                    </div>
+                `);
+            });
+        });
+
+        // Render plants on planters (done after all planters are created)
+        Object.values(gamedatas.plantsOnPlanters || {}).forEach(card => {
+            this.renderPlantInPlanter(card, card.location_arg);
         });
 
         // Add a Bonus Weather section under the player gardens
@@ -495,12 +738,141 @@ export class Game {
         this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
     }
     
-    /*
-    Example:
-    async notif_cardPlayed( args ) {
-        // Note: args contains the arguments specified during you "notifyAllPlayers" / "notifyPlayer" PHP call
-        
-        // TODO: play the card in the user interface.
+    async notif_cardsDrawn(args) {
+        if (!this.gamedatas.hand) {
+            this.gamedatas.hand = {};
+        }
+        Object.values(args.cards).forEach(c => {
+            this.gamedatas.hand[c.id] = c;
+        });
+        this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
     }
-    */
+
+    async notif_playerDrewCard(args) {
+        // Simple notification, UI might not need to update much other than opponent hand count
+    }
+
+    async notif_plantPlanted(args) {
+        const card = args.card;
+        const planterId = args.planter_id;
+        
+        // Remove from hand if it's our plant
+        if (this.gamedatas.hand && this.gamedatas.hand[card.id]) {
+            delete this.gamedatas.hand[card.id];
+            this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
+        }
+
+        // Add to plantsOnPlanters
+        if (!this.gamedatas.plantsOnPlanters) this.gamedatas.plantsOnPlanters = {};
+        this.gamedatas.plantsOnPlanters[card.id] = card;
+
+        // Render the plant in the planter
+        this.renderPlantInPlanter(card, planterId);
+
+        if (args.player_id == this.bga.players.getCurrentPlayerId()) {
+            this.gamedatas.players[args.player_id].planting_status = 1;
+            if (this.bga.states.getCurrentMainStateName() === 'PlantingPhase') {
+                this.plantingPhase.onEnteringState(null, true);
+            }
+        }
+    }
+
+    async notif_plantGrown(args) {
+        const cardId = args.card_id;
+        const level = args.level;
+        
+        // Update data
+        if (this.gamedatas.plantsOnPlanters && this.gamedatas.plantsOnPlanters[cardId]) {
+            this.gamedatas.plantsOnPlanters[cardId].type_arg = level;
+            
+            // Move up visually
+            const el = document.getElementById(`garden_plant_${cardId}`);
+            if (el) {
+                el.querySelector('.plant-level-indicator').innerText = `Level: ${level}`;
+            }
+
+            if (args.max_level) {
+                // Move off planter to garden
+                const card = this.gamedatas.plantsOnPlanters[cardId];
+                delete this.gamedatas.plantsOnPlanters[cardId];
+                if (!this.gamedatas.plantsLevel3) this.gamedatas.plantsLevel3 = {};
+                this.gamedatas.plantsLevel3[cardId] = card;
+
+                if (el) {
+                    el.classList.add('level3-tilted');
+                    el.style.transform = 'rotate(90deg)';
+                    const planterContainer = el.parentElement;
+                    const gardenContainer = planterContainer.parentElement;
+                    gardenContainer.appendChild(el); // Move out of planter
+                }
+            }
+        }
+
+        if (args.player_id == this.bga.players.getCurrentPlayerId()) {
+            this.gamedatas.players[args.player_id].planting_status = 1;
+            if (this.bga.states.getCurrentMainStateName() === 'PlantingPhase') {
+                this.plantingPhase.onEnteringState(null, true);
+            }
+        }
+    }
+
+    async notif_draftCards(args) {
+        this.gamedatas.draftCards = args.cards;
+    }
+
+    async notif_playerStartedDrafting(args) {
+        if (args.player_id == this.bga.players.getCurrentPlayerId()) {
+            this.gamedatas.players[args.player_id].planting_status = 2;
+            if (this.bga.states.getCurrentMainStateName() === 'PlantingPhase') {
+                this.plantingPhase.onEnteringState(null, true);
+            }
+        }
+    }
+
+    async notif_keptCard(args) {
+        if (!this.gamedatas.hand) this.gamedatas.hand = {};
+        this.gamedatas.hand[args.card.id] = args.card;
+        this.gamedatas.draftCards = {};
+        this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
+    }
+
+    async notif_playerKeptDraft(args) {
+        if (args.player_id == this.bga.players.getCurrentPlayerId()) {
+            this.gamedatas.players[args.player_id].planting_status = 1;
+            if (this.bga.states.getCurrentMainStateName() === 'PlantingPhase') {
+                this.plantingPhase.onEnteringState(null, true);
+            }
+        }
+    }
+
+    renderPlantInPlanter(card, planterId) {
+        const planterEl = document.getElementById(`planter_${planterId}`);
+        if (!planterEl) return;
+
+        const cardInfo = this.gamedatas.plantCardTypes[card.type];
+        
+        planterEl.insertAdjacentHTML('beforeend', `
+            <div id="garden_plant_${card.id}" data-id="${card.id}" style="position: absolute; bottom: 30px; left: 10px; right: 10px; height: 120px; border: 2px solid #2ecc71; border-radius: 5px; background: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s;">
+                <strong style="color: #27ae60; font-size: 0.9em;">${cardInfo.name}</strong>
+                <div class="plant-level-indicator" style="margin-top: 5px; font-size: 0.8em; color: #7f8c8d; font-weight: bold;">Level: ${card.type_arg}</div>
+            </div>
+        `);
+    }
+
+    getFamily(plantType) {
+        if (['baby_cactus', 'trv_cactus'].includes(plantType)) return 'cactus';
+        if (['baby_flower', 'trv_flower'].includes(plantType)) return 'flower';
+        if (['baby_tree', 'trv_tree'].includes(plantType)) return 'tree';
+        return '';
+    }
+
+    getPlantCard(cardId) {
+        if (this.gamedatas.plantsOnPlanters && this.gamedatas.plantsOnPlanters[cardId]) {
+            return this.gamedatas.plantsOnPlanters[cardId];
+        }
+        if (this.gamedatas.plantsLevel3 && this.gamedatas.plantsLevel3[cardId]) {
+            return this.gamedatas.plantsLevel3[cardId];
+        }
+        return null;
+    }
 }

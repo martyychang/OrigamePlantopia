@@ -22,7 +22,9 @@ use Bga\Games\OrigamePlantopia\PlantCards;
 use Bga\Games\OrigamePlantopia\WeatherCards;
 use Bga\Games\OrigamePlantopia\CharacterCards;
 use Bga\Games\OrigamePlantopia\States\SetupDecisions;
-use Bga\Games\OrigamePlantopia\States\PlayerTurn;
+use Bga\Games\OrigamePlantopia\States\PlantingPhaseDraw;
+use Bga\Games\OrigamePlantopia\States\PlantingPhase;
+use Bga\Games\OrigamePlantopia\States\WeatherPhaseStart;
 use Bga\GameFramework\Components\Counters\PlayerCounter;
 
 class Game extends \Bga\GameFramework\Table
@@ -153,7 +155,7 @@ class Game extends \Bga\GameFramework\Table
 
         // Get information about players.
         $result["players"] = $this->getCollectionFromDb(
-            "SELECT `player_id` AS `id`, `player_score` AS `score`, `player_score_aux` AS `score_aux`, `player_mulligan_choice` AS `mulligan_choice` FROM `player`"
+            "SELECT `player_id` AS `id`, `player_score` AS `score`, `player_score_aux` AS `score_aux`, `player_mulligan_choice` AS `mulligan_choice`, `player_planting_status` AS `planting_status` FROM `player`"
         );
         $this->playerEnergy->fillResult($result);
 
@@ -168,6 +170,9 @@ class Game extends \Bga\GameFramework\Table
         // Current player's weather hand (private info)
         $result['weatherHand'] = $this->weatherCards->getCardsInLocation('hand', $currentPlayerId);
 
+        // Draft cards (if drafting)
+        $result['draftCards'] = $this->plantCards->getCardsInLocation('draft', $currentPlayerId);
+
         // Deck and discard counts (public info, not the actual cards)
         $result['plantDeckCount'] = $this->plantCards->countCardInLocation('deck');
         $result['plantDiscardCount'] = $this->plantCards->countCardInLocation('discard');
@@ -178,6 +183,12 @@ class Game extends \Bga\GameFramework\Table
 
         // Planter cards (public info)
         $result['planters'] = $this->planterCards->getCardsInLocation('garden');
+
+        // Plants on planters
+        $result['plantsOnPlanters'] = $this->plantCards->getCardsInLocation('planter');
+        
+        // Max level plants (off planter)
+        $result['plantsLevel3'] = $this->plantCards->getCardsInLocation('garden_level3');
 
         // Bonus Weather cards in the market
         $result['bonusWeatherMarket'] = $this->weatherCards->getCardsOfTypeInLocation('bonus', null, 'deck');
