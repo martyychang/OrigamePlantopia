@@ -28,7 +28,7 @@ class SetupDecisions {
             return;
         }
 
-        const isMulliganDone = this.game.gamedatas.players[this.bga.player_id].score_aux == 1;
+        const isMulliganDone = this.game.gamedatas.players[this.bga.getCurrentPlayerId()].score_aux == 1;
 
         if (!isMulliganDone) {
             this.bga.statusBar.setTitle(_('${you} may keep your starting hand or redraw once'));
@@ -48,7 +48,7 @@ class SetupDecisions {
             });
 
             // Highlight the player's own claimed character in their garden to return it
-            const myGarden = document.getElementById(`player-garden-${this.bga.player_id}`);
+            const myGarden = document.getElementById(`player-garden-${this.bga.getCurrentPlayerId()}`);
             if (myGarden) {
                 myGarden.querySelectorAll('.character-card').forEach(el => {
                     el.classList.add('bga-cards_selectable-card');
@@ -240,7 +240,7 @@ export class Game {
     //// Utility methods
     
     async notif_mulliganDone(args) {
-        this.gamedatas.players[this.bga.player_id].score_aux = 1;
+        this.gamedatas.players[this.bga.getCurrentPlayerId()].score_aux = 1;
         if (this.bga.states.currentStateName === 'SetupDecisions') {
             this.bga.statusBar.clear();
             this.setupDecisions.onEnteringState(null, true);
@@ -356,7 +356,7 @@ export class Game {
                 
                 // Re-evaluate current state handlers (adds clickable return if it's ours)
                 if (this.bga.states.currentStateName === 'SetupDecisions') {
-                    this.setupDecisions.onEnteringState(null, this.bga.player_id === args.player_id);
+                    this.setupDecisions.onEnteringState(null, this.bga.getCurrentPlayerId() === args.player_id);
                 }
             }
         }
