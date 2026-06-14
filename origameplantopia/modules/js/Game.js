@@ -220,6 +220,18 @@ export class Game {
             this.renderPlanters(planters, `player-garden-${player.id}`);
         });
 
+        // Add a Bonus Weather section under the player gardens
+        document.getElementById('player-tables').insertAdjacentHTML('afterend', `
+            <div id="bonus-weather-section" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px;">
+                <h3 style="margin-top: 0;">Bonus Weather</h3>
+                <div id="bonus-weather-container" style="display: flex; gap: 10px; margin-top: 10px; min-height: 150px;"></div>
+            </div>
+        `);
+
+        if (gamedatas.bonusWeatherMarket) {
+            this.renderBonusWeatherMarket(gamedatas.bonusWeatherMarket, 'bonus-weather-container');
+        }
+
         // Add a dedicated hand panel for the current player at the bottom (like RFTG)
         this.bga.gameArea.getElement().insertAdjacentHTML('beforeend', `
             <div id="hand_panel" style="margin-top: 20px; border: 2px solid #27ae60; border-radius: 8px; background: rgba(255, 255, 255, 0.9); padding: 15px;">
@@ -346,13 +358,77 @@ export class Game {
         });
     }
 
+    renderBonusWeatherMarket(marketData, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        
+        // Group by type_arg (Wind=2, Rain=1, Sun=0)
+        // Order: Wind, Rain, Sun
+        const groups = {
+            2: [], // Wind
+            1: [], // Rain
+            0: [], // Sun
+        };
+        
+        Object.values(marketData).forEach(card => {
+            if (groups[card.type_arg]) {
+                groups[card.type_arg].push(card);
+            }
+        });
+        
+        const order = [2, 1, 0];
+        order.forEach(type_arg => {
+            const cards = groups[type_arg];
+            if (cards && cards.length > 0) {
+                // Create a group container
+                const groupDiv = document.createElement('div');
+                groupDiv.id = `bonus-weather-group-${type_arg}`;
+                groupDiv.style.display = 'flex';
+                
+                cards.forEach((card, index) => {
+                    const cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
+                    const cardEl = document.createElement('div');
+                    cardEl.id = `weather_${card.id}`;
+                    cardEl.className = 'weather-card';
+                    cardEl.style.width = '120px';
+                    cardEl.style.height = '180px';
+                    cardEl.style.border = '2px solid #3498db';
+                    cardEl.style.borderRadius = '10px';
+                    cardEl.style.padding = '10px';
+                    cardEl.style.textAlign = 'center';
+                    cardEl.style.background = '#ebf5fb';
+                    cardEl.style.display = 'flex';
+                    cardEl.style.flexDirection = 'column';
+                    cardEl.style.justifyContent = 'center';
+                    cardEl.style.boxShadow = '2px 2px 5px rgba(0,0,0,0.1)';
+                    cardEl.style.cursor = 'pointer';
+                    cardEl.style.transition = 'transform 0.2s';
+                    
+                    if (index > 0) {
+                        cardEl.style.marginLeft = '-100px';
+                    }
+                    
+                    cardEl.innerHTML = `<strong style="color: #2980b9; font-size: 1.1em;">${cardInfo.name}</strong>`;
+                    groupDiv.appendChild(cardEl);
+                });
+                
+                container.appendChild(groupDiv);
+            }
+        });
+        
+        // Add simple hover effect to bonus weather cards
+        document.querySelectorAll('#bonus-weather-container .weather-card').forEach(card => {
+            card.addEventListener('mouseenter', () => card.style.transform = 'translateY(-10px)');
+            card.addEventListener('mouseleave', () => card.style.transform = 'translateY(0)');
+        });
+    }
+
     ///////////////////////////////////////////////////
     //// Reaction to cometD notifications
 
     /*
         setupNotifications:
-        
-        In this method, you associate each of your game notifications with your local method to handle it.
         
         Note: game notification names correspond to "bga->notify->all" calls in your Game.php file.
     

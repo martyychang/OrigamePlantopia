@@ -179,6 +179,9 @@ class Game extends \Bga\GameFramework\Table
         // Planter cards (public info)
         $result['planters'] = $this->planterCards->getCardsInLocation('garden');
 
+        // Bonus Weather cards in the market
+        $result['bonusWeatherMarket'] = $this->weatherCards->getCardsOfTypeInLocation('bonus', null, 'deck');
+
         return $result;
     }
 
