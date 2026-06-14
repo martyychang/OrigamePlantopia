@@ -187,8 +187,7 @@ class PlantingPhase {
                             }
                         });
                     } else {
-                        this.bga.statusBar.setTitle(_('Confirm Planting'));
-                        this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmPlant(), { color: 'blue' });
+                        this.confirmPlant();
                     }
                 } else {
                     // Treevolved plant - need to select a plant to sacrifice
@@ -199,8 +198,7 @@ class PlantingPhase {
                             this.updateStatusBar();
                         }, cardInfo);
                     } else {
-                        this.bga.statusBar.setTitle(_('Confirm Treevolution'));
-                        this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmPlant(), { color: 'blue' });
+                        this.confirmPlant();
                     }
                 }
             }
