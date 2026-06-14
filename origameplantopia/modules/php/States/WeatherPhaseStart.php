@@ -21,11 +21,32 @@ class WeatherPhaseStart extends GameState
 
     public function onEnteringState(int $activePlayerId)
     {
-        // TODO: Implement Weather Phase setup
-        $this->bga->notify->all("message", clienttranslate('Weather Phase begins! (Not fully implemented yet)'), []);
+        $players = $this->game->loadPlayersBasicInfos();
+        $playerCount = count($players);
 
-        // For now, loop back to Planting Phase Draw to test the cycle
-        // Or go to NextPlayer if end game.
-        return PlantingPhaseDraw::class;
+        // Discard any public and chosen weather cards from previous round
+        $this->game->weatherCards->moveAllCardsInLocation('weather_public', 'discard');
+        $this->game->weatherCards->moveAllCardsInLocation('weather_chosen', 'discard');
+
+        $cardsToFlip = 0;
+        if ($playerCount == 2) $cardsToFlip = 2;
+        if ($playerCount == 3) $cardsToFlip = 1;
+        if ($playerCount == 4) $cardsToFlip = 1;
+        if ($playerCount == 5) $cardsToFlip = 0;
+
+        if ($cardsToFlip > 0) {
+            $flipped = $this->game->weatherCards->pickCardsForLocation($cardsToFlip, 'deck', 'weather_public', 0);
+            if (count($flipped) < $cardsToFlip) {
+                $this->game->weatherCards->moveAllCardsInLocation('discard', 'deck');
+                $this->game->weatherCards->shuffle('deck');
+                $flipped2 = $this->game->weatherCards->pickCardsForLocation($cardsToFlip - count($flipped), 'deck', 'weather_public', 0);
+                $flipped = array_merge($flipped, $flipped2);
+            }
+            $this->bga->notify->all("weatherDeckFlipped", clienttranslate('Weather cards were flipped from the deck.'), [
+                "cards" => $flipped
+            ]);
+        }
+
+        return WeatherPhaseChoose::class;
     }
 }

@@ -64,6 +64,11 @@ class Game extends \Bga\GameFramework\Table
     {
         parent::__construct();
 
+        $this->initGameStateLabels([
+            'endgame_triggered' => 10,
+        ]);
+
+
         $this->playerEnergy = $this->bga->counterFactory->createPlayerCounter('energy');
 
         // Plant cards Deck component — backed by 'plant_card' DB table
@@ -169,6 +174,9 @@ class Game extends \Bga\GameFramework\Table
         
         // Current player's weather hand (private info)
         $result['weatherHand'] = $this->weatherCards->getCardsInLocation('hand', $currentPlayerId);
+        $result['weatherChosen'] = $this->weatherCards->getCardsInLocation('weather_chosen', $currentPlayerId);
+        $result['weatherPublic'] = $this->weatherCards->getCardsInLocation('weather_public');
+        $result['weatherPublicBonus'] = $this->weatherCards->getCardsInLocation('weather_public_bonus');
 
         // Draft cards (if drafting)
         $result['draftCards'] = $this->plantCards->getCardsInLocation('draft', $currentPlayerId);
@@ -253,6 +261,7 @@ class Game extends \Bga\GameFramework\Table
         // TODO: Create weather card deck once inventory is ready.
 
         // Activate first player (once setup logic is fully complete)
+        $this->setGameStateInitialValue('endgame_triggered', 0);
         $this->activeNextPlayer();
 
         // Start the game in SetupDecisions

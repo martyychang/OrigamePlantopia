@@ -379,6 +379,50 @@ class PlantingPhase {
     }
 }
 
+class WeatherPhaseChoose {
+    constructor(game, bga) {
+        this.game = game;
+        this.bga = bga;
+    }
+
+    onEnteringState(args, isCurrentPlayerActive) {
+        this.onPlayerActivationChange(args, isCurrentPlayerActive);
+    }
+
+    onPlayerActivationChange(args, isCurrentPlayerActive) {
+        this.bga.statusBar.removeActionButtons();
+        
+        if (!isCurrentPlayerActive) {
+            this.bga.statusBar.setTitle(_('Waiting for other players to choose a Weather card...'));
+            return;
+        }
+
+        this.bga.statusBar.setTitle(_('${you} must choose a Weather card to play from your hand'));
+        
+        const weatherHand = this.game.gamedatas.weatherHand;
+        if (!weatherHand || Object.keys(weatherHand).length === 0) {
+             return;
+        }
+        
+        Object.values(weatherHand).forEach(card => {
+            let label = '🌬️ Wind';
+            if (card.type_arg == 0) label = '☀️ Sun';
+            if (card.type_arg == 1) label = '💧 Rain';
+
+            this.bga.statusBar.addActionButton(_(label), () => this.onChooseWeather(card.id), { color: 'blue' });
+        });
+    }
+
+    onLeavingState(args, isCurrentPlayerActive) {
+        this.bga.statusBar.removeActionButtons();
+    }
+
+    onChooseWeather(cardId) {
+        this.bga.actions.performAction("actChooseWeather", { cardId });
+    }
+}
+
+
 export class Game {
     constructor(bga) {
         console.log('origameplantopia constructor');
@@ -390,6 +434,9 @@ export class Game {
 
         this.plantingPhase = new PlantingPhase(this, bga);
         this.bga.states.register('PlantingPhase', this.plantingPhase);
+
+        this.weatherPhaseChoose = new WeatherPhaseChoose(this, bga);
+        this.bga.states.register('WeatherPhaseChoose', this.weatherPhaseChoose);
 
         // Uncomment the next line to show debug informations about state changes in the console. Remove before going to production!
         // this.bga.states.logger = console.log;
@@ -481,6 +528,18 @@ export class Game {
 
         if (gamedatas.bonusWeatherMarket) {
             this.renderBonusWeatherMarket(gamedatas.bonusWeatherMarket, 'bonus-weather-container');
+        }
+
+        // Add a Public Weather section
+        document.getElementById('bonus-weather-section').insertAdjacentHTML('beforebegin', `
+            <div id="public-weather-section" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px;">
+                <h3 style="margin-top: 0;">Public Weather Cards</h3>
+                <div id="weather-public-container" style="display: flex; gap: 10px; margin-top: 10px; min-height: 150px;"></div>
+            </div>
+        `);
+
+        if (gamedatas.weatherPublic) {
+            this.renderPublicWeather(gamedatas.weatherPublic);
         }
 
         // Add a dedicated hand panel for the current player at the bottom (like RFTG)
@@ -675,6 +734,29 @@ export class Game {
         });
     }
 
+    renderPublicWeather(weatherData) {
+        const container = document.getElementById('weather-public-container');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        Object.values(weatherData).forEach(card => {
+            let cardInfo = { name: 'Unknown' };
+            if (this.gamedatas.weatherCardTypes[card.type] && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
+                cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
+            }
+            container.insertAdjacentHTML('beforeend', `
+                <div id="weather_${card.id}" class="weather-card public-weather" style="width: 120px; height: 180px; border: 2px solid #e67e22; border-radius: 10px; padding: 10px; text-align: center; background: #fdf2e9; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                    <strong style="color: #d35400; font-size: 1.1em;">${cardInfo.name}</strong>
+                </div>
+            `);
+        });
+        
+        document.querySelectorAll('#weather-public-container .weather-card').forEach(card => {
+            card.addEventListener('mouseenter', () => card.style.transform = 'translateY(-10px)');
+            card.addEventListener('mouseleave', () => card.style.transform = 'translateY(0)');
+        });
+    }
+
     ///////////////////////////////////////////////////
     //// Reaction to cometD notifications
 
@@ -746,6 +828,30 @@ export class Game {
         this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
     }
     
+    async notif_weatherDeckFlipped(args) {
+        if (!this.gamedatas.weatherPublic) this.gamedatas.weatherPublic = {};
+        Object.values(args.cards).forEach(c => {
+            this.gamedatas.weatherPublic[c.id] = c;
+        });
+        this.renderPublicWeather(this.gamedatas.weatherPublic);
+    }
+
+    async notif_weatherChosen(args) {
+        const cardId = args.card_id;
+        if (this.gamedatas.weatherHand && this.gamedatas.weatherHand[cardId]) {
+            delete this.gamedatas.weatherHand[cardId];
+            this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
+        }
+        if (this.bga.states.getCurrentMainStateName() === 'WeatherPhaseChoose') {
+            this.weatherPhaseChoose.onEnteringState(null, false);
+        }
+    }
+
+    async notif_weatherRevealed(args) {
+        this.gamedatas.weatherPublic = args.cards;
+        this.renderPublicWeather(this.gamedatas.weatherPublic);
+    }
+
     async notif_cardsDrawn(args) {
         if (!this.gamedatas.hand) {
             this.gamedatas.hand = {};
