@@ -45,7 +45,7 @@ class DistributeWeather extends GameState
             // Special Mushroom ability: Also give them 1 Bonus Weather Card of each type.
             if ($characterType === 'mushroom') {
                 $bonusCards = [];
-                $weatherDeckAfter = $this->game->weatherCards->getCardsInLocation('deck');
+                $weatherDeckAfter = $this->game->weatherCards->getCardsInLocation('bonus_deck');
                 
                 // Track which conditions we've already given to ensure 1 of each (0, 1, 2)
                 $foundConditions = [];

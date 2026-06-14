@@ -199,7 +199,7 @@ class Game extends \Bga\GameFramework\Table
         $result['plantsLevel3'] = $this->plantCards->getCardsInLocation('garden_level3');
 
         // Bonus Weather cards in the market
-        $result['bonusWeatherMarket'] = $this->weatherCards->getCardsOfTypeInLocation('bonus', null, 'deck');
+        $result['bonusWeatherMarket'] = $this->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
 
         return $result;
     }
@@ -241,6 +241,9 @@ class Game extends \Bga\GameFramework\Table
         // ── Create and shuffle the weather card deck (15 cards) ──────
         $this->weatherCards->createCards(WeatherCards::getDeckCards(), 'deck');
         $this->weatherCards->shuffle('deck');
+
+        // ── Create the bonus weather deck (9 cards) ──────
+        $this->weatherCards->createCards(WeatherCards::getBonusCards(), 'bonus_deck');
 
         // ── Create and shuffle the character card deck (5 cards) ──────
         $this->characterCards->createCards(CharacterCards::getDeckCards(), 'deck');

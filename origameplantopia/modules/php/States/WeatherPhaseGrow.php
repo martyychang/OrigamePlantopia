@@ -111,7 +111,7 @@ class WeatherPhaseGrow extends GameState
         // 3. Clean up
         $this->game->weatherCards->moveAllCardsInLocation('weather_public', 'discard');
         // Bonus cards go back to supply/deck
-        $this->game->weatherCards->moveAllCardsInLocation('weather_public_bonus', 'deck'); 
+        $this->game->weatherCards->moveAllCardsInLocation('weather_public_bonus', 'bonus_deck'); 
 
         // 4. Check for endgame
         // If someone has 4 Treevolved plants, set endgame flag if not already set

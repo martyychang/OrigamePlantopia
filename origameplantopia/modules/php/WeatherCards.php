@@ -85,6 +85,9 @@ class WeatherCards
     {
         $cards = [];
         foreach (self::getTypes() as $character => $info) {
+            if ($character === 'bonus') {
+                continue;
+            }
             foreach ($info['cards'] as $condition => $cardInfo) {
                 $cards[] = [
                     'type' => $character,
@@ -92,6 +95,23 @@ class WeatherCards
                     'nbr' => $cardInfo['num_cards'],
                 ];
             }
+        }
+        return $cards;
+    }
+
+    /**
+     * Build the array expected by Deck::createCards() for bonus weather cards.
+     */
+    public static function getBonusCards(): array
+    {
+        $cards = [];
+        $info = self::getTypes()['bonus'];
+        foreach ($info['cards'] as $condition => $cardInfo) {
+            $cards[] = [
+                'type' => 'bonus',
+                'type_arg' => $condition,
+                'nbr' => $cardInfo['num_cards'],
+            ];
         }
         return $cards;
     }
