@@ -207,18 +207,15 @@ class PlantingPhase extends GameState
         $this->checkActionAllowed($playerId);
 
         // Draw 5 cards to 'draft' location
-        $drawn = $this->game->plantCards->pickCards(5, 'deck');
+        $drawn = $this->game->plantCards->pickCardsForLocation(5, 'deck', 'draft', $playerId) ?? [];
         if (count($drawn) < 5) {
             // Reshuffle and draw remaining
             $this->game->plantCards->moveAllCardsInLocation('discard', 'deck');
             $this->game->plantCards->shuffle('deck');
             $remaining = 5 - count($drawn);
-            $drawn2 = $this->game->plantCards->pickCards($remaining, 'deck');
+            $drawn2 = $this->game->plantCards->pickCardsForLocation($remaining, 'deck', 'draft', $playerId) ?? [];
             $drawn = array_merge($drawn, $drawn2);
         }
-
-        $cardIds = array_column($drawn, 'id');
-        $this->game->plantCards->moveCards($cardIds, 'draft', $playerId);
 
         // Update status to drafting
         $this->game->DbQuery("UPDATE player SET player_planting_status = 2 WHERE player_id = $playerId");
