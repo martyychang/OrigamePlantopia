@@ -28,7 +28,7 @@ class SetupDecisions {
             return;
         }
 
-        const isMulliganDone = this.game.gamedatas.players[this.bga.players.getCurrentPlayerId()].score_aux == 1;
+        const isMulliganDone = this.game.gamedatas.players[this.bga.players.getCurrentPlayerId()].mulligan_choice > 0;
 
         if (!isMulliganDone) {
             this.bga.statusBar.setTitle(_('${you} may keep your starting hand or redraw once'));
@@ -240,7 +240,7 @@ export class Game {
     //// Utility methods
     
     async notif_playerKeptCards(args) {
-        this.gamedatas.players[args.player_id].score_aux = 1;
+        this.gamedatas.players[args.player_id].mulligan_choice = 1;
         if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions' && args.player_id == this.bga.players.getCurrentPlayerId()) {
             this.bga.statusBar.removeActionButtons();
             this.setupDecisions.onEnteringState(null, true);
@@ -248,7 +248,7 @@ export class Game {
     }
 
     async notif_playerRedrewCards(args) {
-        this.gamedatas.players[args.player_id].score_aux = 1;
+        this.gamedatas.players[args.player_id].mulligan_choice = 2;
         if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions' && args.player_id == this.bga.players.getCurrentPlayerId()) {
             this.bga.statusBar.removeActionButtons();
             this.setupDecisions.onEnteringState(null, true);

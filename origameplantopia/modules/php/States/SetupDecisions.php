@@ -40,7 +40,7 @@ class SetupDecisions extends GameState
             throw new UserException(clienttranslate("You have already made your mulligan decision."));
         }
 
-        $this->game->DbQuery("UPDATE player SET player_score_aux = 1 WHERE player_id = $activePlayerId");
+        $this->game->DbQuery("UPDATE player SET player_mulligan_choice = 1 WHERE player_id = $activePlayerId");
 
         $this->bga->notify->all("playerKeptCards", clienttranslate('${player_name} kept their starting hand.'), [
             "player_id" => $activePlayerId,
@@ -58,7 +58,7 @@ class SetupDecisions extends GameState
             throw new UserException(clienttranslate("You have already made your mulligan decision."));
         }
 
-        $this->game->DbQuery("UPDATE player SET player_score_aux = 1 WHERE player_id = $activePlayerId");
+        $this->game->DbQuery("UPDATE player SET player_mulligan_choice = 2 WHERE player_id = $activePlayerId");
 
         // Player discards their 6 cards and draws 6 new ones.
         $hand = $this->game->plantCards->getCardsInLocation('hand', $activePlayerId);
@@ -132,8 +132,8 @@ class SetupDecisions extends GameState
 
     private function hasMulliganed(int $playerId): bool
     {
-        $val = $this->game->getUniqueValueFromDb("SELECT player_score_aux FROM player WHERE player_id = $playerId");
-        return (int)$val === 1;
+        $val = $this->game->getUniqueValueFromDb("SELECT player_mulligan_choice FROM player WHERE player_id = $playerId");
+        return (int)$val > 0;
     }
 
     private function checkIfAllPlayersReady()
@@ -161,7 +161,7 @@ class SetupDecisions extends GameState
     }
 
     function zombie(int $playerId) {
-        $this->game->DbQuery("UPDATE player SET player_score_aux = 1 WHERE player_id = $playerId");
+        $this->game->DbQuery("UPDATE player SET player_mulligan_choice = 1 WHERE player_id = $playerId");
         // Auto-assign a random character to the zombie
         $chars = $this->game->characterCards->getCardsInLocation('garden', $playerId);
         if (count($chars) === 0) {
