@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace Bga\Games\OrigamePlantopia;
 
 use Bga\Games\OrigamePlantopia\PlantCards;
+use Bga\Games\OrigamePlantopia\WeatherCards;
 use Bga\Games\OrigamePlantopia\States\InitialMulligan;
 use Bga\Games\OrigamePlantopia\States\PlayerTurn;
 use Bga\GameFramework\Components\Counters\PlayerCounter;
@@ -30,9 +31,13 @@ class Game extends \Bga\GameFramework\Table
      * Keyed by card name (= Deck card_type), populated in __construct().
      */
     public static array $PLANT_CARD_TYPES;
+    public static array $WEATHER_CARD_TYPES;
 
     /** BGA Deck component for the 102 plant cards. */
     public \Bga\GameFramework\Components\Deck $plantCards;
+
+    /** BGA Deck component for the 15 weather cards. */
+    public \Bga\GameFramework\Components\Deck $weatherCards;
 
     public PlayerCounter $playerEnergy;
 
@@ -54,8 +59,13 @@ class Game extends \Bga\GameFramework\Table
         // Plant cards Deck component — backed by 'plant_card' DB table
         $this->plantCards = $this->deckFactory->createDeck('plant_card');
 
+        // Weather cards Deck component — backed by 'weather_card' DB table
+        $this->weatherCards = $this->deckFactory->createDeck('weather_card');
+
         // Load material data for all 32 plant card types
         self::$PLANT_CARD_TYPES = PlantCards::getTypes();
+        // Load material data for all 15 weather card types
+        self::$WEATHER_CARD_TYPES = WeatherCards::getTypes();
 
         // Auto-complete player_name in notifications
         $this->bga->notify->addDecorator(function(string $message, array $args) {
@@ -133,6 +143,7 @@ class Game extends \Bga\GameFramework\Table
 
         // Material data — card type definitions (static, same for all players)
         $result['plantCardTypes'] = self::$PLANT_CARD_TYPES;
+        $result['weatherCardTypes'] = self::$WEATHER_CARD_TYPES;
 
         // Current player's hand (private info)
         $result['hand'] = $this->plantCards->getCardsInLocation('hand', $currentPlayerId);
@@ -177,6 +188,10 @@ class Game extends \Bga\GameFramework\Table
         // ── Create and shuffle the plant card deck (102 cards) ──────
         $this->plantCards->createCards(PlantCards::getDeckCards(), 'deck');
         $this->plantCards->shuffle('deck');
+
+        // ── Create and shuffle the weather card deck (15 cards) ──────
+        $this->weatherCards->createCards(WeatherCards::getDeckCards(), 'deck');
+        $this->weatherCards->shuffle('deck');
 
         // Deal initial hand of 6 plant cards to each player
         $playerList = $this->loadPlayersBasicInfos();
