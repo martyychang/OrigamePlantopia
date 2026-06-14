@@ -346,3 +346,24 @@ Use reverse-DNS-style naming: `meeple_ff0000_7`, `card_yellow_magic_2`
 - [BGA Dev Discord](https://discord.gg/YxEUacY)
 - [PHP IDE Helper](https://en.doc.boardgamearena.com/Tools_and_tips_of_BGA_Studio)
 - [TypeScript Definitions](https://en.doc.boardgamearena.com/Game_interface_logic:_yourgamename.js)
+
+---
+
+## Initial Setup & Mulligan Pattern
+
+**Backend (`setupNewGame`)**:
+- Initialize and populate decks (e.g. `$this->plantCards->createCards()`)
+- Shuffle the deck (`$this->plantCards->shuffle('deck')`)
+- Deal starting hands (`$this->plantCards->pickCards(6, 'deck', $playerId)`)
+- Initial state should be a `MULTIPLE_ACTIVE_PLAYER` state for simultaneous decisions (e.g., Keep or Redraw).
+
+**Frontend (`Game.js`)**:
+- Receive the hand from `getAllDatas()` via `setup(gamedatas)`.
+- Use a stock component (like `bga-cards` or `ebg.stock`) to render the hand.
+- In the `onEnteringState` for the setup decision state:
+  - Provide buttons in the status bar (e.g., Keep, Redraw) for the active player.
+  - Trigger backend actions when buttons are clicked.
+
+**State Machine**:
+- Use `#[PossibleAction]` in the state class to handle choices.
+- In a `MULTIPLE_ACTIVE_PLAYER` state, call `$this->bga->gamestate->setPlayerNonMultiactive($activePlayerId, NextState::class)` when a player completes their choice.

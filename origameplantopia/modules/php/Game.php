@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace Bga\Games\OrigamePlantopia;
 
 use Bga\Games\OrigamePlantopia\PlantCards;
+use Bga\Games\OrigamePlantopia\States\InitialMulligan;
 use Bga\Games\OrigamePlantopia\States\PlayerTurn;
 use Bga\GameFramework\Components\Counters\PlayerCounter;
 
@@ -177,10 +178,10 @@ class Game extends \Bga\GameFramework\Table
         $this->plantCards->createCards(PlantCards::getDeckCards(), 'deck');
         $this->plantCards->shuffle('deck');
 
-        // Deal initial hand of 5 plant cards to each player
+        // Deal initial hand of 6 plant cards to each player
         $playerList = $this->loadPlayersBasicInfos();
         foreach ($playerList as $player_id => $player_info) {
-            $this->plantCards->pickCards(5, 'deck', $player_id);
+            $this->plantCards->pickCards(6, 'deck', $player_id);
         }
 
         // TODO: Init game statistics.
@@ -189,7 +190,7 @@ class Game extends \Bga\GameFramework\Table
         // Activate first player once everything has been initialized and ready.
         $this->activeNextPlayer();
 
-        return PlayerTurn::class;
+        return InitialMulligan::class;
     }
 
     /**

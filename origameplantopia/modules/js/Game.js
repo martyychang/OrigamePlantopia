@@ -16,6 +16,35 @@
  * onEnteringState, onLeavingState and onPlayerActivationChange are predefined names that will be called by the framework.
  * When executing code in this state, you can access the args using this.args
  */
+class InitialMulligan {
+    constructor(game, bga) {
+        this.game = game;
+        this.bga = bga;
+    }
+
+    onEnteringState(args, isCurrentPlayerActive) {
+        this.bga.statusBar.setTitle(isCurrentPlayerActive ? 
+            _('${you} may keep your starting hand or redraw once') :
+            _('${actplayer} is deciding to keep or redraw')
+        );
+      
+        if (isCurrentPlayerActive) {
+            this.bga.statusBar.addActionButton(_('Keep Hand'), () => this.onKeepHand(), { color: 'blue' }); 
+            this.bga.statusBar.addActionButton(_('Redraw (Once)'), () => this.onRedrawHand(), { color: 'red' }); 
+        }
+    }
+
+    onLeavingState(args, isCurrentPlayerActive) {
+    }
+
+    onKeepHand() {
+        this.bga.actions.performAction("actKeep");
+    }
+
+    onRedrawHand() {
+        this.bga.actions.performAction("actRedraw");
+    }
+}
 class PlayerTurn {
     constructor(game, bga) {
         this.game = game;
@@ -76,6 +105,9 @@ export class Game {
         this.bga = bga;
 
         // Declare the State classes
+        this.initialMulligan = new InitialMulligan(this, bga);
+        this.bga.states.register('InitialMulligan', this.initialMulligan);
+
         this.playerTurn = new PlayerTurn(this, bga);
         this.bga.states.register('PlayerTurn', this.playerTurn);
 
@@ -124,12 +156,15 @@ export class Game {
 
             // example of adding a div for each player
             document.getElementById('player-tables').insertAdjacentHTML('beforeend', `
-                <div id="player-table-${player.id}">
-                    <strong>${player.name}</strong>
-                    <div>Player zone content goes here</div>
+                <div id="player-table-${player.id}" style="border: 1px solid #ccc; margin: 10px; padding: 10px;">
+                    <h3>${player.name}'s Zone</h3>
+                    <div id="player-hand-${player.id}" style="display: flex; gap: 10px; margin-top: 10px;"></div>
                 </div>
             `);
         });
+
+        // Setup the current player's hand
+        this.renderHand(gamedatas.hand, this.bga.player_id);
         
         // TODO: Set up your game interface here, according to "gamedatas"
         
@@ -144,13 +179,31 @@ export class Game {
     //// Utility methods
     
     /*
-    
         Here, you can defines some utility methods that you can use everywhere in your javascript
         script. Typically, functions that are used in multiple state classes or outside a state class.
-    
     */
 
-    
+    renderHand(handData, playerId) {
+        const handContainer = document.getElementById(`player-hand-${playerId}`);
+        if (!handContainer) return;
+
+        handContainer.innerHTML = ''; // Clear current hand
+        
+        if (!handData) return;
+        
+        Object.values(handData).forEach(card => {
+            // Get the card name from the material data provided by getAllDatas
+            const cardInfo = this.gamedatas.plantCardTypes[card.type] || { name: card.type };
+            
+            // Simple temporary HTML rendering for the card
+            handContainer.insertAdjacentHTML('beforeend', `
+                <div id="card_${card.id}" class="plant-card" style="width: 100px; height: 140px; border: 2px solid #2c3e50; border-radius: 8px; padding: 5px; text-align: center; background: #ecf0f1; display: flex; flex-direction: column; justify-content: center;">
+                    <strong>${cardInfo.name}</strong>
+                </div>
+            `);
+        });
+    }
+
     ///////////////////////////////////////////////////
     //// Reaction to cometD notifications
 
@@ -173,6 +226,12 @@ export class Game {
     }
     
     // TODO: from this point and below, you can write your game notifications handling methods
+    
+    async notif_newHand(args) {
+        console.log("notif_newHand", args);
+        // The server sends the new hand when the player redraws
+        this.renderHand(args.cards, this.bga.player_id);
+    }
     
     /*
     Example:
