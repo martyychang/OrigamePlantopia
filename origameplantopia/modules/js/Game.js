@@ -45,6 +45,60 @@ class InitialMulligan {
         this.bga.actions.performAction("actRedraw");
     }
 }
+
+class CharacterSelection {
+    constructor(game, bga) {
+        this.game = game;
+        this.bga = bga;
+    }
+
+    onEnteringState(args, isCurrentPlayerActive) {
+        this.bga.statusBar.setTitle(isCurrentPlayerActive ? 
+            _('${you} must select a character') :
+            _('${actplayer} is selecting a character')
+        );
+
+        if (isCurrentPlayerActive) {
+            // Highlight clickable characters in the Characters panel
+            document.querySelectorAll('#characters-panel .character-card').forEach(el => {
+                el.classList.add('bga-cards_selectable-card');
+                el.style.cursor = 'pointer';
+                el.style.boxShadow = '0 0 10px #f1c40f';
+                el.onclick = () => this.onClaimCharacter(el.dataset.id);
+            });
+
+            // Highlight the player's own claimed character in their garden to return it
+            const myGarden = document.getElementById(`player-garden-${this.bga.player_id}`);
+            if (myGarden) {
+                myGarden.querySelectorAll('.character-card').forEach(el => {
+                    el.classList.add('bga-cards_selectable-card');
+                    el.style.cursor = 'pointer';
+                    el.style.boxShadow = '0 0 10px #e74c3c';
+                    el.onclick = () => this.onReturnCharacter(el.dataset.id);
+                });
+            }
+        }
+    }
+
+    onLeavingState(args, isCurrentPlayerActive) {
+        // Clean up click handlers
+        document.querySelectorAll('.character-card').forEach(el => {
+            el.classList.remove('bga-cards_selectable-card');
+            el.style.cursor = 'default';
+            el.style.boxShadow = 'none';
+            el.onclick = null;
+        });
+    }
+
+    onClaimCharacter(cardId) {
+        this.bga.actions.performAction("actClaimCharacter", { cardId });
+    }
+
+    onReturnCharacter(cardId) {
+        this.bga.actions.performAction("actReturnCharacter", { cardId });
+    }
+}
+
 class PlayerTurn {
     constructor(game, bga) {
         this.game = game;
@@ -108,6 +162,9 @@ export class Game {
         this.initialMulligan = new InitialMulligan(this, bga);
         this.bga.states.register('InitialMulligan', this.initialMulligan);
 
+        this.characterSelection = new CharacterSelection(this, bga);
+        this.bga.states.register('CharacterSelection', this.characterSelection);
+
         this.playerTurn = new PlayerTurn(this, bga);
         this.bga.states.register('PlayerTurn', this.playerTurn);
 
@@ -138,8 +195,15 @@ export class Game {
 
         // Example to add a div on the game area
         this.bga.gameArea.getElement().insertAdjacentHTML('beforeend', `
+            <div id="characters-panel" style="margin-bottom: 20px; border: 2px solid #8e44ad; border-radius: 8px; background: rgba(255, 255, 255, 0.9); padding: 15px;">
+                <h3 style="color: #8e44ad; margin-top: 0;">Characters</h3>
+                <div id="available-characters-container" style="display: flex; flex-wrap: wrap; gap: 15px;"></div>
+            </div>
             <div id="player-tables"></div>
         `);
+        
+        // Render available characters
+        this.renderCharacters(gamedatas.availableCharacters, 'available-characters-container');
         
         // Setting up player boards
         Object.values(gamedatas.players).forEach(player => {
@@ -161,6 +225,10 @@ export class Game {
                     <div id="player-garden-${player.id}" style="display: flex; gap: 10px; margin-top: 10px; min-height: 150px;"></div>
                 </div>
             `);
+
+            // Render claimed characters for this player
+            const claimed = Object.values(gamedatas.claimedCharacters || {}).filter(c => c.location_arg == player.id);
+            this.renderCharacters(claimed, `player-garden-${player.id}`);
         });
 
         // Add a dedicated hand panel for the current player at the bottom (like RFTG)
@@ -172,7 +240,7 @@ export class Game {
         `);
 
         // Setup the current player's hand
-        this.renderHand(gamedatas.hand);
+        this.renderHand(gamedatas.hand, gamedatas.weatherHand);
         
         // TODO: Set up your game interface here, according to "gamedatas"
         
@@ -191,29 +259,65 @@ export class Game {
         script. Typically, functions that are used in multiple state classes or outside a state class.
     */
 
-    renderHand(handData) {
+    renderCharacters(cards, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        if (containerId === 'available-characters-container') {
+            container.innerHTML = '';
+        }
+
+        if (!cards) return;
+        
+        Object.values(cards).forEach(card => {
+            const cardInfo = this.gamedatas.characterCardTypes[card.type] || { name: card.type, ability: '' };
+            container.insertAdjacentHTML('beforeend', `
+                <div id="character_${card.id}" class="character-card" data-id="${card.id}" style="width: 140px; height: 180px; border: 2px solid #8e44ad; border-radius: 10px; padding: 10px; text-align: center; background: #f4ecf7; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                    <strong style="color: #8e44ad; font-size: 1.1em;">${cardInfo.name}</strong>
+                    <div style="font-size: 0.75em; color: #34495e;">${cardInfo.ability}</div>
+                </div>
+            `);
+        });
+    }
+
+    renderHand(handData, weatherHandData) {
         const handContainer = document.getElementById('my-hand-container');
         if (!handContainer) return;
 
         handContainer.innerHTML = ''; // Clear current hand
         
-        if (!handData) return;
-        
-        Object.values(handData).forEach(card => {
-            // Get the card name from the material data provided by getAllDatas
-            const cardInfo = this.gamedatas.plantCardTypes[card.type] || { name: card.type };
-            
-            // Simple temporary HTML rendering for the card (simulating a BGA card component)
-            handContainer.insertAdjacentHTML('beforeend', `
-                <div id="card_${card.id}" class="plant-card" style="width: 120px; height: 180px; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; text-align: center; background: #e8f8f5; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
-                    <strong style="color: #27ae60; font-size: 1.1em;">${cardInfo.name}</strong>
-                    <div style="margin-top: 10px; font-size: 0.8em; color: #7f8c8d;">${cardInfo.cost ? 'Cost: ' + cardInfo.cost : ''}</div>
-                </div>
-            `);
-        });
+        if (handData) {
+            Object.values(handData).forEach(card => {
+                // Get the card name from the material data provided by getAllDatas
+                const cardInfo = this.gamedatas.plantCardTypes[card.type] || { name: card.type };
+                
+                // Simple temporary HTML rendering for the card (simulating a BGA card component)
+                handContainer.insertAdjacentHTML('beforeend', `
+                    <div id="card_${card.id}" class="plant-card" style="width: 120px; height: 180px; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; text-align: center; background: #e8f8f5; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
+                        <strong style="color: #27ae60; font-size: 1.1em;">${cardInfo.name}</strong>
+                        <div style="margin-top: 10px; font-size: 0.8em; color: #7f8c8d;">${cardInfo.cost ? 'Cost: ' + cardInfo.cost : ''}</div>
+                    </div>
+                `);
+            });
+        }
+
+        if (weatherHandData) {
+            Object.values(weatherHandData).forEach(card => {
+                let cardInfo = { name: card.type };
+                if (this.gamedatas.weatherCardTypes[card.type] && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
+                    cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
+                }
+
+                handContainer.insertAdjacentHTML('beforeend', `
+                    <div id="weather_${card.id}" class="weather-card" style="width: 120px; height: 180px; border: 2px solid #3498db; border-radius: 10px; padding: 10px; text-align: center; background: #ebf5fb; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
+                        <strong style="color: #2980b9; font-size: 1.1em;">${cardInfo.name}</strong>
+                    </div>
+                `);
+            });
+        }
 
         // Add simple hover effect
-        document.querySelectorAll('.plant-card').forEach(card => {
+        document.querySelectorAll('.plant-card, .weather-card').forEach(card => {
             card.addEventListener('mouseenter', () => card.style.transform = 'translateY(-10px)');
             card.addEventListener('mouseleave', () => card.style.transform = 'translateY(0)');
         });
@@ -245,7 +349,51 @@ export class Game {
     async notif_newHand(args) {
         console.log("notif_newHand", args);
         // The server sends the new hand when the player redraws
-        this.renderHand(args.cards);
+        this.gamedatas.hand = args.cards;
+        this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
+    }
+    
+    async notif_characterClaimed(args) {
+        const cardId = args.card.id;
+        const cardEl = document.getElementById(`character_${cardId}`);
+        if (cardEl) {
+            const garden = document.getElementById(`player-garden-${args.player_id}`);
+            if (garden) {
+                garden.appendChild(cardEl);
+                
+                // Re-evaluate current state handlers (adds clickable return if it's ours)
+                if (this.bga.states.currentStateName === 'CharacterSelection') {
+                    this.characterSelection.onEnteringState(null, this.bga.player_id === args.player_id);
+                }
+            }
+        }
+    }
+
+    async notif_characterReturned(args) {
+        const cardId = args.card.id;
+        const cardEl = document.getElementById(`character_${cardId}`);
+        if (cardEl) {
+            const container = document.getElementById('available-characters-container');
+            if (container) {
+                container.appendChild(cardEl);
+
+                // Re-evaluate current state handlers (adds clickable claim)
+                if (this.bga.states.currentStateName === 'CharacterSelection') {
+                    this.characterSelection.onEnteringState(null, true);
+                }
+            }
+        }
+    }
+
+    async notif_receivedWeatherCards(args) {
+        if (!this.gamedatas.weatherHand) {
+            this.gamedatas.weatherHand = {};
+        }
+        // Merge new weather cards
+        Object.values(args.cards).forEach(c => {
+            this.gamedatas.weatherHand[c.id] = c;
+        });
+        this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
     }
     
     /*

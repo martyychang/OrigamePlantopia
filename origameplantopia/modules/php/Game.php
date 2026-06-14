@@ -158,10 +158,17 @@ class Game extends \Bga\GameFramework\Table
 
         // Current player's hand (private info)
         $result['hand'] = $this->plantCards->getCardsInLocation('hand', $currentPlayerId);
+        
+        // Current player's weather hand (private info)
+        $result['weatherHand'] = $this->weatherCards->getCardsInLocation('hand', $currentPlayerId);
 
         // Deck and discard counts (public info, not the actual cards)
         $result['plantDeckCount'] = $this->plantCards->countCardInLocation('deck');
         $result['plantDiscardCount'] = $this->plantCards->countCardInLocation('discard');
+        
+        // Character cards (public info)
+        $result['availableCharacters'] = $this->characterCards->getCardsInLocation('deck');
+        $result['claimedCharacters'] = $this->characterCards->getCardsInLocation('garden');
 
         return $result;
     }

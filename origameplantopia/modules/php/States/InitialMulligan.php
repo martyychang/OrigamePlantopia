@@ -38,7 +38,7 @@ class InitialMulligan extends GameState
             "player_id" => $activePlayerId,
         ]);
 
-        $this->game->gamestate->setPlayerNonMultiactive($activePlayerId, NextPlayer::class);
+        $this->game->gamestate->setPlayerNonMultiactive($activePlayerId, CharacterSelection::class);
     }
 
     #[PossibleAction]
@@ -61,7 +61,7 @@ class InitialMulligan extends GameState
             "player_id" => $activePlayerId,
         ]);
 
-        $this->game->gamestate->setPlayerNonMultiactive($activePlayerId, NextPlayer::class);
+        $this->game->gamestate->setPlayerNonMultiactive($activePlayerId, CharacterSelection::class);
     }
 
     function zombie(int $playerId) {
