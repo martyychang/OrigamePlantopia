@@ -33,8 +33,9 @@ class PlantingPhase extends GameState
     }
 
     #[PossibleAction]
-    public function actPlant(int $cardId, int $planterCardId, array $paymentCardIds)
+    public function actPlant(int $cardId, int $planterCardId, string $paymentCardIds)
     {
+        $paymentCardIds = $paymentCardIds === '' ? [] : array_map('intval', explode(';', $paymentCardIds));
         $playerId = (int)$this->game->getCurrentPlayerId();
         $this->checkActionAllowed($playerId);
 
@@ -142,8 +143,9 @@ class PlantingPhase extends GameState
     }
 
     #[PossibleAction]
-    public function actGrow(int $plantCardId, array $paymentCardIds)
+    public function actGrow(int $plantCardId, string $paymentCardIds)
     {
+        $paymentCardIds = $paymentCardIds === '' ? [] : array_map('intval', explode(';', $paymentCardIds));
         $playerId = (int)$this->game->getCurrentPlayerId();
         $this->checkActionAllowed($playerId);
 
