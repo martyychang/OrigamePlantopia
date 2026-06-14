@@ -241,16 +241,16 @@ export class Game {
     
     async notif_playerKeptCards(args) {
         this.gamedatas.players[args.player_id].score_aux = 1;
-        if (this.bga.states.currentStateName === 'SetupDecisions' && args.player_id == this.bga.players.getCurrentPlayerId()) {
-            this.bga.statusBar.clear();
+        if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions' && args.player_id == this.bga.players.getCurrentPlayerId()) {
+            this.bga.statusBar.removeActionButtons();
             this.setupDecisions.onEnteringState(null, true);
         }
     }
 
     async notif_playerRedrewCards(args) {
         this.gamedatas.players[args.player_id].score_aux = 1;
-        if (this.bga.states.currentStateName === 'SetupDecisions' && args.player_id == this.bga.players.getCurrentPlayerId()) {
-            this.bga.statusBar.clear();
+        if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions' && args.player_id == this.bga.players.getCurrentPlayerId()) {
+            this.bga.statusBar.removeActionButtons();
             this.setupDecisions.onEnteringState(null, true);
         }
     }
@@ -363,7 +363,7 @@ export class Game {
                 garden.appendChild(cardEl);
                 
                 // Re-evaluate current state handlers (adds clickable return if it's ours)
-                if (this.bga.states.currentStateName === 'SetupDecisions') {
+                if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions') {
                     this.setupDecisions.onEnteringState(null, this.bga.players.getCurrentPlayerId() === args.player_id);
                 }
             }
@@ -379,7 +379,7 @@ export class Game {
                 container.appendChild(cardEl);
 
                 // Re-evaluate current state handlers (adds clickable claim)
-                if (this.bga.states.currentStateName === 'SetupDecisions') {
+                if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions') {
                     this.setupDecisions.onEnteringState(null, true);
                 }
             }
