@@ -349,6 +349,20 @@ Use reverse-DNS-style naming: `meeple_ff0000_7`, `card_yellow_magic_2`
 
 ---
 
+## Deck Component Best Practices
+
+The BGA `Deck` component has strict method signatures. Using the wrong number of arguments will result in an `ArgumentCountError`.
+
+- **`pickCards(int $nbr, string $location, int $player_id)`**
+  Draws `$nbr` cards from `$location` and automatically moves them to the `hand` location of `$player_id`. Note that the third argument is an **integer** (the player ID), not a string location name.
+
+- **`pickCardsForLocation(int $nbr, string $from_location, string $to_location, int $location_arg = 0)`**
+  Draws `$nbr` cards from `$from_location` and moves them to any custom `$to_location` (e.g., `'draft'`). It sets the `location_arg` to `$location_arg`. This is the correct method to use when drawing cards to a temporary or specialized zone instead of the player's hand.
+
+Both methods return an array of the picked cards, which is safe to check with `count()` or merge. If you need to manually handle deck reshuffling, verify the count of drawn cards against the requested amount before attempting to draw the remainder.
+
+---
+
 ## Initial Setup & Mulligan Pattern
 
 **Backend (`setupNewGame`)**:
