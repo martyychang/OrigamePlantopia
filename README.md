@@ -16,3 +16,7 @@ This project is developed using **BGA Studio**. For more information on the deve
 ## Development
 
 This project uses the BGA framework. To learn more about how to develop for Board Game Arena, visit the [BGA Studio Documentation](https://en.doc.boardgamearena.com/Studio).
+
+The game can be tested on BGA Studio at the URL below.
+
+https://studio.boardgamearena.com/gamepanel?game=origameplantopia
