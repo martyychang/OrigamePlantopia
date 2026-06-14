@@ -44,6 +44,9 @@ class Game extends \Bga\GameFramework\Table
     /** BGA Deck component for the 5 character cards. */
     public \Bga\GameFramework\Components\Deck $characterCards;
 
+    /** BGA Deck component for the planter cards. */
+    public \Bga\GameFramework\Components\Deck $planterCards;
+
     public PlayerCounter $playerEnergy;
 
     /**
@@ -69,6 +72,9 @@ class Game extends \Bga\GameFramework\Table
 
         // Character cards Deck component — backed by 'character_card' DB table
         $this->characterCards = $this->deckFactory->createDeck('character_card');
+
+        // Planter cards Deck component — backed by 'planter_card' DB table
+        $this->planterCards = $this->deckFactory->createDeck('planter_card');
 
         // Load material data for all 32 plant card types
         self::$PLANT_CARD_TYPES = PlantCards::getTypes();
@@ -170,6 +176,9 @@ class Game extends \Bga\GameFramework\Table
         $result['availableCharacters'] = $this->characterCards->getCardsInLocation('deck');
         $result['claimedCharacters'] = $this->characterCards->getCardsInLocation('garden');
 
+        // Planter cards (public info)
+        $result['planters'] = $this->planterCards->getCardsInLocation('garden');
+
         return $result;
     }
 
@@ -219,6 +228,11 @@ class Game extends \Bga\GameFramework\Table
         $playerList = $this->loadPlayersBasicInfos();
         foreach ($playerList as $player_id => $player_info) {
             $this->plantCards->pickCards(6, 'deck', $player_id);
+            
+            // Give each player 5 Planter cards in their garden
+            $this->planterCards->createCards([
+                ['type' => 'planter', 'type_arg' => 0, 'nbr' => 5]
+            ], 'garden', $player_id);
         }
 
         // TODO: Init game statistics.

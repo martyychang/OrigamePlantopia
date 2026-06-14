@@ -214,6 +214,10 @@ export class Game {
             // Render claimed characters for this player
             const claimed = Object.values(gamedatas.claimedCharacters || {}).filter(c => c.location_arg == player.id);
             this.renderCharacters(claimed, `player-garden-${player.id}`);
+
+            // Render planters for this player
+            const planters = Object.values(gamedatas.planters || {}).filter(c => c.location_arg == player.id);
+            this.renderPlanters(planters, `player-garden-${player.id}`);
         });
 
         // Add a dedicated hand panel for the current player at the bottom (like RFTG)
@@ -276,6 +280,24 @@ export class Game {
                 <div id="character_${card.id}" class="character-card" data-id="${card.id}" style="width: 140px; height: 180px; border: 2px solid #8e44ad; border-radius: 10px; padding: 10px; text-align: center; background: #f4ecf7; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
                     <strong style="color: #8e44ad; font-size: 1.1em;">${cardInfo.name}</strong>
                     <div style="font-size: 0.75em; color: #34495e;">${cardInfo.ability}</div>
+                </div>
+            `);
+        });
+    }
+
+    renderPlanters(cards, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (!cards) return;
+
+        Object.values(cards).forEach(card => {
+            container.insertAdjacentHTML('beforeend', `
+                <div id="planter_${card.id}" class="planter-card" data-id="${card.id}" style="width: 120px; height: 180px; border: 2px dashed #95a5a6; border-radius: 10px; padding: 10px; text-align: center; background: rgba(255,255,255,0.5); display: flex; flex-direction: column; justify-content: flex-end; position: relative;">
+                    <div style="font-size: 0.8em; color: #7f8c8d; font-weight: bold; margin-bottom: 5px;">PLANTER</div>
+                    <div style="display: flex; justify-content: space-around; margin-top: auto; color: #bdc3c7; font-weight: bold; font-family: monospace;">
+                        <span>3</span><span>2</span><span>1</span><span style="color: #27ae60;">0</span>
+                    </div>
                 </div>
             `);
         });

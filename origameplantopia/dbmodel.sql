@@ -45,5 +45,18 @@ CREATE TABLE IF NOT EXISTS `character_card` (
   PRIMARY KEY (`card_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=1;
 
+-- Planter cards (5 per player)
+-- card_type = 'planter'
+-- card_location = 'garden'
+-- card_location_arg = player_id
+CREATE TABLE IF NOT EXISTS `planter_card` (
+  `card_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `card_type` VARCHAR(32) NOT NULL,
+  `card_type_arg` INT NOT NULL,
+  `card_location` VARCHAR(32) NOT NULL,
+  `card_location_arg` INT NOT NULL,
+  PRIMARY KEY (`card_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=1;
+
 ALTER TABLE `player` ADD `player_mulligan_choice` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=undecided, 1=keep, 2=redraw';
 
