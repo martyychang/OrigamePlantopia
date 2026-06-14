@@ -157,7 +157,7 @@ class PlantingPhase {
             this.bga.statusBar.setTitle(_('${you} must choose a planting action'));
             this.bga.statusBar.addActionButton(_('Plant'), () => this.startAction('plant'), { color: 'blue' });
             this.bga.statusBar.addActionButton(_('Grow'), () => this.startAction('grow'), { color: 'green' });
-            this.bga.statusBar.addActionButton(_('Draw 5 (Keep 1)'), () => this.startAction('draw5'), { color: 'red' });
+            this.bga.statusBar.addActionButton(_('Draw 5 (Keep 1)'), () => this.startAction('draw5'), { color: 'blue' });
         } else if (this.selectedAction === 'plant') {
             this.bga.statusBar.addActionButton(_('Cancel'), () => { this.resetSelection(); this.updateStatusBar(); }, { color: 'gray' });
             
