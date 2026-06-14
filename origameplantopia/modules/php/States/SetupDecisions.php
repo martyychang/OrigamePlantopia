@@ -16,7 +16,7 @@ class SetupDecisions extends GameState
         protected Game $game,
     ) {
         parent::__construct($game,
-            id: 11,
+            id: 20,
             type: StateType::MULTIPLE_ACTIVE_PLAYER,
         );
     }
