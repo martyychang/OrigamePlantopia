@@ -361,6 +361,15 @@ The BGA `Deck` component has strict method signatures. Using the wrong number of
 
 Both methods return an array of the picked cards, which is safe to check with `count()` or merge. If you need to manually handle deck reshuffling, verify the count of drawn cards against the requested amount before attempting to draw the remainder.
 
+### Deck Construction and Locations
+
+When constructing decks during `setupNewGame`, do not place sub-types of cards (like "bonus" cards or tokens) into the standard `'deck'` location if they should not be randomly drawn with the rest of the deck. Standard deck operations (like `shuffle('deck')` or `pickCardsForLocation(..., 'deck', ...)`) operate blindly on all cards in that location, which can inadvertently draw unwanted sub-types.
+
+**Best Practice:**
+- **Separate Methods:** Create separate initialization methods for different card groups (e.g., `getDeckCards()` vs `getBonusCards()`).
+- **Separate Locations:** Instantiate the secondary cards directly into a custom location (e.g., `$this->myCards->createCards(MyCards::getBonusCards(), 'bonus_deck');`) to keep the main deck pure.
+- **Cleanup:** Ensure that any phase cleanup logic returns these secondary cards back to their custom location (e.g., `'bonus_deck'`), not the main `'deck'`.
+
 ---
 
 ## Initial Setup & Mulligan Pattern
