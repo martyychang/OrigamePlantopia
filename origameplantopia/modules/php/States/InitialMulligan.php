@@ -27,7 +27,7 @@ class InitialMulligan extends GameState
 
     public function onEnteringState(int $activePlayerId)
     {
-        $this->bga->gamestate->setAllPlayersMultiactive();
+        $this->game->gamestate->setAllPlayersMultiactive();
     }
 
     #[PossibleAction]
@@ -38,7 +38,7 @@ class InitialMulligan extends GameState
             "player_id" => $activePlayerId,
         ]);
 
-        $this->bga->gamestate->setPlayerNonMultiactive($activePlayerId, NextPlayer::class);
+        $this->game->gamestate->setPlayerNonMultiactive($activePlayerId, NextPlayer::class);
     }
 
     #[PossibleAction]
@@ -61,7 +61,7 @@ class InitialMulligan extends GameState
             "player_id" => $activePlayerId,
         ]);
 
-        $this->bga->gamestate->setPlayerNonMultiactive($activePlayerId, NextPlayer::class);
+        $this->game->gamestate->setPlayerNonMultiactive($activePlayerId, NextPlayer::class);
     }
 
     function zombie(int $playerId) {

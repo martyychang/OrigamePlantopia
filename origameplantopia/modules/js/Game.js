@@ -156,15 +156,23 @@ export class Game {
 
             // example of adding a div for each player
             document.getElementById('player-tables').insertAdjacentHTML('beforeend', `
-                <div id="player-table-${player.id}" style="border: 1px solid #ccc; margin: 10px; padding: 10px;">
-                    <h3>${player.name}'s Zone</h3>
-                    <div id="player-hand-${player.id}" style="display: flex; gap: 10px; margin-top: 10px;"></div>
+                <div id="player-table-${player.id}" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px;">
+                    <h3>${player.name}'s Garden</h3>
+                    <div id="player-garden-${player.id}" style="display: flex; gap: 10px; margin-top: 10px; min-height: 150px;"></div>
                 </div>
             `);
         });
 
+        // Add a dedicated hand panel for the current player at the bottom (like RFTG)
+        this.bga.gameArea.getElement().insertAdjacentHTML('beforeend', `
+            <div id="hand_panel" style="margin-top: 20px; border: 2px solid #27ae60; border-radius: 8px; background: rgba(255, 255, 255, 0.9); padding: 15px;">
+                <h3 style="color: #27ae60; margin-top: 0;">My Hand</h3>
+                <div id="my-hand-container" style="display: flex; flex-wrap: wrap; gap: 15px;"></div>
+            </div>
+        `);
+
         // Setup the current player's hand
-        this.renderHand(gamedatas.hand, this.bga.player_id);
+        this.renderHand(gamedatas.hand);
         
         // TODO: Set up your game interface here, according to "gamedatas"
         
@@ -183,8 +191,8 @@ export class Game {
         script. Typically, functions that are used in multiple state classes or outside a state class.
     */
 
-    renderHand(handData, playerId) {
-        const handContainer = document.getElementById(`player-hand-${playerId}`);
+    renderHand(handData) {
+        const handContainer = document.getElementById('my-hand-container');
         if (!handContainer) return;
 
         handContainer.innerHTML = ''; // Clear current hand
@@ -195,12 +203,19 @@ export class Game {
             // Get the card name from the material data provided by getAllDatas
             const cardInfo = this.gamedatas.plantCardTypes[card.type] || { name: card.type };
             
-            // Simple temporary HTML rendering for the card
+            // Simple temporary HTML rendering for the card (simulating a BGA card component)
             handContainer.insertAdjacentHTML('beforeend', `
-                <div id="card_${card.id}" class="plant-card" style="width: 100px; height: 140px; border: 2px solid #2c3e50; border-radius: 8px; padding: 5px; text-align: center; background: #ecf0f1; display: flex; flex-direction: column; justify-content: center;">
-                    <strong>${cardInfo.name}</strong>
+                <div id="card_${card.id}" class="plant-card" style="width: 120px; height: 180px; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; text-align: center; background: #e8f8f5; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
+                    <strong style="color: #27ae60; font-size: 1.1em;">${cardInfo.name}</strong>
+                    <div style="margin-top: 10px; font-size: 0.8em; color: #7f8c8d;">${cardInfo.cost ? 'Cost: ' + cardInfo.cost : ''}</div>
                 </div>
             `);
+        });
+
+        // Add simple hover effect
+        document.querySelectorAll('.plant-card').forEach(card => {
+            card.addEventListener('mouseenter', () => card.style.transform = 'translateY(-10px)');
+            card.addEventListener('mouseleave', () => card.style.transform = 'translateY(0)');
         });
     }
 
@@ -230,7 +245,7 @@ export class Game {
     async notif_newHand(args) {
         console.log("notif_newHand", args);
         // The server sends the new hand when the player redraws
-        this.renderHand(args.cards, this.bga.player_id);
+        this.renderHand(args.cards);
     }
     
     /*
