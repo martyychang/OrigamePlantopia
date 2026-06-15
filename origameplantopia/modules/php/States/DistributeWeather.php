@@ -67,8 +67,12 @@ class DistributeWeather extends GameState
                 "cards" => $newHand
             ]);
             
+            $bonusMarket = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
+
             $this->bga->notify->all("playerReceivedWeather", clienttranslate('${player_name} received their Character Weather cards.'), [
                 "player_id" => $pId,
+                "player_name" => $this->game->getPlayerNameById($pId),
+                "bonusMarket" => $bonusMarket,
             ]);
         }
 

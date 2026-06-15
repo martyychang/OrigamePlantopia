@@ -651,8 +651,8 @@ export class Game {
             </div>
         `);
 
-        if (gamedatas.weatherPublic) {
-            this.renderPublicWeather(gamedatas.weatherPublic);
+        if (gamedatas.weatherPublic || gamedatas.weatherPublicBonus) {
+            this.renderPublicWeather(gamedatas.weatherPublic, gamedatas.weatherPublicBonus);
         }
 
         // Add a dedicated hand panel for the current player at the bottom (like RFTG)
@@ -852,12 +852,12 @@ export class Game {
         });
     }
 
-    renderPublicWeather(weatherData) {
+    renderPublicWeather(weatherData, weatherDataBonus = {}) {
         const container = document.getElementById('weather-public-container');
         if (!container) return;
         container.innerHTML = '';
         
-        Object.values(weatherData).forEach(card => {
+        Object.values(weatherData || {}).forEach(card => {
             let cardInfo = { name: 'Unknown' };
             if (this.gamedatas.weatherCardTypes[card.type] && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
                 cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
@@ -865,6 +865,18 @@ export class Game {
             container.insertAdjacentHTML('beforeend', `
                 <div id="weather_${card.id}" class="weather-card public-weather" style="width: 120px; height: 180px; border: 2px solid #e67e22; border-radius: 10px; padding: 10px; text-align: center; background: #fdf2e9; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
                     <strong style="color: #d35400; font-size: 1.1em;">${cardInfo.name}</strong>
+                </div>
+            `);
+        });
+
+        Object.values(weatherDataBonus || {}).forEach(card => {
+            let cardInfo = { name: 'Unknown' };
+            if (this.gamedatas.weatherCardTypes[card.type] && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
+                cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
+            }
+            container.insertAdjacentHTML('beforeend', `
+                <div id="weather_${card.id}" class="weather-card public-weather" style="width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                    <strong style="color: #8e44ad; font-size: 1.1em;">${cardInfo.name} (Bonus)</strong>
                 </div>
             `);
         });
@@ -915,6 +927,10 @@ export class Game {
             }
         }
         
+        // Update data state
+        if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
+        this.gamedatas.weatherPublicBonus[card.id] = card;
+
         // Add to public weather container visually
         const container = document.getElementById('weather-public-container');
         if (container) {
@@ -973,13 +989,20 @@ export class Game {
         });
         this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
     }
+
+    async notif_playerReceivedWeather(args) {
+        if (args.bonusMarket) {
+            this.gamedatas.bonusWeatherMarket = args.bonusMarket;
+            this.renderBonusWeatherMarket(this.gamedatas.bonusWeatherMarket, 'bonus-weather-container');
+        }
+    }
     
     async notif_weatherDeckFlipped(args) {
         if (!this.gamedatas.weatherPublic) this.gamedatas.weatherPublic = {};
         Object.values(args.cards).forEach(c => {
             this.gamedatas.weatherPublic[c.id] = c;
         });
-        this.renderPublicWeather(this.gamedatas.weatherPublic);
+        this.renderPublicWeather(this.gamedatas.weatherPublic, this.gamedatas.weatherPublicBonus);
     }
 
     async notif_weatherChosen(args) {
@@ -995,7 +1018,7 @@ export class Game {
 
     async notif_weatherRevealed(args) {
         this.gamedatas.weatherPublic = args.cards;
-        this.renderPublicWeather(this.gamedatas.weatherPublic);
+        this.renderPublicWeather(this.gamedatas.weatherPublic, this.gamedatas.weatherPublicBonus);
     }
 
     async notif_cardsDrawn(args) {
