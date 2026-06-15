@@ -416,6 +416,37 @@ The BGA Modern framework uses PHP Reflection to automatically map JSON keys from
 
 ---
 
+## State Transitions & Frontend Synchronization
+
+When transitioning between states—especially into a `MULTIPLE_ACTIVE_PLAYER` state—the client UI (`Game.js`) might retain stale values in `gamedatas` from previous phases (like a `planting_status` left at `1` instead of `0`). This can cause the UI to improperly lock players into a "Waiting for other players..." state.
+
+**Do NOT rely on hardcoded cache resets in the frontend:**
+Attempting to forcefully reset local variables inside `onEnteringState` in `Game.js` (e.g., `p.planting_status = 0`) is fragile and breaks if a user reconnects (F5) mid-phase.
+
+**Do NOT perform state-reset DB updates inside `onEnteringState` of a `MULTIPLE_ACTIVE_PLAYER` state:**
+Because of how the BGA framework broadcasts `MULTIPLE_ACTIVE_PLAYER` transitions, `getArgs()` is evaluated *before or simultaneously* with the state's `onEnteringState()`. If you execute `UPDATE player SET planting_status = 0` inside `onEnteringState()`, `getArgs()` might read the *stale* value from the DB and transmit that stale value to all clients, permanently locking them.
+
+**Best Practice for Syncing State Variables:**
+1. **Reset in the Previous State:** Perform database updates that reset player statuses (e.g., `UPDATE player SET player_planting_status = 0`) in the *outgoing* transition of the previous state (e.g., in `WeatherPhaseReveal` before `return WeatherPhaseBonus::class;`), or in a dedicated intermediate `GAME` state.
+2. **Transmit True State via `getArgs()`:** In the destination state, read the *live* database values in `getArgs()` and return them (e.g., `return ['planting_statuses' => $statuses];`).
+3. **Sync in Frontend:** In the frontend's `onEnteringState`, use the provided `args` to strictly overwrite local cache before calling `onPlayerActivationChange`.
+   * **Crucial JS Syntax:** The BGA framework unpacks the returned array keys directly into the `args` parameter. You must access them as `args.planting_statuses`, **NOT** `args.args.planting_statuses`.
+
+```javascript
+    onEnteringState(args, isCurrentPlayerActive) {
+        if (args && args.planting_statuses) {
+            Object.entries(args.planting_statuses).forEach(([pId, status]) => {
+                if (this.game.gamedatas.players[pId]) {
+                    this.game.gamedatas.players[pId].planting_status = status;
+                }
+            });
+        }
+        this.onPlayerActivationChange(args, isCurrentPlayerActive);
+    }
+```
+
+---
+
 ## End-Game Triggering Pattern
 
 When an end-game condition can be triggered mid-round (e.g., a player achieves a winning threshold during their turn), but the rules state the current round or phase must be completed before the game ends:
