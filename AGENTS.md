@@ -447,6 +447,37 @@ Because of how the BGA framework broadcasts `MULTIPLE_ACTIVE_PLAYER` transitions
 
 ---
 
+## MULTIPLE_ACTIVE_PLAYER Deactivation Gotchas
+
+When a player finishes their action in a `MULTIPLE_ACTIVE_PLAYER` state, you must call `$this->game->gamestate->setPlayerNonMultiactive($playerId, NextState::class)`. The framework will locally deactivate the player and, if they are the **last** active player, synchronously transition the global game state to `NextState::class`.
+
+**Do NOT loop over all players to deactivate them:**
+```php
+// ANTI-PATTERN - DO NOT DO THIS!
+if ($allReady) {
+    foreach ($players as $pId => $pInfo) {
+        $this->game->gamestate->setPlayerNonMultiactive($pId, NextState::class);
+    }
+}
+```
+If you do this, the state transition will trigger synchronously during the loop the moment it hits the last active player. The new state's `onEnteringState` (which often reactivates players via `setAllPlayersMultiactive()`) will execute. Once execution returns to the loop, it will continue calling `setPlayerNonMultiactive` on the remaining players, thereby incorrectly deactivating them **in the new state**.
+
+**Best Practice:**
+Always call `setPlayerNonMultiactive` **only** on the `$playerId` who performed the action triggering the transition.
+```php
+// CORRECT PATTERN
+$playerId = (int)$this->game->getCurrentPlayerId();
+if ($allReady) {
+    $this->game->gamestate->setPlayerNonMultiactive($playerId, NextState::class);
+} else {
+    // Note: For multi-step actions, check if the individual $playerId has completed ALL their steps before calling this.
+    $this->game->gamestate->setPlayerNonMultiactive($playerId, '');
+}
+```
+
+
+---
+
 ## End-Game Triggering Pattern
 
 When an end-game condition can be triggered mid-round (e.g., a player achieves a winning threshold during their turn), but the rules state the current round or phase must be completed before the game ends:
