@@ -8,7 +8,7 @@ use Bga\GameFramework\StateType;
 use Bga\GameFramework\States\GameState;
 use Bga\Games\OrigamePlantopia\Game;
 
-class PlantingPhaseDraw extends GameState
+class PlantingPhaseUpkeep extends GameState
 {
     function __construct(
         protected Game $game,
@@ -23,8 +23,7 @@ class PlantingPhaseDraw extends GameState
     {
         $players = $this->game->loadPlayersBasicInfos();
 
-        // Reset player planting statuses
-        $this->game->DbQuery("UPDATE player SET player_planting_status = 0");
+
 
         foreach ($players as $pId => $pInfo) {
             $drawn = $this->game->plantCards->pickCards(1, 'deck', $pId);

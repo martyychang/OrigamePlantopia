@@ -153,9 +153,14 @@ class SetupDecisions extends GameState
             }
         }
 
+        $playerId = (int)$this->game->getCurrentPlayerId();
         if ($allReady) {
-            foreach ($players as $pId => $pInfo) {
-                $this->game->gamestate->setPlayerNonMultiactive($pId, DistributeWeather::class);
+            $this->game->gamestate->setPlayerNonMultiactive($playerId, DistributeWeather::class);
+        } else {
+            // Only deactivate the current player if they have completed BOTH required actions
+            $playerReady = $this->hasMulliganed($playerId) && count($this->game->characterCards->getCardsInLocation('garden', $playerId)) > 0;
+            if ($playerReady) {
+                $this->game->gamestate->setPlayerNonMultiactive($playerId, '');
             }
         }
     }

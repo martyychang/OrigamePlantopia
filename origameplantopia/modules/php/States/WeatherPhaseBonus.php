@@ -40,7 +40,7 @@ class WeatherPhaseBonus extends GameState
     }
 
     #[PossibleAction]
-    public function actPlayBonusWeather(int $cardId)
+    public function actPlayBonusWeather(string $cardIds)
     {
         $playerId = (int)$this->game->getCurrentPlayerId();
 
@@ -49,29 +49,35 @@ class WeatherPhaseBonus extends GameState
             throw new UserException(clienttranslate("You have already passed."));
         }
 
-        // Check card is in hand and is a bonus card
-        $card = $this->game->weatherCards->getCard($cardId);
-        if ($card['location'] !== 'hand' || (int)$card['location_arg'] !== $playerId) {
-            throw new UserException(clienttranslate("You do not have this card in your hand."));
-        }
-        if ($card['type'] !== 'bonus') {
-            throw new UserException(clienttranslate("You can only play bonus weather cards now."));
-        }
-
-        // Play the card (move to weather_public_bonus with location_arg = player_id)
-        $this->game->weatherCards->moveCard($cardId, 'weather_public_bonus', $playerId);
-
-        $this->bga->notify->player($playerId, "bonusWeatherPlayed", '', [
-            "card" => $card
-        ]);
+        $cardIds = $cardIds === '' ? [] : array_map('intval', explode(';', $cardIds));
         
-        $this->bga->notify->all("playerPlayedBonus", clienttranslate('${player_name} played a bonus weather card.'), [
-            "player_id" => $playerId,
-            "card" => $card
-        ]);
+        foreach ($cardIds as $cardId) {
+            // Check card is in hand and is a bonus card
+            $card = $this->game->weatherCards->getCard($cardId);
+            if ($card['location'] !== 'hand' || (int)$card['location_arg'] !== $playerId) {
+                throw new UserException(clienttranslate("You do not have this card in your hand."));
+            }
+            if ($card['type'] !== 'bonus') {
+                throw new UserException(clienttranslate("You can only play bonus weather cards now."));
+            }
+
+            // Play the card (move to weather_public_bonus with location_arg = player_id)
+            $this->game->weatherCards->moveCard($cardId, 'weather_public_bonus', $playerId);
+
+            $this->bga->notify->player($playerId, "bonusWeatherPlayed", '', [
+                "card" => $card
+            ]);
+            
+            $this->bga->notify->all("playerPlayedBonus", clienttranslate('${player_name} played a bonus weather card.'), [
+                "player_id" => $playerId,
+                "player_name" => $this->game->getPlayerNameById($playerId),
+                "card" => $card
+            ]);
+        }
         
-        // They might want to play another one, so we don't deactivate them.
-        // They must explicitly click pass.
+        // After playing, automatically pass
+        $this->game->DbQuery("UPDATE player SET player_planting_status = 1 WHERE player_id = $playerId");
+        $this->checkIfAllPlayersReady();
     }
 
     #[PossibleAction]
@@ -101,12 +107,10 @@ class WeatherPhaseBonus extends GameState
             }
         }
 
+        $playerId = (int)$this->game->getCurrentPlayerId();
         if ($allReady) {
-            foreach ($players as $pId => $pInfo) {
-                $this->game->gamestate->setPlayerNonMultiactive($pId, WeatherPhaseGrow::class);
-            }
+            $this->game->gamestate->setPlayerNonMultiactive($playerId, WeatherPhaseGrow::class);
         } else {
-            $playerId = (int)$this->game->getCurrentPlayerId();
             $this->game->gamestate->setPlayerNonMultiactive($playerId, '');
         }
     }

@@ -79,6 +79,6 @@ class DistributeWeather extends GameState
         // Shuffle the remaining weather cards
         $this->game->weatherCards->shuffle('deck');
 
-        return PlantingPhaseDraw::class;
+        return PlantingPhaseStart::class;
     }
 }

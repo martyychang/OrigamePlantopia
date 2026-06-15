@@ -1,0 +1,33 @@
+stateDiagram-v2
+    direction TB
+    
+    %% States
+    state "SetupDecisions<br>MULTIPLE_ACTIVE_PLAYER<br>(Keep/Redraw & Claim Character)" as SetupDecisions
+    state "DistributeWeather<br>GAME<br>(Give Character/Bonus Weather)" as DistributeWeather
+    state "PlantingPhaseStart<br>GAME<br>(Cleanup & Reset)" as PlantingPhaseStart
+    state "PlantingPhaseUpkeep<br>GAME<br>(Auto-draw 1 card per player)" as PlantingPhaseUpkeep
+    state "PlantingPhase<br>MULTIPLE_ACTIVE_PLAYER<br>(Plant, Grow, OR Draw 5/Draft)" as PlantingPhase
+    state "WeatherPhaseStart<br>GAME<br>(Cleanup & Reset)" as WeatherPhaseStart
+    state "WeatherPhaseChoose<br>MULTIPLE_ACTIVE_PLAYER<br>(Choose Weather Card)" as WeatherPhaseChoose
+    state "WeatherPhaseReveal<br>GAME<br>(Reveal chosen weather)" as WeatherPhaseReveal
+    state "WeatherPhaseBonus<br>MULTIPLE_ACTIVE_PLAYER<br>(Play Bonus Weather)" as WeatherPhaseBonus
+    state "WeatherPhaseGrow<br>GAME<br>(Resolve weather effects)" as WeatherPhaseGrow
+    state "EndScore<br>GAME<br>(Final Scoring)" as EndScore
+
+    %% Transitions
+    [*] --> SetupDecisions: Start Game
+    SetupDecisions --> DistributeWeather
+    DistributeWeather --> PlantingPhaseStart
+    
+    PlantingPhaseStart --> PlantingPhaseUpkeep
+    PlantingPhaseUpkeep --> PlantingPhase
+    PlantingPhase --> WeatherPhaseStart
+    WeatherPhaseStart --> WeatherPhaseChoose
+    WeatherPhaseChoose --> WeatherPhaseReveal
+    WeatherPhaseReveal --> WeatherPhaseBonus
+    WeatherPhaseBonus --> WeatherPhaseGrow
+    
+    WeatherPhaseGrow --> PlantingPhaseStart: Next Round
+    WeatherPhaseGrow --> EndScore: Game End Triggered
+    
+    EndScore --> [*]: Game Over

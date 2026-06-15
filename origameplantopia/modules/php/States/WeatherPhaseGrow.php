@@ -152,6 +152,6 @@ class WeatherPhaseGrow extends GameState
             return EndScore::class;
         }
 
-        return PlantingPhaseDraw::class;
+        return PlantingPhaseStart::class;
     }
 }

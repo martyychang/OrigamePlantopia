@@ -73,9 +73,7 @@ class WeatherPhaseChoose extends GameState
         }
 
         if ($allReady) {
-            foreach ($players as $pId => $pInfo) {
-                $this->game->gamestate->setPlayerNonMultiactive($pId, WeatherPhaseReveal::class);
-            }
+            $this->game->gamestate->setPlayerNonMultiactive($playerId, WeatherPhaseReveal::class);
         } else {
             $this->game->gamestate->setPlayerNonMultiactive($playerId, '');
         }
@@ -100,9 +98,7 @@ class WeatherPhaseChoose extends GameState
         }
 
         if ($allReady) {
-            foreach ($players as $pId => $pInfo) {
-                $this->game->gamestate->setPlayerNonMultiactive($pId, WeatherPhaseReveal::class);
-            }
+            $this->game->gamestate->setPlayerNonMultiactive($playerId, WeatherPhaseReveal::class);
         } else {
             $this->game->gamestate->setPlayerNonMultiactive($playerId, '');
         }

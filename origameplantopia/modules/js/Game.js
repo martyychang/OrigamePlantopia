@@ -478,11 +478,26 @@ class WeatherPhaseBonus {
         }
 
         if (this.selectingBonus) {
-            this.bga.statusBar.setTitle(_('${you} must select a Bonus Weather card from your hand'));
-            this.bga.statusBar.addActionButton(_('Cancel'), () => {
-                this.selectingBonus = false;
-                this.onPlayerActivationChange(args, true);
-            }, { color: 'gray' });
+            this.selectedBonusCards = this.selectedBonusCards || [];
+            this.bga.statusBar.setTitle(_('${you} must select Bonus Weather cards to play'));
+
+            if (this.selectedBonusCards.length > 0) {
+                this.bga.statusBar.addActionButton(_('Done'), () => {
+                    this.game.gamedatas.players[pId].planting_status = 1; // UPDATE LOCAL CACHE
+                    this.bga.actions.performAction("actPlayBonusWeather", { cardIds: this.selectedBonusCards.join(';') });
+                    this.selectingBonus = false;
+                    this.selectedBonusCards = [];
+                    this.onPlayerActivationChange(null, false);
+                }, { color: 'blue' });
+            } else {
+                this.bga.statusBar.addActionButton(_('Skip'), () => {
+                    this.game.gamedatas.players[pId].planting_status = 1; // UPDATE LOCAL CACHE
+                    this.bga.actions.performAction("actPassBonus");
+                    this.selectingBonus = false;
+                    this.selectedBonusCards = [];
+                    this.onPlayerActivationChange(null, false);
+                }, { color: 'red' });
+            }
 
             // Highlight bonus weather cards
             if (hand) {
@@ -491,10 +506,22 @@ class WeatherPhaseBonus {
                         const el = document.getElementById(`weather_${c.id}`);
                         if (el) {
                             el.classList.add('bga-cards_selectable-card');
-                            el.style.boxShadow = '0 0 10px #f1c40f';
+                            
+                            if (this.selectedBonusCards.includes(c.id)) {
+                                el.style.boxShadow = '0 0 10px #2ecc71';
+                                el.style.border = '2px solid #2ecc71';
+                            } else {
+                                el.style.boxShadow = '0 0 10px #f1c40f';
+                                el.style.border = '';
+                            }
+
                             el.onclick = () => {
-                                this.selectingBonus = false;
-                                this.bga.actions.performAction("actPlayBonusWeather", { cardId: c.id });
+                                if (this.selectedBonusCards.includes(c.id)) {
+                                    this.selectedBonusCards = this.selectedBonusCards.filter(id => id !== c.id);
+                                } else {
+                                    this.selectedBonusCards.push(c.id);
+                                }
+                                this.onPlayerActivationChange(args, true);
                             };
                         }
                     }
@@ -505,6 +532,7 @@ class WeatherPhaseBonus {
                 this.bga.statusBar.setTitle(_('${you} may play Bonus Weather cards or proceed to Grow Plants'));
                 this.bga.statusBar.addActionButton(_('Play Bonus Weather'), () => {
                     this.selectingBonus = true;
+                    this.selectedBonusCards = [];
                     this.onPlayerActivationChange(args, true);
                 }, { color: 'blue' });
             } else {
@@ -527,6 +555,7 @@ class WeatherPhaseBonus {
         document.querySelectorAll('.weather-card').forEach(el => {
             el.classList.remove('bga-cards_selectable-card');
             el.style.boxShadow = '2px 2px 5px rgba(0,0,0,0.1)';
+            el.style.border = '';
             el.onclick = null;
         });
     }
