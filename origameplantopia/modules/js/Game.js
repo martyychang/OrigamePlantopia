@@ -412,6 +412,8 @@ class WeatherPhaseChoose {
         }
         
         Object.values(weatherHand).forEach(card => {
+            if (card.type === 'bonus') return;
+
             let label = '🌬️ Wind';
             if (card.type_arg == 0) label = '☀️ Sun';
             if (card.type_arg == 1) label = '💧 Rain';

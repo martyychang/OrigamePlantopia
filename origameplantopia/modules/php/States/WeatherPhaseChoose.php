@@ -42,6 +42,10 @@ class WeatherPhaseChoose extends GameState
             throw new UserException(clienttranslate("You do not have this card in your hand."));
         }
 
+        if ($card['type'] === 'bonus') {
+            throw new UserException(clienttranslate("You cannot choose a bonus weather card as your primary weather."));
+        }
+
         // Check if already chosen
         $chosen = $this->game->weatherCards->getCardsInLocation('weather_chosen', $playerId);
         if (count($chosen) > 0) {
@@ -80,8 +84,9 @@ class WeatherPhaseChoose extends GameState
     function zombie(int $playerId) {
         // Auto-choose a random weather card if zombie
         $cards = $this->game->weatherCards->getCardsInLocation('hand', $playerId);
-        if (count($cards) > 0) {
-            $card = array_values($cards)[0];
+        $characterCards = array_filter($cards, fn($c) => $c['type'] !== 'bonus');
+        if (count($characterCards) > 0) {
+            $card = array_values($characterCards)[0];
             $this->game->weatherCards->moveCard((int)$card['id'], 'weather_chosen', $playerId);
         }
         $players = $this->game->loadPlayersBasicInfos();
