@@ -58,7 +58,23 @@ class WeatherPhaseChoose extends GameState
             "player_id" => $playerId,
         ]);
 
-        $this->game->gamestate->setPlayerNonMultiactive($playerId, WeatherPhaseReveal::class);
+        $players = $this->game->loadPlayersBasicInfos();
+        $allReady = true;
+        foreach ($players as $pId => $pInfo) {
+            $chosen = $this->game->weatherCards->getCardsInLocation('weather_chosen', $pId);
+            if (count($chosen) === 0) {
+                $allReady = false;
+                break;
+            }
+        }
+
+        if ($allReady) {
+            foreach ($players as $pId => $pInfo) {
+                $this->game->gamestate->setPlayerNonMultiactive($pId, WeatherPhaseReveal::class);
+            }
+        } else {
+            $this->game->gamestate->setPlayerNonMultiactive($playerId, '');
+        }
     }
 
     function zombie(int $playerId) {
@@ -68,6 +84,22 @@ class WeatherPhaseChoose extends GameState
             $card = array_values($cards)[0];
             $this->game->weatherCards->moveCard((int)$card['id'], 'weather_chosen', $playerId);
         }
-        $this->game->gamestate->setPlayerNonMultiactive($playerId, WeatherPhaseReveal::class);
+        $players = $this->game->loadPlayersBasicInfos();
+        $allReady = true;
+        foreach ($players as $pId => $pInfo) {
+            $chosen = $this->game->weatherCards->getCardsInLocation('weather_chosen', $pId);
+            if (count($chosen) === 0) {
+                $allReady = false;
+                break;
+            }
+        }
+
+        if ($allReady) {
+            foreach ($players as $pId => $pInfo) {
+                $this->game->gamestate->setPlayerNonMultiactive($pId, WeatherPhaseReveal::class);
+            }
+        } else {
+            $this->game->gamestate->setPlayerNonMultiactive($playerId, '');
+        }
     }
 }

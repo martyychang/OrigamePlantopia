@@ -24,7 +24,14 @@ class PlantingPhase extends GameState
 
     public function getArgs(): array
     {
-        return [];
+        $players = $this->game->loadPlayersBasicInfos();
+        $statuses = [];
+        foreach ($players as $pId => $pInfo) {
+            $statuses[$pId] = (int)$this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $pId");
+        }
+        return [
+            'planting_statuses' => $statuses
+        ];
     }
 
     public function onEnteringState(int $activePlayerId)

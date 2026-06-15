@@ -24,27 +24,15 @@ class WeatherPhaseReveal extends GameState
         // 1. Move all chosen cards to public
         $this->game->weatherCards->moveAllCardsInLocation('weather_chosen', 'weather_public');
 
-        // 2. Draw 1 more card in 2p and 3p games
-        $players = $this->game->loadPlayersBasicInfos();
-        $playerCount = count($players);
-
-        $flipped = [];
-        if ($playerCount == 2 || $playerCount == 3) {
-            $flipped = $this->game->weatherCards->pickCardsForLocation(1, 'deck', 'weather_public', 0) ?? [];
-            if (count($flipped) < 1) {
-                $this->game->weatherCards->moveAllCardsInLocation('discard', 'deck');
-                $this->game->weatherCards->shuffle('deck');
-                $flipped = $this->game->weatherCards->pickCardsForLocation(1, 'deck', 'weather_public', 0) ?? [];
-            }
-        }
-
         // 3. Notify reveal
         $publicCards = $this->game->weatherCards->getCardsInLocation('weather_public');
         
         $this->bga->notify->all("weatherRevealed", clienttranslate('Weather cards have been revealed.'), [
             "cards" => $publicCards,
-            "flipped" => $flipped
+            "flipped" => []
         ]);
+
+        $this->game->DbQuery("UPDATE player SET player_planting_status = 0");
 
         return WeatherPhaseBonus::class;
     }

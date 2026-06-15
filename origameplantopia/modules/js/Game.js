@@ -105,6 +105,13 @@ class PlantingPhase {
     }
 
     onEnteringState(args, isCurrentPlayerActive) {
+        if (args && args.planting_statuses) {
+            Object.entries(args.planting_statuses).forEach(([pId, status]) => {
+                if (this.game.gamedatas.players[pId]) {
+                    this.game.gamedatas.players[pId].planting_status = status;
+                }
+            });
+        }
         this.onPlayerActivationChange(args, isCurrentPlayerActive);
     }
 
@@ -422,6 +429,107 @@ class WeatherPhaseChoose {
     }
 }
 
+class WeatherPhaseBonus {
+    constructor(game, bga) {
+        this.game = game;
+        this.bga = bga;
+        this.selectingBonus = false;
+    }
+
+    onEnteringState(args, isCurrentPlayerActive) {
+        this.selectingBonus = false;
+
+        if (args && args.planting_statuses) {
+            Object.entries(args.planting_statuses).forEach(([pId, status]) => {
+                if (this.game.gamedatas.players[pId]) {
+                    this.game.gamedatas.players[pId].planting_status = status;
+                }
+            });
+        }
+
+        this.onPlayerActivationChange(args, isCurrentPlayerActive);
+    }
+
+    onPlayerActivationChange(args, isCurrentPlayerActive) {
+        this.bga.statusBar.removeActionButtons();
+        this.cleanupUI();
+        
+        if (!isCurrentPlayerActive) {
+            this.bga.statusBar.setTitle(_('Waiting for other players to finish playing Bonus Weather...'));
+            return;
+        }
+
+        const pId = this.bga.players.getCurrentPlayerId();
+        const status = this.game.gamedatas.players[pId].planting_status;
+        if (status == 1) {
+            this.bga.statusBar.setTitle(_('Waiting for other players to finish playing Bonus Weather...'));
+            return;
+        }
+
+        // Find if they have any bonus weather cards
+        const hand = this.game.gamedatas.weatherHand;
+        let hasBonus = false;
+        if (hand) {
+            Object.values(hand).forEach(c => {
+                if (c.type === 'bonus') hasBonus = true;
+            });
+        }
+
+        if (this.selectingBonus) {
+            this.bga.statusBar.setTitle(_('${you} must select a Bonus Weather card from your hand'));
+            this.bga.statusBar.addActionButton(_('Cancel'), () => {
+                this.selectingBonus = false;
+                this.onPlayerActivationChange(args, true);
+            }, { color: 'gray' });
+
+            // Highlight bonus weather cards
+            if (hand) {
+                Object.values(hand).forEach(c => {
+                    if (c.type === 'bonus') {
+                        const el = document.getElementById(`weather_${c.id}`);
+                        if (el) {
+                            el.classList.add('bga-cards_selectable-card');
+                            el.style.boxShadow = '0 0 10px #f1c40f';
+                            el.onclick = () => {
+                                this.selectingBonus = false;
+                                this.bga.actions.performAction("actPlayBonusWeather", { cardId: c.id });
+                            };
+                        }
+                    }
+                });
+            }
+        } else {
+            if (hasBonus) {
+                this.bga.statusBar.setTitle(_('${you} may play Bonus Weather cards or proceed to Grow Plants'));
+                this.bga.statusBar.addActionButton(_('Play Bonus Weather'), () => {
+                    this.selectingBonus = true;
+                    this.onPlayerActivationChange(args, true);
+                }, { color: 'blue' });
+            } else {
+                this.bga.statusBar.setTitle(_('${you} must proceed to Grow Plants'));
+            }
+            this.bga.statusBar.addActionButton(_('Proceed to Grow Plants'), () => {
+                this.game.gamedatas.players[pId].planting_status = 1; // UPDATE LOCAL CACHE
+                this.bga.actions.performAction("actPassBonus");
+                this.onPlayerActivationChange(null, false); // Manually trigger waiting UI immediately
+            }, { color: 'green' });
+        }
+    }
+
+    onLeavingState(args, isCurrentPlayerActive) {
+        this.bga.statusBar.removeActionButtons();
+        this.cleanupUI();
+    }
+
+    cleanupUI() {
+        document.querySelectorAll('.weather-card').forEach(el => {
+            el.classList.remove('bga-cards_selectable-card');
+            el.style.boxShadow = '2px 2px 5px rgba(0,0,0,0.1)';
+            el.onclick = null;
+        });
+    }
+}
+
 
 export class Game {
     constructor(bga) {
@@ -437,6 +545,9 @@ export class Game {
 
         this.weatherPhaseChoose = new WeatherPhaseChoose(this, bga);
         this.bga.states.register('WeatherPhaseChoose', this.weatherPhaseChoose);
+
+        this.weatherPhaseBonus = new WeatherPhaseBonus(this, bga);
+        this.bga.states.register('WeatherPhaseBonus', this.weatherPhaseBonus);
 
         // Uncomment the next line to show debug informations about state changes in the console. Remove before going to production!
         // this.bga.states.logger = console.log;
@@ -785,6 +896,34 @@ export class Game {
         this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
     }
     
+    async notif_playerPlayedBonus(args) {
+        console.log("notif_playerPlayedBonus", args);
+        const card = args.card;
+        
+        // Remove from hand if it's our hand
+        if (args.player_id == this.bga.players.getCurrentPlayerId()) {
+            if (this.gamedatas.weatherHand && this.gamedatas.weatherHand[card.id]) {
+                delete this.gamedatas.weatherHand[card.id];
+                this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
+            }
+        }
+        
+        // Add to public weather container visually
+        const container = document.getElementById('weather-public-container');
+        if (container) {
+            let cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
+            container.insertAdjacentHTML('beforeend', `
+                <div id="weather_${card.id}" class="weather-card public-weather" style="width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                    <strong style="color: #8e44ad; font-size: 1.1em;">${cardInfo.name} (Bonus)</strong>
+                </div>
+            `);
+        }
+
+        if (args.player_id == this.bga.players.getCurrentPlayerId() && this.bga.states.getCurrentMainStateName() === 'WeatherPhaseBonus') {
+             this.weatherPhaseBonus.onPlayerActivationChange(null, true);
+        }
+    }
+
     async notif_characterClaimed(args) {
         const cardId = args.card.id;
         const cardEl = document.getElementById(`character_${cardId}`);

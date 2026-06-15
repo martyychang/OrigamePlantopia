@@ -23,25 +23,20 @@ class WeatherPhaseBonus extends GameState
 
     public function getArgs(): array
     {
-        return [];
+        $players = $this->game->loadPlayersBasicInfos();
+        $statuses = [];
+        foreach ($players as $pId => $pInfo) {
+            $statuses[$pId] = (int)$this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $pId");
+        }
+        return [
+            'planting_statuses' => $statuses
+        ];
     }
 
     public function onEnteringState(int $activePlayerId)
     {
-        $players = $this->game->loadPlayersBasicInfos();
         $this->game->DbQuery("UPDATE player SET player_planting_status = 0");
-        
-        $activeIds = [];
-        foreach ($players as $pId => $info) {
-            $bonusCards = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'hand', $pId);
-            if (count($bonusCards) > 0) {
-                $activeIds[] = $pId;
-            } else {
-                $this->game->DbQuery("UPDATE player SET player_planting_status = 1 WHERE player_id = $pId");
-            }
-        }
-        
-        $this->game->gamestate->setPlayersMultiactive($activeIds, WeatherPhaseGrow::class, true);
+        $this->game->gamestate->setAllPlayersMultiactive();
     }
 
     #[PossibleAction]
@@ -83,12 +78,41 @@ class WeatherPhaseBonus extends GameState
     public function actPassBonus()
     {
         $playerId = (int)$this->game->getCurrentPlayerId();
+        
+        $status = $this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $playerId");
+        if ((int)$status === 1) {
+            throw new UserException(clienttranslate("You have already passed."));
+        }
+
         $this->game->DbQuery("UPDATE player SET player_planting_status = 1 WHERE player_id = $playerId");
-        $this->game->gamestate->setPlayerNonMultiactive($playerId, WeatherPhaseGrow::class);
+        $this->checkIfAllPlayersReady();
+    }
+
+    private function checkIfAllPlayersReady()
+    {
+        $players = $this->game->loadPlayersBasicInfos();
+        $allReady = true;
+        
+        foreach ($players as $pId => $pInfo) {
+            $status = $this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $pId");
+            if ((int)$status === 0) {
+                $allReady = false;
+                break;
+            }
+        }
+
+        if ($allReady) {
+            foreach ($players as $pId => $pInfo) {
+                $this->game->gamestate->setPlayerNonMultiactive($pId, WeatherPhaseGrow::class);
+            }
+        } else {
+            $playerId = (int)$this->game->getCurrentPlayerId();
+            $this->game->gamestate->setPlayerNonMultiactive($playerId, '');
+        }
     }
 
     function zombie(int $playerId) {
         $this->game->DbQuery("UPDATE player SET player_planting_status = 1 WHERE player_id = $playerId");
-        $this->game->gamestate->setPlayerNonMultiactive($playerId, WeatherPhaseGrow::class);
+        $this->checkIfAllPlayersReady();
     }
 }
