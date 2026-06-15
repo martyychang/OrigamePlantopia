@@ -761,6 +761,11 @@ export class Game {
 
         if (weatherHandData) {
             Object.values(weatherHandData).forEach(card => {
+                // Hide character weather cards as they are available in the status bar during Weather Phase
+                if (card.type !== 'bonus') {
+                    return;
+                }
+
                 let cardInfo = { name: card.type };
                 if (this.gamedatas.weatherCardTypes[card.type] && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
                     cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
