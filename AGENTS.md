@@ -506,3 +506,22 @@ When building custom UI interactions where a player builds up a selection before
 
 **Best Practice:**
 Always clear temporary selection arrays and flags (e.g., `this.selectedCards = []; this.isSelecting = false;`) immediately after calling `this.bga.actions.performAction(...)`, and also when the user clicks a "Pass" or "Cancel" button. Failing to do so will cause the stale selection to persist and reappear the next time the interaction is triggered for that player.
+
+---
+
+## Tooltips & Translations
+
+When implementing tooltips in the BGA Modern Framework, be aware of the following conventions:
+
+**1. Tooltip Method Access:**
+The `addTooltipHtml` method is exposed on the `GameGui` instance, which is wrapped by the `bga` object. You must call it as `this.bga.gameui.addTooltipHtml(nodeId, html)` inside your client-side class. Do NOT use `this.bga.addTooltipHtml()` or `this.addTooltipHtml()` (which was standard in the legacy framework).
+
+**2. Tooltip HTML Styling:**
+To maintain a consistent aesthetic with standard BGA patterns (like *Race for the Galaxy*), structure tooltip HTML as follows:
+- Use an `<h3>` tag for the title text.
+- Use an `<hr/>` below the title.
+- Wrap the body text in a `<div class="cardtooltip">`.
+- Wrap secondary or effect text in a `<p class="smalltext">`.
+
+**3. Tooltip Translations:**
+Always wrap hardcoded label strings inside the tooltip HTML with the `_("...")` Javascript translation function (e.g., `_("Plant Type")`). This ensures the strings can be parsed and replaced by BGA's built-in translation localization system. Dynamic string variables should generally remain untranslated directly here unless they represent static keywords.
