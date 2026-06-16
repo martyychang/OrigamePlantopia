@@ -492,7 +492,17 @@ When an end-game condition can be triggered mid-round (e.g., a player achieves a
 ## Shared Component Synchronization & UI State Persistence
 
 When a backend state transition changes a global shared UI component (like removing cards from a public deck), you must explicitly transmit the updated state of that shared component to all clients via `notify->all`. BGA does not automatically sync physical deck locations dynamically if the frontend is unaware.
+* **Notification Payloads:** You can include updated global data directly within a transition's or cleanup's notification payload (e.g., `$this->bga->notify->all('weatherCleared', '', ['bonusMarket' => $bonusMarket]);`). This allows the frontend's notification handler to seamlessly re-render shared market areas without requiring a full page refresh.
 
 Additionally, when custom dynamic UI states depend on transient card locations (like a played "bonus weather" card moving into a custom `weather_public_bonus` location), you must:
 1. Update the local `this.gamedatas` cache directly within the notification handler (e.g., `notif_playerPlayedBonus`) so the data persists locally during live play.
 2. Ensure that the initial `setup(gamedatas)` correctly reads and renders that specific slice of `gamedatas`, merging it with other generic components if necessary. Failure to process this local cache in `setup` will result in visual elements vanishing if the user refreshes the page mid-round.
+
+---
+
+## UI Action State Resets
+
+When building custom UI interactions where a player builds up a selection before submitting (like selecting multiple cards), you must explicitly reset your local state variables immediately upon submission or cancellation.
+
+**Best Practice:**
+Always clear temporary selection arrays and flags (e.g., `this.selectedCards = []; this.isSelecting = false;`) immediately after calling `this.bga.actions.performAction(...)`, and also when the user clicks a "Pass" or "Cancel" button. Failing to do so will cause the stale selection to persist and reappear the next time the interaction is triggered for that player.
