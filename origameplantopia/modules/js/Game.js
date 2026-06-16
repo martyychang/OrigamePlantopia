@@ -1233,11 +1233,24 @@ export class Game {
     addPlantTooltip(nodeId, cardInfo) {
         if (!cardInfo || !cardInfo.name) return;
         
+        let formattedCost = cardInfo.cost;
+        if (cardInfo.plant_type.startsWith('baby_')) {
+            formattedCost = cardInfo.cost == 1 ? cardInfo.cost + ' ' + _('card') : cardInfo.cost + ' ' + _('cards');
+        } else if (cardInfo.plant_type.startsWith('trv_')) {
+            if (cardInfo.plant_type.includes('cactus')) {
+                formattedCost = _('Level') + ' ' + cardInfo.cost + ' ' + _('Baby Cactus');
+            } else if (cardInfo.plant_type.includes('flower')) {
+                formattedCost = _('Level') + ' ' + cardInfo.cost + ' ' + _('Baby Flower');
+            } else if (cardInfo.plant_type.includes('tree')) {
+                formattedCost = _('Level') + ' ' + cardInfo.cost + ' ' + _('Baby Tree');
+            }
+        }
+
         let html = `<div class="plant-tooltip" style="padding: 5px; max-width: 250px;">`;
         html += `<h3 style="margin: 0; color: #27ae60;">${cardInfo.name}</h3><hr style="margin: 5px 0;">`;
         html += `<div class="cardtooltip">`;
         html += `<div><strong>${_("Plant Type")}:</strong> ${this.getFormattedPlantType(cardInfo.plant_type)}</div>`;
-        html += `<div><strong>${_("Growth Cost")}:</strong> ${cardInfo.cost}</div>`;
+        html += `<div><strong>${_("Growth Cost")}:</strong> ${formattedCost}</div>`;
         html += `<div><strong>${_("Points Per Level")}:</strong> ${cardInfo.points_per_level}</div>`;
         if (cardInfo.card_effect) {
             html += `<br><p class="smalltext" style="margin: 0;"><strong>${_("Card Effect")}:</strong><br><em>${cardInfo.card_effect}</em></p>`;
