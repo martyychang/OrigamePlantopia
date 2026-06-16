@@ -621,8 +621,20 @@ export class Game {
         Object.values(gamedatas.players).forEach(player => {
             // example of setting up players boards
             this.bga.playerPanels.getElement(player.id).insertAdjacentHTML('beforeend', `
-                <span id="energy-player-counter-${player.id}"></span> Energy
+                <div style="margin-top: 5px;">
+                    <span id="hand-count-${player.id}"></span> Hand Cards
+                </div>
+                <div>
+                    <span id="energy-player-counter-${player.id}"></span> Energy
+                </div>
             `);
+            
+            if (!this.handCounters) this.handCounters = {};
+            const handCounter = new ebg.counter();
+            handCounter.create(`hand-count-${player.id}`);
+            handCounter.setValue(gamedatas.handCounts ? (gamedatas.handCounts[player.id] || 0) : 0);
+            this.handCounters[player.id] = handCounter;
+
             const counter = new ebg.counter();
             counter.create(`energy-player-counter-${player.id}`, {
                 value: player.energy,
@@ -952,6 +964,25 @@ export class Game {
     }
     
     // TODO: from this point and below, you can write your game notifications handling methods
+    
+    async notif_updateScores(args) {
+        console.log("notif_updateScores", args);
+        const scores = args.scores;
+        const handCounts = args.handCounts;
+        
+        for (const playerId in scores) {
+            this.gamedatas.players[playerId].score = scores[playerId];
+            if (this.bga.playerPanels.getScoreCounter(playerId)) {
+                this.bga.playerPanels.getScoreCounter(playerId).toValue(scores[playerId]);
+            }
+        }
+        
+        for (const playerId in handCounts) {
+            if (this.handCounters && this.handCounters[playerId]) {
+                this.handCounters[playerId].toValue(handCounts[playerId]);
+            }
+        }
+    }
     
     async notif_newHand(args) {
         console.log("notif_newHand", args);

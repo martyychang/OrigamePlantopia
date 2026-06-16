@@ -172,6 +172,9 @@ class Game extends \Bga\GameFramework\Table
         // Current player's hand (private info)
         $result['hand'] = $this->plantCards->getCardsInLocation('hand', $currentPlayerId);
         
+        // Hand counts of all players
+        $result['handCounts'] = $this->plantCards->countCardsByLocationArgs('hand');
+        
         // Current player's weather hand (private info)
         $result['weatherHand'] = $this->weatherCards->getCardsInLocation('hand', $currentPlayerId);
         $result['weatherChosen'] = $this->weatherCards->getCardsInLocation('weather_chosen', $currentPlayerId);
@@ -295,5 +298,109 @@ class Game extends \Bga\GameFramework\Table
         $card = array_values($this->cards->getCardsOfType($cardType))[0];
         $this->cards->moveCard($card['id'], 'hand', $playerId);
     }
+    }
     */
+
+    /**
+     * Calculates the score for all players, updates the database, and sends a notification.
+     */
+    public function calculateAllScores(): array
+    {
+        $players = $this->loadPlayersBasicInfos();
+        $handCounts = $this->plantCards->countCardsByLocationArgs('hand');
+
+        $planters = $this->planterCards->getCardsInLocation('garden');
+        $planterToPlayer = [];
+        foreach ($planters as $planter) {
+            $planterToPlayer[$planter['id']] = (int)$planter['location_arg'];
+        }
+
+        $plantsOnPlanters = $this->plantCards->getCardsInLocation('planter');
+        $plantsLevel3 = $this->plantCards->getCardsInLocation('garden_level3');
+
+        $scores = [];
+
+        foreach ($players as $playerId => $playerInfo) {
+            $playerId = (int)$playerId;
+            $score = 0;
+            $cardsInHand = $handCounts[$playerId] ?? 0;
+
+            $playerPlants = [];
+            foreach ($plantsOnPlanters as $plant) {
+                if (isset($planterToPlayer[$plant['location_arg']]) && $planterToPlayer[$plant['location_arg']] === $playerId) {
+                    $playerPlants[] = $plant;
+                }
+            }
+            foreach ($plantsLevel3 as $plant) {
+                if ((int)$plant['location_arg'] === $playerId) {
+                    $playerPlants[] = $plant;
+                }
+            }
+
+            $counts = [
+                'level3' => 0,
+                'baby_tree' => 0,
+                'trv_tree' => 0,
+                'baby_cactus' => 0,
+                'trv_cactus' => 0,
+                'baby_flower' => 0,
+                'trv_flower' => 0,
+                'plant_types' => [],
+            ];
+
+            foreach ($playerPlants as $plant) {
+                $plantInfo = self::$PLANT_CARD_TYPES[$plant['type']];
+                $level = (int)$plant['type_arg'];
+                if ($plant['location'] === 'garden_level3') {
+                    $level = 3;
+                }
+                
+                $score += $level * $plantInfo['points_per_level'];
+                if ($level === 3) {
+                    $counts['level3']++;
+                }
+                
+                $counts['plant_types'][$plantInfo['plant_type']] = true;
+                
+                $treatAs = $plantInfo['treat_as'] ?? [$plantInfo['plant_type'] => 1];
+                foreach ($treatAs as $type => $amount) {
+                    if ($type === PlantCards::BABY_TREE) $counts['baby_tree'] += $amount;
+                    if ($type === PlantCards::TRV_TREE) $counts['trv_tree'] += $amount;
+                    if ($type === PlantCards::BABY_CACTUS) $counts['baby_cactus'] += $amount;
+                    if ($type === PlantCards::TRV_CACTUS) $counts['trv_cactus'] += $amount;
+                    if ($type === PlantCards::BABY_FLOWER) $counts['baby_flower'] += $amount;
+                    if ($type === PlantCards::TRV_FLOWER) $counts['trv_flower'] += $amount;
+                }
+            }
+            
+            $trvPlantsCount = $counts['trv_tree'] + $counts['trv_cactus'] + $counts['trv_flower'];
+            
+            foreach ($playerPlants as $plant) {
+                $plantInfo = self::$PLANT_CARD_TYPES[$plant['type']];
+                $bonus = $plantInfo['bonus_scoring'] ?? [];
+                
+                if (isset($bonus['fixed_points'])) $score += $bonus['fixed_points'];
+                if (isset($bonus['per_two_cards_in_hand'])) $score += ceil($cardsInHand / 2) * $bonus['per_two_cards_in_hand'];
+                if (isset($bonus['per_level3'])) $score += $counts['level3'] * $bonus['per_level3'];
+                if (isset($bonus['per_baby_tree'])) $score += $counts['baby_tree'] * $bonus['per_baby_tree'];
+                if (isset($bonus['per_trv_tree'])) $score += $counts['trv_tree'] * $bonus['per_trv_tree'];
+                if (isset($bonus['per_baby_cactus'])) $score += $counts['baby_cactus'] * $bonus['per_baby_cactus'];
+                if (isset($bonus['per_trv_cactus'])) $score += $counts['trv_cactus'] * $bonus['per_trv_cactus'];
+                if (isset($bonus['per_baby_flower'])) $score += $counts['baby_flower'] * $bonus['per_baby_flower'];
+                if (isset($bonus['per_trv_flower'])) $score += $counts['trv_flower'] * $bonus['per_trv_flower'];
+                if (isset($bonus['per_plant_type'])) $score += count($counts['plant_types']) * $bonus['per_plant_type'];
+            }
+            
+            $scores[$playerId] = $score;
+            
+            $this->DbQuery("UPDATE player SET player_score = $score, player_score_aux = $trvPlantsCount WHERE player_id = $playerId");
+        }
+        
+        $this->bga->notify->all("updateScores", "", [
+            "scores" => $scores,
+            "handCounts" => $handCounts,
+        ]);
+        
+        return $scores;
+    }
 }

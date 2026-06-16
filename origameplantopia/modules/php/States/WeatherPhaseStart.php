@@ -21,6 +21,7 @@ class WeatherPhaseStart extends GameState
 
     public function onEnteringState(int $activePlayerId)
     {
+        $this->game->calculateAllScores();
         $players = $this->game->loadPlayersBasicInfos();
         $playerCount = count($players);
 

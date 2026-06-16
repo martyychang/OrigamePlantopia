@@ -21,6 +21,7 @@ class PlantingPhaseStart extends GameState
 
     public function onEnteringState(int $activePlayerId)
     {
+        $this->game->calculateAllScores();
         // Reset player planting statuses for the new round
         $this->game->DbQuery("UPDATE player SET player_planting_status = 0");
 
