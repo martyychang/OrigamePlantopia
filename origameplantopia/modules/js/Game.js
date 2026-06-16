@@ -660,6 +660,28 @@ export class Game {
             this.renderPlantInPlanter(card, card.location_arg);
         });
 
+        // Render Bonus Weather for each player directly in their garden
+        Object.values(gamedatas.players).forEach(player => {
+            const playerBonusWeather = Object.values(gamedatas.weatherPublicBonus || {}).filter(c => c.location_arg == player.id);
+            playerBonusWeather.forEach(card => {
+                let cardInfo = { name: 'Unknown' };
+                if (this.gamedatas.weatherCardTypes[card.type] && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
+                    cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
+                }
+                const garden = document.getElementById(`player-garden-${player.id}`);
+                if (garden) {
+                    garden.insertAdjacentHTML('beforeend', `
+                        <div id="weather_${card.id}" class="weather-card bonus-weather" style="width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                            <strong style="color: #8e44ad; font-size: 1.1em;">${cardInfo.name} (Bonus)</strong>
+                        </div>
+                    `);
+                    const newCard = document.getElementById(`weather_${card.id}`);
+                    newCard.addEventListener('mouseenter', () => newCard.style.transform = 'translateY(-10px)');
+                    newCard.addEventListener('mouseleave', () => newCard.style.transform = 'translateY(0)');
+                }
+            });
+        });
+
         // Add a Bonus Weather section under the player gardens
         document.getElementById('player-tables').insertAdjacentHTML('afterend', `
             <div id="bonus-weather-section" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px;">
@@ -680,8 +702,8 @@ export class Game {
             </div>
         `);
 
-        if (gamedatas.weatherPublic || gamedatas.weatherPublicBonus) {
-            this.renderPublicWeather(gamedatas.weatherPublic, gamedatas.weatherPublicBonus);
+        if (gamedatas.weatherPublic) {
+            this.renderPublicWeather(gamedatas.weatherPublic);
         }
 
         // Add a dedicated hand panel for the current player at the bottom (like RFTG)
@@ -881,7 +903,7 @@ export class Game {
         });
     }
 
-    renderPublicWeather(weatherData, weatherDataBonus = {}) {
+    renderPublicWeather(weatherData) {
         const container = document.getElementById('weather-public-container');
         if (!container) return;
         container.innerHTML = '';
@@ -898,18 +920,6 @@ export class Game {
             `);
         });
 
-        Object.values(weatherDataBonus || {}).forEach(card => {
-            let cardInfo = { name: 'Unknown' };
-            if (this.gamedatas.weatherCardTypes[card.type] && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
-                cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
-            }
-            container.insertAdjacentHTML('beforeend', `
-                <div id="weather_${card.id}" class="weather-card public-weather" style="width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
-                    <strong style="color: #8e44ad; font-size: 1.1em;">${cardInfo.name} (Bonus)</strong>
-                </div>
-            `);
-        });
-        
         document.querySelectorAll('#weather-public-container .weather-card').forEach(card => {
             card.addEventListener('mouseenter', () => card.style.transform = 'translateY(-10px)');
             card.addEventListener('mouseleave', () => card.style.transform = 'translateY(0)');
@@ -960,15 +970,20 @@ export class Game {
         if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
         this.gamedatas.weatherPublicBonus[card.id] = card;
 
-        // Add to public weather container visually
-        const container = document.getElementById('weather-public-container');
-        if (container) {
+        // Add to player's garden visually
+        const garden = document.getElementById(`player-garden-${args.player_id}`);
+        if (garden) {
             let cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
-            container.insertAdjacentHTML('beforeend', `
-                <div id="weather_${card.id}" class="weather-card public-weather" style="width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+            garden.insertAdjacentHTML('beforeend', `
+                <div id="weather_${card.id}" class="weather-card bonus-weather" style="width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
                     <strong style="color: #8e44ad; font-size: 1.1em;">${cardInfo.name} (Bonus)</strong>
                 </div>
             `);
+            const newCard = document.getElementById(`weather_${card.id}`);
+            if (newCard) {
+                newCard.addEventListener('mouseenter', () => newCard.style.transform = 'translateY(-10px)');
+                newCard.addEventListener('mouseleave', () => newCard.style.transform = 'translateY(0)');
+            }
         }
 
         if (args.player_id == this.bga.players.getCurrentPlayerId() && this.bga.states.getCurrentMainStateName() === 'WeatherPhaseBonus') {
@@ -1031,13 +1046,21 @@ export class Game {
         Object.values(args.cards).forEach(c => {
             this.gamedatas.weatherPublic[c.id] = c;
         });
-        this.renderPublicWeather(this.gamedatas.weatherPublic, this.gamedatas.weatherPublicBonus);
+        this.renderPublicWeather(this.gamedatas.weatherPublic);
     }
 
     async notif_weatherCleared(args) {
         this.gamedatas.weatherPublic = {};
         this.gamedatas.weatherPublicBonus = {};
-        this.renderPublicWeather(this.gamedatas.weatherPublic, this.gamedatas.weatherPublicBonus);
+        this.renderPublicWeather(this.gamedatas.weatherPublic);
+        
+        // Remove bonus weather cards from gardens
+        document.querySelectorAll('.weather-card.bonus-weather').forEach(el => el.remove());
+
+        if (args.bonusMarket) {
+            this.gamedatas.bonusWeatherMarket = args.bonusMarket;
+            this.renderBonusWeatherMarket(args.bonusMarket, 'bonus-weather-container');
+        }
     }
 
     async notif_weatherChosen(args) {
@@ -1053,7 +1076,7 @@ export class Game {
 
     async notif_weatherRevealed(args) {
         this.gamedatas.weatherPublic = args.cards;
-        this.renderPublicWeather(this.gamedatas.weatherPublic, this.gamedatas.weatherPublicBonus);
+        this.renderPublicWeather(this.gamedatas.weatherPublic);
     }
 
     async notif_cardsDrawn(args) {

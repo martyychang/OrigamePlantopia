@@ -120,7 +120,10 @@ class WeatherPhaseGrow extends GameState
         // Bonus cards go back to supply/deck
         $this->game->weatherCards->moveAllCardsInLocation('weather_public_bonus', 'bonus_deck'); 
 
-        $this->bga->notify->all("weatherCleared", '', []);
+        $bonusMarket = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
+        $this->bga->notify->all("weatherCleared", '', [
+            "bonusMarket" => $bonusMarket
+        ]);
 
         // 4. Check for endgame
         // If someone has 4 Treevolved plants, set endgame flag if not already set
