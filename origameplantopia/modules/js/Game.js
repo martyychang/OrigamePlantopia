@@ -1034,6 +1034,12 @@ export class Game {
         this.renderPublicWeather(this.gamedatas.weatherPublic, this.gamedatas.weatherPublicBonus);
     }
 
+    async notif_weatherCleared(args) {
+        this.gamedatas.weatherPublic = {};
+        this.gamedatas.weatherPublicBonus = {};
+        this.renderPublicWeather(this.gamedatas.weatherPublic, this.gamedatas.weatherPublicBonus);
+    }
+
     async notif_weatherChosen(args) {
         const cardId = args.card_id;
         if (this.gamedatas.weatherHand && this.gamedatas.weatherHand[cardId]) {
