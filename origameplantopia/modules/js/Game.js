@@ -116,6 +116,8 @@ class PlantingPhase {
     }
 
     onPlayerActivationChange(args, isCurrentPlayerActive) {
+        this.bga.statusBar.removeActionButtons();
+
         if (!isCurrentPlayerActive) {
             this.bga.statusBar.setTitle(_('Waiting for other players to finish Planting...'));
             return;
