@@ -82,6 +82,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 1, 'sun' => 1],
                 'points_per_level' => 1,
                 'flavor_text' => clienttranslate('Very purrickly.'),
+                'card_effect' => clienttranslate('Immediately draw 5 cards and discard 4 cards.'),
                 'planting_effect' => [
                     'draw_cards' => 5,
                     'discard_cards' => 4,
@@ -98,6 +99,7 @@ class PlantCards
                 'growth' => ['wind' => 1, 'rain' => 0, 'sun' => 1],
                 'points_per_level' => 1,
                 'flavor_text' => clienttranslate('The cutest.'),
+                'card_effect' => clienttranslate('Immediately draw 2 cards.'),
                 'planting_effect' => [
                     'draw_cards' => 2,
                 ],
@@ -113,6 +115,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 0, 'sun' => 2],
                 'points_per_level' => 1,
                 'flavor_text' => clienttranslate('Never gets to the point.'),
+                'card_effect' => clienttranslate('Immediately draw 4 cards and discard 2 cards.'),
                 'planting_effect' => [
                     'draw_cards' => 3,
                     'discard_cards' => 1,
@@ -129,6 +132,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 0, 'sun' => 2],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('Sparkles like a star.'),
+                'card_effect' => clienttranslate('Immediately draw 5 cards and discard 3 cards.'),
                 'planting_effect' => [
                     'draw_cards' => 5,
                     'discard_cards' => 2,
@@ -149,6 +153,7 @@ class PlantCards
                 'growth' => ['wind' => 2, 'rain' => 0, 'sun' => 0],
                 'points_per_level' => 1,
                 'flavor_text' => clienttranslate('Blossoms among the bubbles.'),
+                'card_effect' => clienttranslate('Immediately grow any plant by 1 level.'),
                 'planting_effect' => [
                     'level_up' => self::LEVEL_UP_ANY,
                 ],
@@ -164,6 +169,7 @@ class PlantCards
                 'growth' => ['wind' => 1, 'rain' => 0, 'sun' => 1],
                 'points_per_level' => 1,
                 'flavor_text' => clienttranslate('This flower is neither sharp nor flat.'),
+                'card_effect' => clienttranslate('Immediately grow a different plant by 1 level.'),
                 'planting_effect' => [
                     'level_up' => self::LEVEL_UP_OTHER,
                 ],
@@ -179,6 +185,7 @@ class PlantCards
                 'growth' => ['wind' => 1, 'rain' => 1, 'sun' => 0],
                 'points_per_level' => 1,
                 'flavor_text' => clienttranslate('A pair of very talkative twins.'),
+                'card_effect' => clienttranslate('Immediately grow itself by 1 level.'),
                 'planting_effect' => [
                     'level_up' => self::LEVEL_UP_THIS,
                 ],
@@ -194,6 +201,7 @@ class PlantCards
                 'growth' => ['wind' => 2, 'rain' => 0, 'sun' => 0],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('A mini violin.'),
+                'card_effect' => clienttranslate('Immediately grow any plant by 1 level.'),
                 'planting_effect' => [
                     'level_up' => self::LEVEL_UP_BABY,
                 ],
@@ -213,6 +221,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 2, 'sun' => 0],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('The origin of sticky tree sap.'),
+                'card_effect' => clienttranslate('Immediately gain any Bonus Weather Card.'),
                 'planting_effect' => [
                     'gain_weather_qty' => 2,
                     'gain_weather_type' => self::WEATHER_ANY,
@@ -229,6 +238,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 1, 'sun' => 1],
                 'points_per_level' => 1,
                 'flavor_text' => clienttranslate('Hot and spicy!'),
+                'card_effect' => clienttranslate('Immediately gain a Bonus Wind card and gain 1 card.'),
                 'planting_effect' => [
                     'gain_weather_qty' => 1,
                     'gain_weather_type' => self::WEATHER_WIND,
@@ -246,6 +256,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 2, 'sun' => 0],
                 'points_per_level' => 1,
                 'flavor_text' => clienttranslate("Money doesn't grow on trees. Trees grow on trees."),
+                'card_effect' => clienttranslate('Immediately gain a Bonus Sun card and gain 1 card.'),
                 'planting_effect' => [
                     'gain_weather_qty' => 1,
                     'gain_weather_type' => self::WEATHER_SUN,
@@ -263,6 +274,7 @@ class PlantCards
                 'growth' => ['wind' => 1, 'rain' => 1, 'sun' => 0],
                 'points_per_level' => 1,
                 'flavor_text' => clienttranslate('A cute angel.'),
+                'card_effect' => clienttranslate('Immediately gain a Bonus Rain card and gain 1 card.'),
                 'planting_effect' => [
                     'gain_weather_qty' => 1,
                     'gain_weather_type' => self::WEATHER_RAIN,
@@ -284,6 +296,7 @@ class PlantCards
                 'growth' => ['wind' => 1, 'rain' => 1, 'sun' => 1],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('It drinks chlorophyll.'),
+                'card_effect' => clienttranslate('Gain 1 point per 2 cards in hand at the end of the game (rounded up).'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_two_cards_in_hand' => 1,
@@ -299,6 +312,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 0, 'sun' => 3],
                 'points_per_level' => 3,
                 'flavor_text' => clienttranslate("Sun's out, guns out."),
+                'card_effect' => clienttranslate('Gain 3 points at the end of the game.'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_plant_type' => 2,
@@ -314,6 +328,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 1, 'sun' => 2],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('Gotta go work. Not on leaf today.'),
+                'card_effect' => clienttranslate('Gain 2 points for every Treevolved Cactus or Flower at the end of the game (itself included).'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_trv_cactus' => 2,
@@ -330,6 +345,7 @@ class PlantCards
                 'growth' => ['wind' => 1, 'rain' => 0, 'sun' => 2],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('It is safe to pat its head.'),
+                'card_effect' => clienttranslate('Immediately carry out a Planting Phase action.'),
                 'planting_effect' => [
                     'gain_action' => true,
                     'draw_cards' => 2,
@@ -346,6 +362,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 1, 'sun' => 2],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('Its favorite drink is Ulent.'),
+                'card_effect' => clienttranslate('Gain 2 points for every level 3 plant at the end of the game (itself included).'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_level3' => 2,
@@ -361,6 +378,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 0, 'sun' => 3],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('Grows well in stony places.'),
+                'card_effect' => clienttranslate('Gain 2 points for every Baby and Treevolved Cactus at the end of the game (itself included).'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_baby_cactus' => 2,
@@ -381,6 +399,7 @@ class PlantCards
                 'growth' => ['wind' => 2, 'rain' => 1, 'sun' => 0],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('Full of good pointers, unlike Pointless Cactus.'),
+                'card_effect' => clienttranslate('Immediately carry out a Planting Phase action.'),
                 'planting_effect' => [
                     'level_up' => self::LEVEL_UP_ANY,
                     'gain_action' => true,
@@ -397,6 +416,7 @@ class PlantCards
                 'growth' => ['wind' => 3, 'rain' => 0, 'sun' => 0],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('Hello? Lily?'),
+                'card_effect' => clienttranslate('Gain 2 points for every Baby and Treevolved Tree at the end of the game (itself included).'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_baby_flower' => 2,
@@ -413,6 +433,7 @@ class PlantCards
                 'growth' => ['wind' => 2, 'rain' => 0, 'sun' => 1],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('A country of many cars.'),
+                'card_effect' => clienttranslate('Gain 2 points for every Treevolved Flower or Tree at the end of the game (itself included).'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_trv_tree' => 2,
@@ -429,6 +450,7 @@ class PlantCards
                 'growth' => ['wind' => 3, 'rain' => 0, 'sun' => 0],
                 'points_per_level' => 3,
                 'flavor_text' => clienttranslate('Explosive seed dispersal.'),
+                'card_effect' => clienttranslate('Gain 3 points at the end of the game.'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_plant_type' => 2,
@@ -444,6 +466,7 @@ class PlantCards
                 'growth' => ['wind' => 2, 'rain' => 0, 'sun' => 1],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('Found on a valley under a rainbow.'),
+                'card_effect' => clienttranslate('Gain 2 points for every level 3 plant at the end of the game (itself included).'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_level3' => 2,
@@ -459,6 +482,7 @@ class PlantCards
                 'growth' => ['wind' => 1, 'rain' => 1, 'sun' => 1],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate("Money doesn't grow on trees. They grow as flowers."),
+                'card_effect' => clienttranslate('Gain 1 point per 2 cards in hand at the end of the game (rounded up).'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_two_cards_in_hand' => 1,
@@ -474,6 +498,7 @@ class PlantCards
                 'growth' => ['wind' => 2, 'rain' => 1, 'sun' => 0],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('This is not even its final form.'),
+                'card_effect' => clienttranslate('Treat this plant as being 2 Treevolved Flowers for the purpose of end-game scoring.'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_trv_flower' => 1,
@@ -494,6 +519,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 3, 'sun' => 0],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('Grown from organic boba pearls.'),
+                'card_effect' => clienttranslate('Gain 2 points for every Baby and Treevolved Tree at the end of the game (itself included).'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_baby_tree' => 2,
@@ -510,6 +536,7 @@ class PlantCards
                 'growth' => ['wind' => 1, 'rain' => 0, 'sun' => 2],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('Always barking up the wrong tree.'),
+                'card_effect' => clienttranslate('Treat this plant as being 2 Treevolved Cacti for the purpose of end-game scoring.'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_trv_cactus' => 1,
@@ -526,6 +553,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 2, 'sun' => 1],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('Support the use of tractors in farming! Be pro-tractor!'),
+                'card_effect' => clienttranslate('Immediately carry out a Planting Phase action.'),
                 'planting_effect' => [
                     'gain_action' => true,
                     'gain_weather_qty' => 1,
@@ -543,6 +571,7 @@ class PlantCards
                 'growth' => ['wind' => 1, 'rain' => 2, 'sun' => 0],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('A species discovered by MC Treescher.'),
+                'card_effect' => clienttranslate('Gain 2 points for every Treevolved Cactus or Tree at the end of the game (itself included).'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_trv_cactus' => 2,
@@ -559,6 +588,7 @@ class PlantCards
                 'growth' => ['wind' => 1, 'rain' => 1, 'sun' => 1],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('DeepVine Artreeficial Intelleafgence. Its favorite game is Go.'),
+                'card_effect' => clienttranslate('Gain 1 point per 2 cards in hand at the end of the game (rounded up).'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_two_cards_in_hand' => 1,
@@ -574,6 +604,7 @@ class PlantCards
                 'growth' => ['wind' => 1, 'rain' => 2, 'sun' => 0],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('Sometimes behaves irrationally.'),
+                'card_effect' => clienttranslate('Gain 2 points for every level 3 plant at the end of the game (itself included).'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_level3' => 2,
@@ -589,6 +620,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 2, 'sun' => 1],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('We stand for fairness and treequality.'),
+                'card_effect' => clienttranslate('Treat this plant as being 2 Treevolved Trees for the purpose of end-game scoring.'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_trv_tree' => 1,
@@ -605,6 +637,7 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 3, 'sun' => 0],
                 'points_per_level' => 3,
                 'flavor_text' => clienttranslate('Thrives on holy water.'),
+                'card_effect' => clienttranslate('Gain 3 points at the end of the game.'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_plant_type' => 2,

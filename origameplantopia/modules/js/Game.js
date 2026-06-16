@@ -380,6 +380,8 @@ class PlantingPhase {
                 </div>
             `);
             
+            this.game.addPlantTooltip(`draft_${c.id}`, cardInfo);
+            
             document.getElementById(`draft_${c.id}`).onclick = () => {
                 this.bga.actions.performAction("actKeepFromDraw5", { cardId: c.id });
                 document.getElementById('draft-container').remove();
@@ -654,6 +656,7 @@ export class Game {
                         <div class="plant-level-indicator" style="margin-top: 5px; font-size: 0.8em; color: #7f8c8d; font-weight: bold;">Level: ${card.type_arg}</div>
                     </div>
                 `);
+                this.addPlantTooltip(`garden_plant_${card.id}`, cardInfo);
             });
         });
 
@@ -809,6 +812,7 @@ export class Game {
                         <div style="margin-top: 10px; font-size: 0.8em; color: #7f8c8d;">${cardInfo.cost ? 'Cost: ' + cardInfo.cost : ''}</div>
                     </div>
                 `);
+                this.addPlantTooltip(`card_${card.id}`, cardInfo);
             });
         }
 
@@ -1200,6 +1204,7 @@ export class Game {
                 <div class="plant-level-indicator" style="margin-top: 5px; font-size: 0.8em; color: #7f8c8d; font-weight: bold;">Level: ${card.type_arg}</div>
             </div>
         `);
+        this.addPlantTooltip(`garden_plant_${card.id}`, cardInfo);
     }
 
     getFamily(plantType) {
@@ -1217,5 +1222,28 @@ export class Game {
             return this.gamedatas.plantsLevel3[cardId];
         }
         return null;
+    }
+
+    getFormattedPlantType(plantType) {
+        if (!plantType) return '';
+        const words = plantType.split('_');
+        return words.map(w => w === 'trv' ? 'Treevolved' : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+
+    addPlantTooltip(nodeId, cardInfo) {
+        if (!cardInfo || !cardInfo.name) return;
+        
+        let html = `<div class="plant-tooltip" style="padding: 5px; max-width: 250px;">`;
+        html += `<h3 style="margin: 0; color: #27ae60;">${cardInfo.name}</h3><hr style="margin: 5px 0;">`;
+        html += `<div class="cardtooltip">`;
+        html += `<div><strong>${_("Plant Type")}:</strong> ${this.getFormattedPlantType(cardInfo.plant_type)}</div>`;
+        html += `<div><strong>${_("Growth Cost")}:</strong> ${cardInfo.cost}</div>`;
+        html += `<div><strong>${_("Points Per Level")}:</strong> ${cardInfo.points_per_level}</div>`;
+        if (cardInfo.card_effect) {
+            html += `<br><p class="smalltext" style="margin: 0;"><strong>${_("Card Effect")}:</strong><br><em>${cardInfo.card_effect}</em></p>`;
+        }
+        html += `</div></div>`;
+        
+        this.bga.gameui.addTooltipHtml(nodeId, html);
     }
 }
