@@ -489,8 +489,8 @@ class PlantCards
                 ],
             ],
 
-            'Potted Planted Potted Plants' => [
-                'name' => clienttranslate('Potted Planted Potted Plants'),
+            'Abnormal Potted Planted Potted Plants' => [
+                'name' => clienttranslate('Abnormal Potted Planted Potted Plants'),
                 'plant_type' => self::TRV_FLOWER,
                 'num_cards' => 2,
                 'cost' => 1,
@@ -500,10 +500,8 @@ class PlantCards
                 'flavor_text' => clienttranslate('This is not even its final form.'),
                 'card_effect' => clienttranslate('Treat this plant as being 2 Treevolved Flowers for the purpose of end-game scoring.'),
                 'planting_effect' => [],
-                'bonus_scoring' => [
-                    'per_trv_flower' => 1,
-                    'fixed_points' => 2,
-                ],
+                'treat_as' => [self::TRV_FLOWER => 2],
+                'bonus_scoring' => [],
             ],
 
             // ════════════════════════════════════════════════════════════
@@ -538,10 +536,8 @@ class PlantCards
                 'flavor_text' => clienttranslate('Always barking up the wrong tree.'),
                 'card_effect' => clienttranslate('Treat this plant as being 2 Treevolved Cacti for the purpose of end-game scoring.'),
                 'planting_effect' => [],
-                'bonus_scoring' => [
-                    'per_trv_cactus' => 1,
-                    'fixed_points' => 2,
-                ],
+                'treat_as' => [self::TRV_CACTUS => 2],
+                'bonus_scoring' => [],
             ],
 
             'Geometree' => [
@@ -622,10 +618,8 @@ class PlantCards
                 'flavor_text' => clienttranslate('We stand for fairness and treequality.'),
                 'card_effect' => clienttranslate('Treat this plant as being 2 Treevolved Trees for the purpose of end-game scoring.'),
                 'planting_effect' => [],
-                'bonus_scoring' => [
-                    'per_trv_tree' => 1,
-                    'fixed_points' => 2,
-                ],
+                'treat_as' => [self::TRV_TREE => 2],
+                'bonus_scoring' => [],
             ],
 
             'Treenity' => [
