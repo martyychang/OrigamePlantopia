@@ -142,11 +142,19 @@ class PlantingPhase extends GameState
         ]);
 
         // Execute "Lightning" effects
+        $gainAction = false;
         if (isset($material['planting_effect'])) {
-            $this->executePlantingEffect($playerId, $material['planting_effect']);
+            $gainAction = $this->executePlantingEffect($playerId, $material['planting_effect']);
         }
 
-        $this->markPlayerDone($playerId);
+        if (!$gainAction) {
+            $this->markPlayerDone($playerId);
+        } else {
+            $this->bga->notify->all("playerGainedAction", clienttranslate('${player_name} immediately takes another Planting Phase action.'), [
+                "player_id" => $playerId,
+                "player_name" => $this->game->getPlayerNameById($playerId),
+            ]);
+        }
     }
 
     #[PossibleAction]
@@ -275,7 +283,7 @@ class PlantingPhase extends GameState
         $this->markPlayerDone($playerId);
     }
 
-    private function executePlantingEffect(int $playerId, array $effect)
+    private function executePlantingEffect(int $playerId, array $effect): bool
     {
         // Simple effects like draw cards, discard cards, gain weather cards
         if (isset($effect['draw_cards'])) {
@@ -287,6 +295,8 @@ class PlantingPhase extends GameState
         // Other effects like discard cards or gain action would need more complex state handling.
         // For simplicity, we just process the automated ones or queue substates.
         // Note: Full implementation of lightning effects might require substates.
+
+        return isset($effect['gain_action']) && $effect['gain_action'];
     }
 
     private function checkActionAllowed(int $playerId)

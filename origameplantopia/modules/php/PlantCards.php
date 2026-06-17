@@ -401,7 +401,6 @@ class PlantCards
                 'flavor_text' => clienttranslate('Full of good pointers, unlike Pointless Cactus.'),
                 'card_effect' => clienttranslate('Immediately carry out a Planting Phase action.'),
                 'planting_effect' => [
-                    'level_up' => self::LEVEL_UP_ANY,
                     'gain_action' => true,
                 ],
                 'bonus_scoring' => [],

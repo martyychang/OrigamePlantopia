@@ -1130,6 +1130,14 @@ export class Game {
         // Simple notification, UI might not need to update much other than opponent hand count
     }
 
+    async notif_playerGainedAction(args) {
+        if (args.player_id == this.bga.players.getCurrentPlayerId()) {
+            this.game.gamedatas.players[args.player_id].planting_status = 0;
+            this.resetSelection();
+            this.onPlayerActivationChange(null, true);
+        }
+    }
+
     async notif_plantPlanted(args) {
         const card = args.card;
         const planterId = args.planter_id;
