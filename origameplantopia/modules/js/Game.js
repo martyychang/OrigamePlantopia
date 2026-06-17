@@ -123,13 +123,19 @@ class PlantingPhase {
             return;
         }
 
-        const status = this.game.gamedatas.players[this.bga.players.getCurrentPlayerId()].planting_status;
+        const player = this.game.gamedatas.players[this.bga.players.getCurrentPlayerId()];
+        const status = player.planting_status;
         
         if (status == 1) {
             this.bga.statusBar.setTitle(_('Waiting for other players to finish Planting...'));
-        } else if (status == 2) {
-            this.bga.statusBar.setTitle(_('${you} must choose 1 card to keep'));
-            this.renderDraftModal();
+        } else if (status == 2 || status == 3) {
+            let pending = [];
+            try { pending = JSON.parse(player.pending_effects || '[]'); } catch(e) {}
+            if (pending.length > 0) {
+                this.renderPendingEffect(pending[0]);
+            } else {
+                this.bga.statusBar.setTitle(_('Resolving effects...'));
+            }
         } else {
             this.resetSelection();
             this.updateStatusBar();
@@ -166,7 +172,7 @@ class PlantingPhase {
             this.bga.statusBar.setTitle(_('${you} must choose a planting action'));
             this.bga.statusBar.addActionButton(_('Plant'), () => this.startAction('plant'), { color: 'blue' });
             this.bga.statusBar.addActionButton(_('Grow'), () => this.startAction('grow'), { color: 'green' });
-            this.bga.statusBar.addActionButton(_('Draw 5 (Keep 1)'), () => this.startAction('draw5'), { color: 'blue' });
+            this.bga.statusBar.addActionButton(_('Draw 5 (Keep 2)'), () => this.startAction('draw5'), { color: 'blue' });
         } else if (this.selectedAction === 'plant') {
             this.bga.statusBar.addActionButton(_('Cancel'), () => { this.resetSelection(); this.updateStatusBar(); }, { color: 'gray' });
             
@@ -357,16 +363,72 @@ class PlantingPhase {
         });
     }
 
-    renderDraftModal() {
+    renderPendingEffect(effect) {
+        this.resetSelection();
+        this.selectedPaymentCards = [];
+        
+        if (effect.type === 'draft_cards') {
+            this.bga.statusBar.setTitle(_('Choose ${keep} card(s) to keep').replace('${keep}', effect.keep));
+            this.renderDraftModal(effect.keep);
+        } else if (effect.type === 'discard_cards') {
+            this.bga.statusBar.setTitle(_('Discard ${qty} card(s) from your hand').replace('${qty}', effect.qty));
+            this.highlightHandCardsForSelection(id => {
+                if (this.selectedPaymentCards.includes(id)) {
+                    this.selectedPaymentCards = this.selectedPaymentCards.filter(c => c !== id);
+                    document.getElementById(`card_${id}`).style.boxShadow = '0 0 10px #e74c3c';
+                } else {
+                    this.selectedPaymentCards.push(id);
+                    document.getElementById(`card_${id}`).style.boxShadow = '0 0 10px #2ecc71';
+                }
+                
+                this.bga.statusBar.removeActionButtons();
+                if (this.selectedPaymentCards.length === effect.qty || this.selectedPaymentCards.length === Object.keys(this.game.gamedatas.hand).length) {
+                    this.bga.statusBar.addActionButton(_('Confirm Discard'), () => {
+                        this.bga.actions.performAction("actResolveDiscard", { cardIdsStr: this.selectedPaymentCards.join(';') });
+                    }, { color: 'red' });
+                }
+            });
+            // Initial highlight
+            Object.values(this.game.gamedatas.hand).forEach(c => {
+                const el = document.getElementById(`card_${c.id}`);
+                if (el) el.style.boxShadow = '0 0 10px #e74c3c';
+            });
+        } else if (effect.type === 'gain_weather') {
+            this.bga.statusBar.setTitle(_('Choose a Bonus Weather card to gain'));
+            document.querySelectorAll('#bonus-weather-container .weather-card').forEach(el => {
+                el.classList.add('bga-cards_selectable-card');
+                el.style.boxShadow = '0 0 10px #f1c40f';
+                el.style.cursor = 'pointer';
+                el.onclick = () => {
+                    this.bga.actions.performAction("actResolveGainWeather", { cardId: el.dataset.id });
+                };
+            });
+        } else if (effect.type === 'level_up') {
+            this.bga.statusBar.setTitle(_('Choose a plant in your garden to grow'));
+            this.highlightPlantsToGrow(id => {
+                this.bga.actions.performAction("actResolveLevelUp", { plantCardId: id });
+            });
+        } else if (effect.type === 'level_up_family') {
+            this.bga.statusBar.setTitle(_('Choose a plant family to grow'));
+            this.bga.statusBar.addActionButton(_('Tree'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'tree' }), { color: 'green' });
+            this.bga.statusBar.addActionButton(_('Flower'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'flower' }), { color: 'red' });
+            this.bga.statusBar.addActionButton(_('Cactus'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'cactus' }), { color: 'blue' });
+        }
+    }
+
+    renderDraftModal(keepQty) {
         this.cleanupUI();
         const pId = this.bga.players.getCurrentPlayerId();
         const draftCards = this.game.gamedatas.draftCards;
         if (!draftCards || Object.keys(draftCards).length === 0) return;
 
+        this.selectedDraftCards = [];
+
         this.bga.gameArea.getElement().insertAdjacentHTML('afterbegin', `
             <div id="draft-container" style="padding: 20px; background: rgba(0,0,0,0.8); border-radius: 10px; margin-bottom: 20px; text-align: center; color: white;">
-                <h2>Choose 1 Card to Keep</h2>
+                <h2>Choose ${keepQty} Card(s) to Keep</h2>
                 <div style="display: flex; justify-content: center; gap: 15px; margin-top: 15px;" id="draft-cards-list"></div>
+                <div style="margin-top: 20px;" id="draft-actions"></div>
             </div>
         `);
 
@@ -382,9 +444,32 @@ class PlantingPhase {
             
             this.game.addPlantTooltip(`draft_${c.id}`, cardInfo);
             
-            document.getElementById(`draft_${c.id}`).onclick = () => {
-                this.bga.actions.performAction("actKeepFromDraw5", { cardId: c.id });
-                document.getElementById('draft-container').remove();
+            const el = document.getElementById(`draft_${c.id}`);
+            el.onclick = () => {
+                if (this.selectedDraftCards.includes(c.id)) {
+                    this.selectedDraftCards = this.selectedDraftCards.filter(id => id !== c.id);
+                    el.style.boxShadow = '0 0 10px #27ae60';
+                    el.style.border = '2px solid #2ecc71';
+                } else {
+                    if (this.selectedDraftCards.length < keepQty) {
+                        this.selectedDraftCards.push(c.id);
+                        el.style.boxShadow = '0 0 15px #f1c40f';
+                        el.style.border = '4px solid #f1c40f';
+                    }
+                }
+                
+                const actions = document.getElementById('draft-actions');
+                actions.innerHTML = '';
+                if (this.selectedDraftCards.length === keepQty || this.selectedDraftCards.length === Object.keys(draftCards).length) {
+                    const btn = document.createElement('button');
+                    btn.className = 'bga-button bga-button_blue';
+                    btn.innerText = 'Confirm';
+                    btn.onclick = () => {
+                        this.bga.actions.performAction("actResolveDraft", { cardIdsStr: this.selectedDraftCards.join(';') });
+                        document.getElementById('draft-container').remove();
+                    };
+                    actions.appendChild(btn);
+                }
             };
         });
     }
@@ -1207,10 +1292,18 @@ export class Game {
     }
 
     async notif_playerStartedDrafting(args) {
-        if (args.player_id == this.bga.players.getCurrentPlayerId()) {
-            this.gamedatas.players[args.player_id].planting_status = 2;
-            if (this.bga.states.getCurrentMainStateName() === 'PlantingPhase') {
-                this.plantingPhase.onEnteringState(null, true);
+        // Just a text log notification now
+    }
+
+    async notif_pendingEffects(args) {
+        if (args.effects && args.effects.length > 0) {
+            const pId = this.bga.players.getCurrentPlayerId();
+            if (this.gamedatas.players[pId]) {
+                this.gamedatas.players[pId].pending_effects = JSON.stringify(args.effects);
+                this.gamedatas.players[pId].planting_status = 3;
+                if (this.bga.states.getCurrentMainStateName() === 'PlantingPhase') {
+                    this.plantingPhase.onEnteringState(null, true);
+                }
             }
         }
     }

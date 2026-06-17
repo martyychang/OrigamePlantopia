@@ -160,7 +160,7 @@ class Game extends \Bga\GameFramework\Table
 
         // Get information about players.
         $result["players"] = $this->getCollectionFromDb(
-            "SELECT `player_id` AS `id`, `player_score` AS `score`, `player_score_aux` AS `score_aux`, `player_mulligan_choice` AS `mulligan_choice`, `player_planting_status` AS `planting_status` FROM `player`"
+            "SELECT `player_id` AS `id`, `player_score` AS `score`, `player_score_aux` AS `score_aux`, `player_mulligan_choice` AS `mulligan_choice`, `player_planting_status` AS `planting_status`, `player_pending_effects` AS `pending_effects` FROM `player`"
         );
         $this->playerEnergy->fillResult($result);
 
@@ -380,7 +380,7 @@ class Game extends \Bga\GameFramework\Table
                 $bonus = $plantInfo['bonus_scoring'] ?? [];
                 
                 if (isset($bonus['fixed_points'])) $score += $bonus['fixed_points'];
-                if (isset($bonus['per_two_cards_in_hand'])) $score += ceil($cardsInHand / 2) * $bonus['per_two_cards_in_hand'];
+                if (isset($bonus['per_two_cards_in_hand'])) $score += floor($cardsInHand / 2) * $bonus['per_two_cards_in_hand'];
                 if (isset($bonus['per_level3'])) $score += $counts['level3'] * $bonus['per_level3'];
                 if (isset($bonus['per_baby_tree'])) $score += $counts['baby_tree'] * $bonus['per_baby_tree'];
                 if (isset($bonus['per_trv_tree'])) $score += $counts['trv_tree'] * $bonus['per_trv_tree'];

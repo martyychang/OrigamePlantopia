@@ -60,4 +60,6 @@ CREATE TABLE IF NOT EXISTS `planter_card` (
 
 ALTER TABLE `player` ADD `player_mulligan_choice` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=undecided, 1=keep, 2=redraw';
 
-ALTER TABLE `player` ADD `player_planting_status` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=undecided, 1=decided, 2=drafting';
+ALTER TABLE `player` ADD `player_planting_status` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=undecided, 1=decided, 2=drafting, 3=resolving_effects';
+
+ALTER TABLE `player` ADD `player_pending_effects` TEXT NULL COMMENT 'JSON array of pending effects to resolve';
