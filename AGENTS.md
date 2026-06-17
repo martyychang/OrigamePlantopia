@@ -139,6 +139,10 @@ class MyState extends GameState {
 
 **State transitions:** Return the next state's class name (e.g., `return NextPlayer::class;`) or a reserved state ID constant for gameEnd (`return 99;`).
 
+### Live Scoring & Phase Transitions
+- For games requiring live intermediate scoring (e.g., recalculated at the end of each phase), a robust pattern is to define a dedicated `calculateAllScores()` method in `Game.php`. This method should compute scores, update `player_score` and `player_score_aux` in the DB, and fire an `updateScores` notification.
+- **Timing**: Trigger this calculation inside the `onEnteringState()` of the *subsequent* phase's start state (e.g., `WeatherPhaseStart` or `PlantingPhaseStart`) and `EndScore`. This guarantees the score perfectly reflects the state at the exact boundary of the previous phase.
+
 ### Client Side (JavaScript/TypeScript)
 
 #### Game.js — `modules/js/Game.js`
@@ -147,6 +151,11 @@ class MyState extends GameState {
 - Key methods:
   - `setup(gamedatas)`: Build UI from server data, set up notifications
   - `setupNotifications()`: Register notification handlers
+
+#### Player Panels & Custom Counters
+- Standard BGA framework updates player scores via `bga.playerPanels.getScoreCounter(playerId).toValue(newScore)`.
+- To display custom counters (e.g., Energy or Hand count), inject HTML directly into `this.bga.playerPanels.getElement(playerId)` during `setup()`, and hook it up using the legacy `ebg.counter()` component.
+- **Tip**: To cleanly initialize hand counters, use the `Deck` component's PHP method `$this->cards->countCardsByLocationArgs('hand')` to fetch all players' hand counts in one query, then pass it down in `getAllDatas()`.
 
 #### State Handlers
 Each state gets a JS class registered with the framework:
@@ -228,6 +237,7 @@ async notif_notifName(args) {
   - **Card table** (for Deck component): `card_id`, `card_type`, `card_type_arg`, `card_location`, `card_location_arg`
   - **Token table** (general purpose): `token_key` (VARCHAR PK), `token_location` (VARCHAR), `token_state` (INT)
 - Keep it simple — usually 1–2 tables with ≤5 columns
+- **String Length Gotcha**: If your game features long names (e.g., card names exceeding 32 characters like "Abnormal Potted Planted Potted Plants"), be sure to increase the standard `VARCHAR(32)` limit to `VARCHAR(64)` or higher in `dbmodel.sql` for columns like `card_type`. Otherwise, BGA will throw a fatal "Data too long for column" error during game setup.
 
 ### Material Data
 Static, non-changing game info (names, tooltips, rules text, strengths, etc.)
