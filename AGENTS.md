@@ -426,6 +426,28 @@ The BGA Modern framework uses PHP Reflection to automatically map JSON keys from
 
 ---
 
+## Complex Multi-Step State Machines & Effect Queues
+
+When a single action (like planting a card) triggers a chain of multiple effects (e.g., "draw cards, discard a card, then gain a weather card"), avoid creating distinct PHP GameState classes for every possible intermediate combination.
+
+**Best Practice:**
+1. **Database Queue:** Add a JSON column to the `player` table (e.g., `player_pending_effects`).
+2. **Push Effects:** When the card is played, construct an array of effect objects and serialize it into this column.
+3. **Process Loop:** Create a single method (e.g., `processPendingEffects()`) that loads the queue and processes non-interactive effects in a `while` loop. 
+4. **Pause for Input:** When an interactive effect is reached (like `draft_cards` or `discard_cards`), `break` out of the loop, set the player's status (e.g., `player_planting_status = 3`), and fire a notification with the current queue to instruct the frontend to render the appropriate UI prompt.
+5. **Resolve and Resume:** The frontend calls a corresponding `actResolve*` method (e.g., `actResolveDraft`) which handles the user's input, removes the effect from the front of the queue (`array_shift`), saves the queue, and immediately calls `processPendingEffects()` to resume the chain.
+
+---
+
+## PHP Division & Math Gotchas
+
+When implementing game rules that require division (e.g., "Gain 1 point for every 2 cards in hand"), be careful with PHP's standard math functions.
+
+- **`ceil($val / 2)`**: Rounds **up**. If a player has 1 card, `ceil(0.5)` equals 1, incorrectly awarding a point.
+- **`floor($val / 2)`**: Rounds **down**. This is the correct way to award points for complete sets or pairs.
+
+---
+
 ## State Transitions & Frontend Synchronization
 
 When transitioning between states—especially into a `MULTIPLE_ACTIVE_PLAYER` state—the client UI (`Game.js`) might retain stale values in `gamedatas` from previous phases (like a `planting_status` left at `1` instead of `0`). This can cause the UI to improperly lock players into a "Waiting for other players..." state.
