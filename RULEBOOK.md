@@ -1,143 +1,176 @@
 # **PLANTOPIA: POTATO'S PLANT PLANET**
 
-In their exploration of the galaxy with Rocket Salad, Potato and friends land on a lush green planet where plants from all stalks of life rule supreme. They call this planet Plantopia. Potato and friends are now on a quest to help the residents of Plantopia grow to their maximum potential. Let's conquer the weather and grow the craziest garden ever\!
+In their exploration of the galaxy with Rocket Salad, Potato and friends land on a lush green planet where plants from all stalks of life rule supreme. They call this planet \- Plantopia. Potato and friends are now on a quest to help the residents of Plantopia grow to their maximum potential. Let's conquer the weather and grow the craziest garden ever\!
 
-## **Game Components**
+*A Singaporean collab: DARYL CHOW & LIFE OF A POTATO*
 
-* **102** Plant cards  
-* **25** Planter cards  
-* **15** Weather cards (3 per player)  
-* **9** Bonus Weather cards  
-* **5** Player Aid cards
+*Published by Barrel Aged Games / Origame Studios*
 
-## **Aim of the Game**
+## **AIM OF THE GAME**
 
-The player who has the most points when at least one player has 4 Treevolved plants in their Garden will win the game and earn the title of Champion Gardener of Plantopia\!
+Gain the most Rainbow Leaves (Points) by the end of the game. The game ends immediately after the Weather phase if any player has 4 Adult plants (at any level) in their garden.
 
-## **Game Setup**
+## **GAME COMPONENTS**
 
-1. **Prepare the Deck:** Shuffle the Plant cards face-down to create a deck. Deal each player **6 cards** as their starting hand. Players have the choice to discard all their cards to redraw another 6 cards, but may only do this *once*.  
-2. **Weather Cards:** Give each player the 3 Weather cards in the character of their choice, and their corresponding Player Aid card. If you are playing with less than 5 players, shuffle the Weather cards from unused characters in a deck in the middle of the playing area, known as the **Weather deck**.  
-3. **The Garden:** Give each player **5 Planter cards** to be placed in a row in the middle of their playing area, known as their **Garden**. The other Planter cards will not be used in the game.  
-4. **Bonus Cards:** Place the Bonus Weather cards to the side of the playing area. You are ready to begin\!
+* **102 Plant Cards**  
+* **25 Planter Cards**  
+* **5 Player Aid Cards**  
+* **15 Weather Cards** (3 per player)  
+* **9 Bonus Weather Cards**  
+* **5 Character Power Cards**
 
-## **Flow of the Game**
+### **Cards At a Glance**
 
-The game will alternate between the **Planting Phase** and the **Weather Phase** until one player has 4 Treevolved plants. There are no turns on the planet Plantopia\! All players will carry out these phases simultaneously. However, you will need to wait for all players to finish their moves before proceeding to the next phase together.
+In addition to the bottom icon, the semicircle colors indicate the plant type\!
 
-### **Planting Phase**
+* **Tree:** Blue  
+* **Cactus:** Green  
+* **Flower:** Pink
 
-In the Planting phase, **all players will first draw 1 card each** (including the first phase of the game). Note that there is no limit to the number of cards in your hand.
+The semicircle outlines and bottom rectangle colors also indicate if it is a Baby or Adult Plant:
 
-Then, all players each choose **1 of the 3 options** to carry out simultaneously:
+* **Baby:** Yellow  
+* **Adult:** Brown
 
-#### **1\. Plant**
+## **GAME SETUP**
 
-To plant a card, choose a Plant card from your hand to play to your Garden. The cost to play the Plant card is stated in the top left of the card.
+1. **Planters:** Give each player 5 Planter Cards to be placed in a row in the middle of their playing area, known as their Garden. The other Planter Cards will not be used in the game.  
+2. **Weather Cards:** Give each player the 3 Weather Cards with their character on the back of the cards. If you are playing with fewer than 5 players, shuffle the Weather Cards from unused characters into a deck, known as the Weather Deck, and place it in the middle of the playing area.  
+3. **Plant Cards:** Shuffle the Plant Cards face-down to create a deck. Deal each player 6 cards as their starting hand. Players have the choice to discard all their cards to redraw another 6 cards, but may only do this once.  
+4. **Bonus Weather:** Place the Bonus Weather Cards to the side of the playing area.  
+5. **Characters:** If playing with character powers, deal the appropriate Character Power Card to each player and carry out the effects on the card.
 
-* **Baby Plants:** Require you to pay cards from your hand as the cost to play them, from a range of 1 to 3\. Pay these cards to the discard pile.  
-* **Treevolved Plants:** Require you to pay a Baby or Treevolved Plant from your Garden of a specific type and a minimum level. Discard this plant to the discard pile. Think of it as your plant treevolving into a Treevolved Plant\!
+## **FLOW OF THE GAME**
 
-*Note: When you plant a new card, place your plant on any of your empty Planter cards. You may not plant a new card if all your Planter cards are full. All plants start from Level 0 when first planted. Some plants have "Lightning" effects that take place upon planting them. Execute these effects the moment they are planted.*
+The game will alternate between the **Planting Phase** and the **Weather Phase** until any player has 4 Adult Plants. There are no turns on planet Plantopia\! All players will carry out these phases simultaneously. However, you need to wait for all players to finish their moves before proceeding to the next phase together.
 
-#### **2\. Grow**
+## **1\. PLANTING PHASE**
 
-To grow a plant, choose one plant in your Garden to grow by 1 level. Pay cards from your hand as fertilizer to grow this plant. The number of cards you need to pay is equal to the number in the top left (the same number that is used to plant a card).
+In the Planting Phase, all players will first **draw 1 card each** (including the first phase of the game). There is no limit to the number of cards in your hand.
 
-After paying the fertilizer cost, move the plant's level up by one on the Planter card. You may only grow **1 plant by 1 level per Planting phase**.
+Then, all players each choose **1 of the following 3 options** to carry out simultaneously:
 
-#### **3\. Draw 5 Cards and Keep 1**
+### **Option 1: Plant (One card ONLY)**
 
-As a planting action, players may choose to draw 5 cards and pick 1 to keep. Discard the other 4 cards.
+This is the MAIN ACTION in the Planting Phase. To plant a card from their hand, players must pay the cost (shown in the upper left of that card) and plant it in their garden.
 
-**Take note\! Max Level Rules**
+* **Baby Plants:** Require you to pay cards from your hand as the cost to play them. Pay these cards to the discard pile. When you plant a Baby Plant, place it on any of your empty Planter Cards. You may not plant a Baby Plant if all your Planter Cards are full.  
+* **Adult Plants:** Require you to pay a Baby Plant from your Garden of a specific type and a minimum Level. Place that Baby Plant card in the discard pile. Think of it as your Baby Plant transforming into an Adult Plant\!
 
-Plants may only grow to a maximum of **Level 3**. When a plant has reached Level 3, tilt it 90° horizontally, remove it from the Planter card and place it to the side of your garden. The Planter card is now ready for reuse, and you may immediately use it to plant another plant.
+**Leveling & Capacity:**
 
-All tilted cards will thus be treated as Level 3\. Players may only use a maximum of 5 Planter cards at any one time, but there is no limit to the number of Level 3 plants a player can have.
+* All plants start from Level 0 when first planted.  
+* Some plants have effects that take place immediately upon planting them. Execute these effects the moment they are planted.  
+* Plants may only grow to a maximum of Level 3\. When a plant has reached Level 3, remove it from the Planter, tilt it 90° horizontally and place it underneath your Garden. All tilted cards will thus be treated as Level 3\.  
+* Players may only use a maximum of 5 Planter Cards at any one time, but there is no limit to the number of Level 3 plants a player can have.
 
-### **Weather Phase**
+### **Option 2: Grow (Multiple cards)**
 
-In the Weather phase, all players will choose weather cards to play from their hand, then reveal them and carry out any plant growth. The Weather phase is split into 3 steps:
+Instead of Planting, a player can choose to Grow any number of plants in their Garden by 1 Level.
 
-#### **1\. Choose a Weather card**
+* You will need to pay cards from your hand as fertilizer to grow these plants.  
+* The cost you need to pay is equal to the number in the top left (the same number that is used to plant that card).  
+* After paying the fertilizer cost for each plant, move the plant up 1 Level on the Planter Card.  
+* You may only grow each plant by 1 Level per Planting Phase.
 
-First, shuffle the Weather deck. Depending on the number of players in the game, flip a number of cards face-up from the Weather deck *(2p: 2, 3p: 1, 4p: 1, 5p: 0\)*. Then, all players will choose 1 Weather card from their hand to play face-down. Your decision will hinge on the type of plants you plan to grow this turn, as well as from information from revealed Weather cards and your opponents' plants.
+### **Option 3: Draw 5 cards and discard 3**
 
-#### **2\. Reveal Weather cards**
+As a planting action, players may choose to draw 5 cards and discard 3 cards from those drawn, keeping 2\.
 
-Now, all players reveal their Weather cards. In a 2 and 3 player game, flip one more card from the Weather deck face-up. Place all the revealed Weather cards together. There should *always* be a total of 5 Weather cards, no matter the player count.
+## **2\. WEATHER PHASE**
 
-* **Bonus Weather Cards:** At this point, players with any Bonus Weather cards may play them. Bonus Weather cards only affect the player who played them, and once played they return to the stock. If you want to take a Bonus Weather card and there are none left of that type, you may take a card of that type from a player of your choice.
+In the Weather Phase, all players will choose Weather Cards to play from their hand, then reveal them and carry out any plant growth. The Weather Phase is split into 3 steps:
 
-#### **3\. Grow Plants**
+### **Step 1: Choose a Weather Card**
 
-According to the revealed Weather, plants will now grow. Plants will grow if their growth condition (at the top of the card) is present in the current weather. Check each card's growth condition against the current weather individually.
+First, shuffle the Weather Deck. Depending on the number of players in the game, flip a number of cards face-up from the Weather Deck:
 
-Plants may grow 1 level for *each* time their requirements are repeated in the weather. For example, if there is *Sun Sun Rain Rain* and the requirements are *Sun Rain*, the plant may grow twice.
+* **2 Players:** 2 face-up, 1 face-down  
+* **3 Players:** 1 face-up, 1 face-down  
+* **4 Players:** 1 face-up
 
-## **End of a Turn & Game**
+Then, all players will choose 1 Weather Card from their hand to play face-down. Your decision will hinge on the type of plants you plan to grow this turn, as well as from information from revealed Weather Cards and your opponents' plants.
 
-Technically, there are no turns\! If you have just finished the Weather phase, carry out the Planting phase. If you have just completed the Planting phase, go to the Weather phase.
+### **Step 2: Reveal Weather Cards**
 
-If, at the end of the Planting phase, one or more players has **4 Treevolved plants** in their Garden, complete *one last Weather Phase*, then proceed to the End of the Game. *(Note: Plants with double Treevolved icons count as 1 plant for this purpose).*
+Now, all players reveal their Weather Cards, including any face-down Weather Cards in a 2 and 3 player game. Place all the revealed Weather Cards together. **There should always be a total of 5 Weather Cards**, no matter the player count.
 
-## **Scoring**
+**Bonus Weather Cards:**
 
-Now, all players will count their score to see who has the craziest garden in all of Plantopia\! The total score of each plant is its **Plant Score \+ Bonus Score**.
+At this point, players with any Bonus Weather Cards may play them. Bonus Weather Cards only affect the player who played them, and once played they return to the stock. *(If you get to take a Bonus Weather Card and there are none left of that type, take any other weather card. If none remain, take a Bonus Weather card of your choice from another player.)*
 
-**1\. Plant Scoring**
+### **Step 3: Grow Plants**
 
-Each plant will score points equal to the number of rainbow leaves in the top right multiplied by the level of the plant. *(e.g., A plant that grants 3 points per level at Level 2 scores: 2 x 3 \= 6 points)*
+According to the revealed Weather, plants will now grow. Plants will grow if their growth condition (at the top of the card) is present in the current Weather.
 
-**2\. Bonus Scoring**
+Check each card's growth condition against the current Weather individually. If there are multiple sets of a growth condition of a plant in the current Weather, the plant may grow by that number of Levels.
 
-Most Treevolved plants will give you bonus scoring opportunities as listed on the bottom of the card. Score each of these separately and add them to your score total.
+*Example: If a plant's growth condition is Rain and Sun, and the current Weather cards show 2 Rain and 2 Sun, the plant grows by 2 Levels\!*
 
-When all of your points are tallied, the player with the most points is crowned the **Champion Gardener of Plantopia**\! In the case of a tie, the player with the most Treevolved plants in their Garden wins.
+At the end of the Weather Phase, all players take back the Weather Card with their character.
 
-## **List of Plant Names and Effects**
+## **END OF A TURN & END OF THE GAME**
 
-| Plant Name | Card Effect |
-| :---- | :---- |
-| **Abnormal Potted Planted Potted Plants** | Treat this plant as being 2 Treevolved Flowers for the purpose of end-game scoring. |
-| **Arrowhead** | Immediately carry out a Planting Phase action. |
-| **Baby Cactus** | Immediately draw 2 cards. |
-| **Battus** | Gain 1 point per 2 cards in hand at the end of the game (rounded up). |
-| **Boba Tree** | Gain 2 points for every Baby and Treevolved Tree at the end of the game (itself included). |
-| **Bufftus** | Gain 3 points at the end of the game. |
-| **Buttercup** | Immediately grow any plant by 1 level. |
-| **Cactie** | Gain 2 points for every Treevolved Cactus or Flower at the end of the game (itself included). |
-| **Calla-Lily** | Gain 2 points for every Baby and Treevolved Tree at the end of the game (itself included). |
-| **Captus** | Immediately carry out a Planting Phase action. |
-| **Carnation** | Gain 2 points for every Treevolved Flower or Tree at the end of the game (itself included). |
-| **Cattus** | Immediately draw 5 cards and discard 4 cards. |
-| **Dogtus** | Treat this plant as being 2 Treevolved Cacti for the purpose of end-game scoring. |
-| **Firecracker Flower** | Gain 3 points at the end of the game. |
-| **Geometree** | Immediately carry out a Planting Phase action. |
-| **Gum Tree** | Immediately gain any Bonus Weather Card. |
-| **Holey Treenity** | Gain 3 points at the end of the game. |
-| **Impossible Tree** | Gain 2 points for every Treevolved Cactus or Tree at the end of the game (itself included). |
-| **Lily-of-the-Rainbow** | Gain 2 points for every level 3 plant at the end of the game (itself included). |
-| **Money Plant** | Gain 1 point per 2 cards in hand at the end of the game (rounded up). |
-| **Monte-Carlo Tree** | Gain 1 point per 2 cards in hand at the end of the game (rounded up). |
-| **Natural Flower** | Immediately grow a different plant by 1 level. |
-| **Pepper Tree** | Immediately gain a Bonus Wind card and gain 1 card. |
-| **Pointless Cactus** | Immediately draw 4 cards and discard 2 cards. |
-| **Sand Dollar Cactus** | Immediately draw 5 cards and discard 3 cards. |
-| **Square Root of Tree** | Gain 2 points for every level 3 plant at the end of the game (itself included). |
-| **Suckulent** | Gain 2 points for every level 3 plant at the end of the game (itself included). |
-| **Symmetree** | Treat this plant as being 2 Treevolved Trees for the purpose of end-game scoring. |
-| **Thornos** | Gain 2 points for every Baby and Treevolved Cactus at the end of the game (itself included). |
-| **Treegonometree** | Immediately gain a Bonus Rain card and gain 1 card. |
-| **Tree Tree** | Immediately gain a Bonus Sun card and gain 1 card. |
-| **Two Lips** | Immediately grow itself by 1 level. |
-| **Violet** | Immediately grow any plant by 1 level. |
+* **End of a Turn:** Technically, there are no turns\! If you have just finished the Weather Phase, carry out the Planting Phase. If you have just completed the Planting Phase, go to the Weather Phase.  
+* **End of the Game:** If, at the end of the Planting Phase, one or more players have 4 Adult Plants in their Garden, complete one last Weather Phase and the game ends. The game ends immediately after the Weather phase if any player has 4 Adult Plants (at any level) in their garden. Total up the score to see who has the most Rainbow Leaves (Points) at the end of the game.
 
-## **Credits**
+## **SCORING**
 
-**Team PLANTOPIA:** A collaboration between Life of a Potato and Origame.
+The total score of each plant is its **Plant Score \+ Bonus Score**.
 
-* Game mechanics designed by Daryl Chow of Origame.  
-* Artwork and creative content by Ryu Ho, creator of Life of a Potato.  
-* Additional team members: Nicholas Pang (co-founder of Origame), and Alwyn Lee (founder/CEO of Daylight Studios).
+1. **Plant Scoring:** Each plant will score points equal to the number of Leaves in the top right multiplied by the Level of the plant. (e.g., 3 points per level. Plant is Level 2\. 3 x 2 \= 6 points).  
+2. **Bonus Scoring:** Most Adult Plants will give you bonus scoring opportunities listed on the bottom of the cards. Score these separately and add them to your score total.
+
+When all your points are tallied, the player with the most points is crowned the Champion Gardener of Plantopia\!
+
+* **Tiebreakers:** In the case of a tie, the player with the most Adult Plants in their Garden wins. If players are still tied, the player with the most cards left in their hand wins. If players are still tied, all tied players are Champions\!
+
+## **SOLO MODE**
+
+There are 3 ways to embark on a visit to Plantopia by yourself\! Learn about the Solo Modes at our website here: www.BarrelAgedGames.com
+
+## **GLOSSARY OF CHARACTERS & EFFECTS**
+
+### **Character Powers**
+
+* **Potato:** Start with 4 extra cards.  
+* **Mushroom:** Start with 1 Bonus Weather Card of each type.  
+* **Carrot:** When planting an Adult Plant, grow a Baby Plant by 1 Level.  
+* **Tomato:** Upon planting a Baby Plant, grow a matching (same type) Adult Plant by 1 Level.  
+* **Banana:** Discard 2 Baby Plants from hand to gain 1 planting action (max. 1 per round).
+
+### **Plant Cards and Effects**
+
+* **Arrowhead / Impossible Tree:** Immediately carry out a Planting Phase action and grow any plant by 1 Level.  
+* **Battus:** Gain 1 Point per 2 cards in hand at the end of the game (including all Weather Cards).  
+* **Boba Tree:** Gain 2 Points for every Baby Tree or Treevolved Tree at the end of the game (including itself).  
+* **Bufftus:** Gain 2 Points for every different plant type. (6 types: Baby Tree, Treevolved Tree, Baby Flower, Treevolved Flower, Baby Cactus, Treevolved Cactus)  
+* **Buttercup:** Immediately grow any plant by 2 Levels.  
+* **Cactie: **Gain 2 Points for every Treevolved Flower or Treevolved Cactus at the end of the game (including itself).  
+* **Call-A-Lily:** Gain 2 Points for every Baby Flower or Treevolved Flower at the end of the game (including itself).  
+* **Captus:** Immediately carry out a Planting Phase action and draw 2 cards.  
+* **Carnation:** Gain 2 Points for every Treevolved Flower or Treevolved Tree at the end of the game (including itself).  
+* **Cattus:** Draw 5 cards at once and discard 4 of them.  
+* **Cutetus:** Draw 2 cards at once.  
+* **Dogtus:** Treat this plant as being 2 Treevolved Cacti for the purpose of end-game scoring and gain 2 Points.  
+* **Firecracker Flower:** Gain 2 Points for every different plant type. (6 types: Baby Tree, Treevolved Tree, Baby Flower, Treevolved Flower, Baby Cactus, Treevolved Cactus)  
+* **Geometree:** Immediately carry out a Planting Phase action and gain any Bonus Weather Card.  
+* **Gum Tree:** Immediately gain 2 Bonus Weather Cards.  
+* **Impossible Tree**: Gain 2 Points for every Treevolved Cactus or Treevolved Tree at the end of the game (including itself).  
+* **Lily-of-the-Rainbow:** Gain 2 Points for every Level 3 plant at the end of the game (including itself).  
+* **Money Plant:** Gain 1 Point per 2 cards in hand at the end of the game (including all Weather Cards).  
+* **Monte Carlo Tree:** Gain 1 Point per 2 cards in hand at the end of the game (including all Weather Cards).  
+* **Natural Flower:** Immediately grow another plant by 1 Level (not itself).  
+* **Pepper Tree:** Immediately draw 1 card and gain a Bonus Wind Card.  
+* **Pointless Cactus:** Draw 3 cards at once and discard 1 of them.  
+* **Potted Planted Potted Plants:** Treat this plant as being 2 Treevolved Flowers for the purpose of end-game scoring and gain 2 Points.  
+* **Sand Dollar Cactus:** Draw 5 cards at once and discard 2 of them.  
+* **Square Root of Tree:** Gain 2 Points for every Level 3 plant at the end of the game (including itself).  
+* **Suckulent:** Gain 2 Points for every Level 3 plant at the end of the game (including itself).  
+* **Symmetree:** Treat this plant as being 2 Treevolved Trees for the purpose of end-game scoring and gain 2 Points.  
+* **Thornos:** Gain 2 Points for every Baby Cactus or Treevolved Cactus at the end of the game (including itself).  
+* **Treegonometree:** Immediately draw 1 card and gain a Bonus Rain Card.  
+* **Treenity:** Gain 2 Points for every different plant type. (6 types: Baby Tree, Treevolved Tree, Baby Flower, Treevolved Flower, Baby Cactus, Treevolved Cactus)  
+* **Tree Tree:** Immediately draw 1 card and gain a Bonus Sun Card.  
+* **Twolips:** Immediately grow itself by 2 Levels.  
+* **Violet:** Immediately grow all Trees/Flowers/Cacti (pick 1 type) by 1 Level.
