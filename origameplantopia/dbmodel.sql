@@ -14,7 +14,7 @@
 -- card_location_arg = position within location (or player_id for 'hand')
 CREATE TABLE IF NOT EXISTS `plant_card` (
   `card_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `card_type` VARCHAR(32) NOT NULL,
+  `card_type` VARCHAR(64) NOT NULL,
   `card_type_arg` INT NOT NULL,
   `card_location` VARCHAR(32) NOT NULL,
   `card_location_arg` INT NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS `plant_card` (
 -- card_location = zone string (e.g. 'deck', 'hand', 'discard', 'played')
 CREATE TABLE IF NOT EXISTS `weather_card` (
   `card_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `card_type` VARCHAR(32) NOT NULL,
+  `card_type` VARCHAR(64) NOT NULL,
   `card_type_arg` INT NOT NULL,
   `card_location` VARCHAR(32) NOT NULL,
   `card_location_arg` INT NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS `weather_card` (
 -- card_location = zone string (e.g. 'deck', 'player_12345')
 CREATE TABLE IF NOT EXISTS `character_card` (
   `card_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `card_type` VARCHAR(32) NOT NULL,
+  `card_type` VARCHAR(64) NOT NULL,
   `card_type_arg` INT NOT NULL,
   `card_location` VARCHAR(32) NOT NULL,
   `card_location_arg` INT NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS `character_card` (
 -- card_location_arg = player_id
 CREATE TABLE IF NOT EXISTS `planter_card` (
   `card_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `card_type` VARCHAR(32) NOT NULL,
+  `card_type` VARCHAR(64) NOT NULL,
   `card_type_arg` INT NOT NULL,
   `card_location` VARCHAR(32) NOT NULL,
   `card_location_arg` INT NOT NULL,
