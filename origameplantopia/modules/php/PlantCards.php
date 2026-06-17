@@ -488,8 +488,8 @@ class PlantCards
                 ],
             ],
 
-            'Abnormal Potted Planted Potted Plants' => [
-                'name' => clienttranslate('Abnormal Potted Planted Potted Plants'),
+            'Potted Planted Potted Plants' => [
+                'name' => clienttranslate('Potted Planted Potted Plants'),
                 'plant_type' => self::TRV_FLOWER,
                 'num_cards' => 2,
                 'cost' => 1,
