@@ -90,8 +90,8 @@ class PlantCards
                 'bonus_scoring' => [],
             ],
 
-            'Baby Cactus' => [
-                'name' => clienttranslate('Baby Cactus'),
+            'Cutetus' => [
+                'name' => clienttranslate('Cutetus'),
                 'plant_type' => self::BABY_CACTUS,
                 'num_cards' => 5,
                 'cost' => 1,
