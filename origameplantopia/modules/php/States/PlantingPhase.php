@@ -287,7 +287,18 @@ class PlantingPhase extends GameState
     {
         // Simple effects like draw cards, discard cards, gain weather cards
         if (isset($effect['draw_cards'])) {
-            $drawn = $this->game->plantCards->pickCards($effect['draw_cards'], 'deck', $playerId);
+            $numToDraw = $effect['draw_cards'];
+            $drawn = $this->game->plantCards->pickCards($numToDraw, 'deck', $playerId) ?? [];
+            if (count($drawn) < $numToDraw) {
+                // Deck is empty, reshuffle discard
+                $this->game->plantCards->moveAllCardsInLocation('discard', 'deck');
+                $this->game->plantCards->shuffle('deck');
+                $this->bga->notify->all('message', clienttranslate('The plant deck is empty. Reshuffling the discard pile...'), []);
+                
+                $remaining = $numToDraw - count($drawn);
+                $drawn2 = $this->game->plantCards->pickCards($remaining, 'deck', $playerId) ?? [];
+                $drawn = array_merge($drawn, $drawn2);
+            }
             $this->bga->notify->player($playerId, "cardsDrawn", '', ["cards" => $drawn]);
             $this->bga->notify->all("playerDrewCard", clienttranslate('${player_name} drew cards from planting effect.'), ["player_id" => $playerId]);
         }

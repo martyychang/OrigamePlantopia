@@ -1,6 +1,6 @@
 Plant Card Name,Num Cards in Deck,Plant Type,Cost,Cost Unit of Measure,Growth Condition: Wind,Growth Condition: Rain,Growth Condition: Sun,Num Points Scored Per Level,Flavor Text,Bonus Scoring Description,Bonus Scoring: Two Cards in Hand,Bonus Scoring: Plant Type,Bonus Scoring: Fixed Num Points,Bonus Scoring: Level 3 Plant,Bonus Scoring: Baby Tree,Bonus Scoring: Treevolved Tree,Bonus Scoring: Baby Cactus,Bonus Scoring: Treevolved Cactus,Bonus Scoring: Baby Flower,Bonus Scoring: Treevolved Flower,Planting Effect: Level Up,Planting Effect: Gain Planting Action,Planting Effect: Gain Weather Card Quantity,Planting Effect: Gain Weather Card Type,Planting Effect: Draw Cards,Planting Effect: Discard Cards
 Cattus,5,Baby Cactus,1,Card,0,1,1,1,Very purrickly.,,,,,,,,,,,,,,,,5,4
-Cutetus,5,Baby Cactus,1,Card,1,0,1,1,The cutest.,,,,,,,,,,,,,,,,2,
+Baby Cactus,5,Baby Cactus,1,Card,1,0,1,1,The cutest.,,,,,,,,,,,,,,,,2,
 Pointless Cactus,5,Baby Cactus,1,Card,0,0,2,1,Never gets to the point.,,,,,,,,,,,,,,,,3,1
 Sand Dollar Cactus,5,Baby Cactus,2,Card,0,0,2,2,Sparkles like a star.,,,,,,,,,,,,,,,,5,2
 Buttercup,4,Baby Flower,0,Card,2,0,0,1,Blossoms among the bubbles.,,,,,,,,,,,,Any plant,,,,,
