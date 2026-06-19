@@ -28,7 +28,7 @@ class CharacterCards
             ],
             'tomato' => [
                 'name' => clienttranslate('Tomato'),
-                'ability' => clienttranslate('Upon planting a Baby Plant, grow a matching Treevolved Plant by 1 Level.'),
+                'ability' => clienttranslate('Upon planting a Baby Plant, grow a matching (same type) Adult Plant by 1 Level.'),
             ],
             'potato' => [
                 'name' => clienttranslate('Potato'),
@@ -40,7 +40,7 @@ class CharacterCards
             ],
             'carrot' => [
                 'name' => clienttranslate('Carrot'),
-                'ability' => clienttranslate('Upon treevolving, grow a Baby Plant by 1 Level.'),
+                'ability' => clienttranslate('When planting an Adult Plant, grow a Baby Plant by 1 Level.'),
             ],
         ];
     }

@@ -9,6 +9,7 @@ use Bga\GameFramework\States\GameState;
 use Bga\GameFramework\States\PossibleAction;
 use Bga\GameFramework\UserException;
 use Bga\Games\OrigamePlantopia\Game;
+use Bga\Games\OrigamePlantopia\WeatherCards;
 
 class SetupDecisions extends GameState
 {
@@ -108,7 +109,62 @@ class SetupDecisions extends GameState
             "character_name" => Game::$CHARACTER_CARD_TYPES[$card['type']]['name']
         ]);
 
+        $this->applyClaimAbility($activePlayerId, $card['type']);
+
         $this->checkIfAllPlayersReady();
+    }
+
+    /**
+     * Apply the character's ability at the moment it's claimed.
+     *
+     * Phase 1 (this commit) wires up the start-of-game abilities:
+     *   - Potato:   Start with 4 extra cards
+     *   - Mushroom: Start with 1 Bonus Weather Card of each type
+     *
+     * Carrot / Tomato / Banana trigger during the Planting Phase and are wired
+     * up in subsequent commits on the same Trello card
+     * (https://trello.com/c/rgIS3JiZ).
+     */
+    private function applyClaimAbility(int $playerId, string $character): void
+    {
+        switch ($character) {
+            case 'potato':
+                // Draw 4 extra plant cards into the player's hand.
+                $this->game->plantCards->pickCards(4, 'deck', $playerId);
+                $newHand = $this->game->plantCards->getCardsInLocation('hand', $playerId);
+                $handCounts = $this->game->plantCards->countCardsByLocationArgs('hand');
+
+                $this->bga->notify->player($playerId, "newHand", '', [
+                    "cards" => $newHand,
+                ]);
+                $this->bga->notify->all("potatoExtraCards", clienttranslate('${player_name} drew 4 extra cards (Potato ability).'), [
+                    "player_id" => $playerId,
+                    "handCounts" => $handCounts,
+                ]);
+                break;
+
+            case 'mushroom':
+                // Give 1 Bonus Weather Card of each condition (sun / rain / wind),
+                // moved from the public bonus deck into the player's public bonus
+                // weather area (rendered in their garden).
+                $given = [];
+                foreach ([WeatherCards::CONDITION_SUN, WeatherCards::CONDITION_RAIN, WeatherCards::CONDITION_WIND] as $cond) {
+                    $candidates = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', $cond, 'bonus_deck');
+                    if (!empty($candidates)) {
+                        $cardId = (int)array_key_first($candidates);
+                        $this->game->weatherCards->moveCard($cardId, 'weather_public_bonus', $playerId);
+                        $given[] = $this->game->weatherCards->getCard($cardId);
+                    }
+                }
+                $this->bga->notify->all("mushroomBonusWeather", clienttranslate('${player_name} received 1 Bonus Weather Card of each type (Mushroom ability).'), [
+                    "player_id" => $playerId,
+                    "cards" => $given,
+                ]);
+                break;
+
+            // 'carrot', 'tomato', 'banana' — no claim-time effect; their
+            //  abilities trigger during the Planting Phase. Phase 2 / Phase 3.
+        }
     }
 
     #[PossibleAction]

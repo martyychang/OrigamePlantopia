@@ -1077,7 +1077,45 @@ export class Game {
         this.gamedatas.hand = args.cards;
         this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
     }
-    
+
+    async notif_potatoExtraCards(args) {
+        console.log("notif_potatoExtraCards", args);
+        // Update every player's hand counter from the server-provided counts.
+        const handCounts = args.handCounts || {};
+        for (const playerId in handCounts) {
+            if (this.handCounters && this.handCounters[playerId]) {
+                this.handCounters[playerId].toValue(handCounts[playerId]);
+            }
+        }
+    }
+
+    async notif_mushroomBonusWeather(args) {
+        console.log("notif_mushroomBonusWeather", args);
+        const cards = args.cards || [];
+        if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
+        const garden = document.getElementById(`player-garden-${args.player_id}`);
+        cards.forEach(card => {
+            // Track in local gamedatas so subsequent renders include the card.
+            this.gamedatas.weatherPublicBonus[card.id] = card;
+            if (!garden) return;
+            let cardInfo = { name: 'Unknown' };
+            if (this.gamedatas.weatherCardTypes[card.type]
+                && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
+                cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
+            }
+            garden.insertAdjacentHTML('beforeend', `
+                <div id="weather_${card.id}" class="weather-card bonus-weather" style="width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                    <strong style="color: #8e44ad; font-size: 1.1em;">${cardInfo.name} (Bonus)</strong>
+                </div>
+            `);
+            const newCard = document.getElementById(`weather_${card.id}`);
+            if (newCard) {
+                newCard.addEventListener('mouseenter', () => newCard.style.transform = 'translateY(-10px)');
+                newCard.addEventListener('mouseleave', () => newCard.style.transform = 'translateY(0)');
+            }
+        });
+    }
+
     async notif_playerPlayedBonus(args) {
         console.log("notif_playerPlayedBonus", args);
         const card = args.card;
