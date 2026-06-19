@@ -63,3 +63,5 @@ ALTER TABLE `player` ADD `player_mulligan_choice` INT UNSIGNED NOT NULL DEFAULT 
 ALTER TABLE `player` ADD `player_planting_status` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=undecided, 1=decided, 2=drafting, 3=resolving_effects';
 
 ALTER TABLE `player` ADD `player_pending_effects` TEXT NULL COMMENT 'JSON array of pending effects to resolve';
+
+ALTER TABLE `player` ADD `player_banana_used` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Banana character ability: 0=unused this Planting Phase, 1=used. Reset at PlantingPhaseStart.';

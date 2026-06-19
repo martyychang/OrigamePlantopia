@@ -428,7 +428,79 @@ class PlantingPhase {
             this.highlightPlantsToGrow(id => {
                 this.bga.actions.performAction("actResolveLevelUpMatchingAdult", { plantCardId: id });
             });
+        } else if (effect.type === 'banana_offer') {
+            // Banana character ability — after the normal Planting Phase
+            // action completes, optionally discard 2 Baby Plants from hand
+            // to gain one more Planting Phase action. Two action buttons:
+            // 'Use ability' enters baby-only multi-select; 'Skip' finishes
+            // the Planting Phase normally.
+            this.bga.statusBar.setTitle(_('Banana ability: discard 2 Baby Plants from your hand for one more Planting Phase action?'));
+            this.bga.statusBar.addActionButton(
+                _('Use Banana ability'),
+                () => this.beginBananaCardSelection(),
+                { color: 'blue' }
+            );
+            this.bga.statusBar.addActionButton(
+                _('Skip'),
+                () => this.bga.actions.performAction("actDeclineBananaAbility", {}),
+                { color: 'gray' }
+            );
         }
+    }
+
+    /**
+     * Banana ability: enter a hand-multi-select mode restricted to Baby
+     * Plant cards. The player must pick exactly 2 cards. As soon as 2 are
+     * selected, surface a Confirm button that invokes actUseBananaAbility.
+     */
+    beginBananaCardSelection() {
+        this.bga.statusBar.removeActionButtons();
+        this.bga.statusBar.setTitle(_('Select 2 Baby Plant cards from your hand to discard.'));
+        this.selectedPaymentCards = [];
+
+        const hand = this.game.gamedatas.hand || {};
+        const plantTypes = this.game.gamedatas.plantCardTypes || {};
+        const babyIds = Object.values(hand)
+            .filter(c => plantTypes[c.type] && plantTypes[c.type].plant_type
+                ? plantTypes[c.type].plant_type.startsWith('baby_')
+                : false)
+            .map(c => c.id);
+
+        // Highlight the eligible Baby cards in the player's hand.
+        babyIds.forEach(id => {
+            const el = document.getElementById(`card_${id}`);
+            if (el) {
+                el.classList.add('bga-cards_selectable-card');
+                el.style.boxShadow = '0 0 10px #f1c40f';
+                el.style.cursor = 'pointer';
+                el.onclick = () => this.toggleBananaBabySelection(id, babyIds);
+            }
+        });
+    }
+
+    toggleBananaBabySelection(cardId, eligibleIds) {
+        if (this.selectedPaymentCards.includes(cardId)) {
+            this.selectedPaymentCards = this.selectedPaymentCards.filter(c => c !== cardId);
+            const el = document.getElementById(`card_${cardId}`);
+            if (el) el.style.boxShadow = '0 0 10px #f1c40f';
+        } else {
+            if (this.selectedPaymentCards.length >= 2) return; // hard cap
+            this.selectedPaymentCards.push(cardId);
+            const el = document.getElementById(`card_${cardId}`);
+            if (el) el.style.boxShadow = '0 0 15px #27ae60';
+        }
+
+        this.bga.statusBar.removeActionButtons();
+        if (this.selectedPaymentCards.length === 2) {
+            this.bga.statusBar.addActionButton(_('Confirm Discard (2 Baby Plants)'), () => {
+                this.bga.actions.performAction("actUseBananaAbility", {
+                    babyCardIdsStr: this.selectedPaymentCards.join(';'),
+                });
+            }, { color: 'green' });
+        }
+        this.bga.statusBar.addActionButton(_('Cancel — skip Banana ability'), () => {
+            this.bga.actions.performAction("actDeclineBananaAbility", {});
+        }, { color: 'gray' });
     }
 
     renderDraftModal(keepQty) {

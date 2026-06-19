@@ -552,7 +552,7 @@ class PlantingPhase extends GameState
         } else {
             $status = (int)$this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $playerId");
             if (!$gainedAction && $status !== 1) {
-                $this->markPlayerDone($playerId);
+                $this->tryMarkPlayerDone($playerId);
             } else if ($gainedAction) {
                 $this->game->DbQuery("UPDATE player SET player_planting_status = 0 WHERE player_id = $playerId");
                 $this->bga->notify->all("playerGainedAction", clienttranslate('${player_name} immediately takes another Planting Phase action.'), [
@@ -835,6 +835,149 @@ class PlantingPhase extends GameState
     {
         $this->game->DbQuery("UPDATE player SET player_planting_status = 1 WHERE player_id = $playerId");
         $this->game->gamestate->setPlayerNonMultiactive($playerId, WeatherPhaseStart::class);
+    }
+
+    /**
+     * Phase 3 of https://trello.com/c/rgIS3JiZ — Banana character ability.
+     *
+     * Called when the player has finished their normal Planting Phase action
+     * and would otherwise be marked done. If the Banana ability is eligible
+     * (player claimed Banana, hasn't used it this round, and has at least
+     * 2 Baby Plant cards in hand), instead of marking done we queue a
+     * 'banana_offer' effect, set status to 'resolving_effects', and notify
+     * the player so the client can present Use/Skip buttons. Otherwise we
+     * delegate to markPlayerDone as before.
+     */
+    private function tryMarkPlayerDone(int $playerId): void
+    {
+        if (!$this->isBananaEligible($playerId)) {
+            $this->markPlayerDone($playerId);
+            return;
+        }
+
+        $this->appendEffect($playerId, ['type' => 'banana_offer']);
+        $this->game->DbQuery("UPDATE player SET player_planting_status = 3 WHERE player_id = $playerId");
+
+        $queue = json_decode(
+            $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId") ?: '[]',
+            true
+        );
+        $this->bga->notify->player($playerId, "pendingEffects", '', [
+            "effects" => $queue
+        ]);
+        $this->bga->notify->all("playerResolvingEffects", clienttranslate('${player_name} is deciding whether to use the Banana ability.'), [
+            "player_id" => $playerId,
+        ]);
+    }
+
+    /**
+     * True iff the player can currently use the Banana ability:
+     *   - their claimed character is Banana
+     *   - they have not yet used the ability this Planting Phase
+     *   - they have at least 2 Baby Plant cards in their hand
+     */
+    private function isBananaEligible(int $playerId): bool
+    {
+        if ($this->getPlayerCharacter($playerId) !== 'banana') {
+            return false;
+        }
+        $used = (int)$this->game->getUniqueValueFromDb("SELECT player_banana_used FROM player WHERE player_id = $playerId");
+        if ($used !== 0) {
+            return false;
+        }
+        return count($this->getBabyCardsInHand($playerId)) >= 2;
+    }
+
+    /**
+     * Return the Baby Plant cards in the player's hand, as an array keyed by
+     * card id. Used by the Banana eligibility check and the resolve handler.
+     */
+    private function getBabyCardsInHand(int $playerId): array
+    {
+        $hand = $this->game->plantCards->getCardsInLocation('hand', $playerId);
+        $babies = [];
+        foreach ($hand as $cardId => $card) {
+            if (PlantCards::isBaby($card['type'])) {
+                $babies[$cardId] = $card;
+            }
+        }
+        return $babies;
+    }
+
+    /**
+     * Player chose to use the Banana ability: discard exactly 2 Baby Plant
+     * cards from their hand, mark the ability used for this round, and reset
+     * their planting status so they take one more Planting Phase action.
+     */
+    #[PossibleAction]
+    public function actUseBananaAbility(string $babyCardIdsStr)
+    {
+        $playerId = (int)$this->game->getCurrentPlayerId();
+
+        $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
+        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        if (count($queue) === 0 || $queue[0]['type'] !== 'banana_offer') {
+            throw new UserException(clienttranslate("There is no Banana offer to resolve."));
+        }
+        if ($this->getPlayerCharacter($playerId) !== 'banana') {
+            throw new UserException(clienttranslate("Only the Banana character can use this ability."));
+        }
+        $used = (int)$this->game->getUniqueValueFromDb("SELECT player_banana_used FROM player WHERE player_id = $playerId");
+        if ($used !== 0) {
+            throw new UserException(clienttranslate("You have already used the Banana ability this round."));
+        }
+
+        $cardIds = $babyCardIdsStr === '' ? [] : array_map('intval', explode(';', $babyCardIdsStr));
+        if (count($cardIds) !== 2) {
+            throw new UserException(clienttranslate("You must discard exactly 2 Baby Plant cards."));
+        }
+        foreach ($cardIds as $cId) {
+            $card = $this->game->plantCards->getCard($cId);
+            if ($card['location'] !== 'hand' || (int)$card['location_arg'] !== $playerId) {
+                throw new UserException(clienttranslate("You can only discard cards from your hand."));
+            }
+            if (!PlantCards::isBaby($card['type'])) {
+                throw new UserException(clienttranslate("You must discard Baby Plant cards only."));
+            }
+        }
+
+        $this->game->plantCards->moveCards($cardIds, 'discard');
+
+        // Mark Banana used for the rest of this Planting Phase, then
+        // reset planting status so the player gains a new action and
+        // pop the banana_offer off the queue.
+        $this->game->DbQuery("UPDATE player SET player_banana_used = 1, player_planting_status = 0 WHERE player_id = $playerId");
+        array_shift($queue);
+        $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "' WHERE player_id = $playerId");
+
+        $handCounts = $this->game->plantCards->countCardsByLocationArgs('hand');
+        $this->bga->notify->player($playerId, "newHand", '', [
+            "cards" => $this->game->plantCards->getCardsInLocation('hand', $playerId),
+        ]);
+        $this->bga->notify->all("playerUsedBananaAbility", clienttranslate('${player_name} discarded 2 Baby Plants and gained an extra Planting Phase action (Banana ability).'), [
+            "player_id" => $playerId,
+            "handCounts" => $handCounts,
+        ]);
+    }
+
+    /**
+     * Player chose NOT to use the Banana ability this round: pop the
+     * banana_offer from the queue and finish their Planting Phase.
+     */
+    #[PossibleAction]
+    public function actDeclineBananaAbility()
+    {
+        $playerId = (int)$this->game->getCurrentPlayerId();
+
+        $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
+        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        if (count($queue) === 0 || $queue[0]['type'] !== 'banana_offer') {
+            throw new UserException(clienttranslate("There is no Banana offer to resolve."));
+        }
+
+        array_shift($queue);
+        $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "' WHERE player_id = $playerId");
+        $this->markPlayerDone($playerId);
     }
 
     function zombie(int $playerId) {
