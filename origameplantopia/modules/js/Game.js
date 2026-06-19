@@ -808,9 +808,11 @@ export class Game {
             this.renderPublicWeather(gamedatas.weatherPublic);
         }
 
-        // Add a dedicated hand panel for the current player at the bottom (like RFTG)
-        this.bga.gameArea.getElement().insertAdjacentHTML('beforeend', `
-            <div id="hand_panel" style="margin-top: 20px; border: 2px solid #27ae60; border-radius: 8px; background: rgba(255, 255, 255, 0.9); padding: 15px;">
+        // Add a dedicated hand panel for the current player, placed above the
+        // player gardens so it's visible without scrolling past every player's
+        // garden first.
+        document.getElementById('player-tables').insertAdjacentHTML('beforebegin', `
+            <div id="hand_panel" style="margin-bottom: 20px; border: 2px solid #27ae60; border-radius: 8px; background: rgba(255, 255, 255, 0.9); padding: 15px;">
                 <h3 style="color: #27ae60; margin-top: 0;">My Hand</h3>
                 <div id="my-hand-container" style="display: flex; flex-wrap: wrap; gap: 15px;"></div>
             </div>
