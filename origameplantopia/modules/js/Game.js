@@ -413,6 +413,21 @@ class PlantingPhase {
             this.bga.statusBar.addActionButton(_('Tree'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'tree' }), { color: 'green' });
             this.bga.statusBar.addActionButton(_('Flower'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'flower' }), { color: 'red' });
             this.bga.statusBar.addActionButton(_('Cactus'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'cactus' }), { color: 'blue' });
+        } else if (effect.type === 'level_up_matching_adult') {
+            // Tomato character ability — grow a matching-family Adult Plant in
+            // the player's garden by 1 level. The server validates that the
+            // chosen plant is an Adult of the right family; the player picks
+            // the target from their garden plants.
+            const familyLabel = effect.family
+                ? effect.family.charAt(0).toUpperCase() + effect.family.slice(1)
+                : '';
+            this.bga.statusBar.setTitle(
+                _('Choose an Adult ${family} plant in your garden to grow (Tomato ability)')
+                    .replace('${family}', familyLabel)
+            );
+            this.highlightPlantsToGrow(id => {
+                this.bga.actions.performAction("actResolveLevelUpMatchingAdult", { plantCardId: id });
+            });
         }
     }
 

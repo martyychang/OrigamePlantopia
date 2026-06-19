@@ -148,7 +148,132 @@ class PlantingPhase extends GameState
             $this->game->DbQuery("UPDATE player SET player_pending_effects = '[]' WHERE player_id = $playerId");
         }
 
+        // Phase 2 of https://trello.com/c/rgIS3JiZ: character abilities that
+        // trigger at plant time. Carrot fires after planting an Adult
+        // (treevolved) plant; Tomato fires after planting a Baby plant. Both
+        // effects are queued *after* any built-in planting effects so the
+        // built-in effect resolves first.
+        $this->queueCharacterPlantingEffects($playerId, $card, $cardId);
+
         $this->processPendingEffects($playerId);
+    }
+
+    /**
+     * Append character-driven effects to the player's pending-effects queue
+     * based on the character they claimed during SetupDecisions and the
+     * card they just planted.
+     *
+     * - Carrot: when an Adult Plant is planted, queue a grow-a-Baby effect.
+     * - Tomato: when a Baby Plant is planted, queue a grow-a-matching-Adult
+     *   effect (matching means same family — cactus/flower/tree).
+     * - Skip if the player has no valid targets in their garden (no
+     *   growable Baby for Carrot, no matching Adult below max level for
+     *   Tomato), so the player isn't stuck on a no-op resolution.
+     */
+    private function queueCharacterPlantingEffects(int $playerId, array $plantedCard, int $sourceCardId): void
+    {
+        $character = $this->getPlayerCharacter($playerId);
+        if ($character === null) {
+            return;
+        }
+
+        $plantedType = $plantedCard['type'];
+
+        if ($character === 'carrot' && PlantCards::isTreevolved($plantedType)) {
+            if ($this->playerHasGrowableBaby($playerId)) {
+                $this->appendEffect($playerId, [
+                    'type'           => 'level_up',
+                    'target'         => PlantCards::LEVEL_UP_BABY,
+                    'qty'            => 1,
+                    'source_card_id' => $sourceCardId,
+                ]);
+            }
+            return;
+        }
+
+        if ($character === 'tomato' && PlantCards::isBaby($plantedType)) {
+            $family = PlantCards::getFamily($plantedType);
+            if ($this->playerHasGrowableAdultOfFamily($playerId, $family)) {
+                $this->appendEffect($playerId, [
+                    'type'           => 'level_up_matching_adult',
+                    'family'         => $family,
+                    'qty'            => 1,
+                    'source_card_id' => $sourceCardId,
+                ]);
+            }
+            return;
+        }
+    }
+
+    /**
+     * Returns the character type ('potato', 'mushroom', etc.) the player
+     * claimed during SetupDecisions, or null if they have none.
+     */
+    private function getPlayerCharacter(int $playerId): ?string
+    {
+        $chars = $this->game->characterCards->getCardsInLocation('garden', $playerId);
+        if (empty($chars)) {
+            return null;
+        }
+        $card = array_values($chars)[0];
+        return $card['type'];
+    }
+
+    /**
+     * Append a single effect onto the player's pending-effects queue,
+     * preserving any effects already queued ahead of it.
+     */
+    private function appendEffect(int $playerId, array $effect): void
+    {
+        $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
+        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        $queue[] = $effect;
+        $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "' WHERE player_id = $playerId");
+    }
+
+    /**
+     * True if the player has at least one Baby Plant in a planter below
+     * the maximum level (i.e., growable by 1 level).
+     */
+    private function playerHasGrowableBaby(int $playerId): bool
+    {
+        $rows = $this->game->getCollectionFromDb("
+            SELECT pc.card_id, pc.card_type, pc.card_type_arg
+            FROM plant_card pc
+            JOIN planter_card plc ON plc.card_id = pc.card_location_arg
+            WHERE pc.card_location = 'planter'
+              AND plc.card_location_arg = $playerId
+        ");
+        foreach ($rows as $row) {
+            if (PlantCards::isBaby($row['card_type']) && (int)$row['card_type_arg'] < 3) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * True if the player has at least one Adult (Treevolved) Plant of the
+     * given family in a planter below max level (i.e., growable).
+     */
+    private function playerHasGrowableAdultOfFamily(int $playerId, string $family): bool
+    {
+        $rows = $this->game->getCollectionFromDb("
+            SELECT pc.card_id, pc.card_type, pc.card_type_arg
+            FROM plant_card pc
+            JOIN planter_card plc ON plc.card_id = pc.card_location_arg
+            WHERE pc.card_location = 'planter'
+              AND plc.card_location_arg = $playerId
+        ");
+        foreach ($rows as $row) {
+            $type = $row['card_type'];
+            if (PlantCards::isTreevolved($type)
+                && PlantCards::getFamily($type) === $family
+                && (int)$row['card_type_arg'] < 3) {
+                return true;
+            }
+        }
+        return false;
     }
 
     #[PossibleAction]
@@ -631,6 +756,64 @@ class PlantingPhase extends GameState
                 "family" => $family,
             ]);
         }
+
+        array_shift($queue);
+        $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "' WHERE player_id = $playerId");
+        $this->processPendingEffects($playerId);
+    }
+
+    /**
+     * Resolve the Tomato character's plant-time effect: grow one Adult
+     * (Treevolved) Plant matching the family of the Baby that was just
+     * planted. The player chooses which matching Adult to grow when
+     * multiple eligible targets exist.
+     */
+    #[PossibleAction]
+    public function actResolveLevelUpMatchingAdult(int $plantCardId)
+    {
+        $playerId = (int)$this->game->getCurrentPlayerId();
+        $this->checkActionAllowed($playerId);
+
+        $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
+        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        if (count($queue) === 0 || $queue[0]['type'] !== 'level_up_matching_adult') {
+            throw new UserException(clienttranslate("You do not have a matching-Adult level up effect to resolve."));
+        }
+        $effect = $queue[0];
+
+        $plant = $this->game->plantCards->getCard($plantCardId);
+        if ($plant['location'] !== 'planter') {
+            throw new UserException(clienttranslate("You can only grow plants that are on a planter."));
+        }
+        $pId = $this->game->getUniqueValueFromDb("SELECT card_location_arg FROM planter_card WHERE card_id = " . $plant['location_arg']);
+        if ((int)$pId !== $playerId) {
+            throw new UserException(clienttranslate("This plant is not in your garden."));
+        }
+        if (!PlantCards::isTreevolved($plant['type'])) {
+            throw new UserException(clienttranslate("You must select an Adult (Treevolved) plant to grow."));
+        }
+        if (PlantCards::getFamily($plant['type']) !== $effect['family']) {
+            throw new UserException(clienttranslate("You must select an Adult plant of the matching family."));
+        }
+        $level = (int)$plant['type_arg'];
+        if ($level >= 3) {
+            throw new UserException(clienttranslate("This plant is already at maximum level."));
+        }
+
+        $newLevel = min(3, $level + $effect['qty']);
+        $this->game->DbQuery("UPDATE plant_card SET card_type_arg = $newLevel WHERE card_id = $plantCardId");
+        if ($newLevel === 3) {
+            $this->game->plantCards->moveCard($plantCardId, 'garden_level3', $playerId);
+        }
+
+        $material = Game::$PLANT_CARD_TYPES[$plant['type']];
+        $this->bga->notify->all("plantGrown", clienttranslate('${player_name} grew their ${plant_name} to level ${level} (Tomato ability).'), [
+            "player_id" => $playerId,
+            "plant_name" => $material['name'],
+            "card_id" => $plantCardId,
+            "level" => $newLevel,
+            "max_level" => ($newLevel === 3)
+        ]);
 
         array_shift($queue);
         $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "' WHERE player_id = $playerId");
