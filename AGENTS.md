@@ -9,11 +9,11 @@
 
 ## Project Layout
 
-The BGA game lives inside `origameplantopia/` and is synced to BGA Studio via
-SFTP. All game code changes go in that folder.
+The BGA game lives in the root directory and is synced to BGA Studio via
+SFTP. All game code changes go in this folder.
 
 ```
-origameplantopia/
+.
 ├── modules/
 │   ├── php/
 │   │   ├── Game.php              # Main server-side game class

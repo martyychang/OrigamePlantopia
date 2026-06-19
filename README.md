@@ -6,12 +6,11 @@ This project is developed using **BGA Studio**. For more information on the deve
 
 ## Project Structure
 
-- `origameplantopia/`: The main game source code.
-  - `modules/php/`: Game logic and state machine.
-  - `modules/js/`: Client-side game logic.
-  - `origameplantopia.css`: Game styles.
-  - `dbmodel.sql`: Database schema for the game.
-  - `gameinfos.jsonc`: Game configuration.
+- `modules/php/`: Game logic and state machine.
+- `modules/js/`: Client-side game logic.
+- `origameplantopia.css`: Game styles.
+- `dbmodel.sql`: Database schema for the game.
+- `gameinfos.jsonc`: Game configuration.
 
 ## Development
 
