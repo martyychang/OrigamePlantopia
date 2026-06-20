@@ -788,9 +788,19 @@ export class Game {
         
         // Render available characters
         this.renderCharacters(gamedatas.availableCharacters, 'available-characters-container');
-        
+
+        // Always render the current player's garden first so it sits directly
+        // below their hand panel (which is prepended to #player-tables below).
+        // Spectators fall back to default player order.
+        const currentPlayerId = this.bga.players.getCurrentPlayerId();
+        const orderedPlayers = Object.values(gamedatas.players).sort((a, b) => {
+            if (a.id == currentPlayerId) return -1;
+            if (b.id == currentPlayerId) return 1;
+            return 0;
+        });
+
         // Setting up player boards
-        Object.values(gamedatas.players).forEach(player => {
+        orderedPlayers.forEach(player => {
             // example of setting up players boards
             this.bga.playerPanels.getElement(player.id).insertAdjacentHTML('beforeend', `
                 <div style="margin-top: 5px;">
@@ -850,7 +860,7 @@ export class Game {
         });
 
         // Render Bonus Weather for each player directly in their garden
-        Object.values(gamedatas.players).forEach(player => {
+        orderedPlayers.forEach(player => {
             const playerBonusWeather = Object.values(gamedatas.weatherPublicBonus || {}).filter(c => c.location_arg == player.id);
             playerBonusWeather.forEach(card => {
                 let cardInfo = { name: 'Unknown' };
