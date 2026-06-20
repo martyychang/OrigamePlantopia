@@ -1353,11 +1353,22 @@ export class Game {
     async notif_plantPlanted(args) {
         const card = args.card;
         const planterId = args.planter_id;
-        
-        // Remove from hand if it's our plant
-        if (this.gamedatas.hand && this.gamedatas.hand[card.id]) {
-            delete this.gamedatas.hand[card.id];
-            this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
+
+        if (this.gamedatas.hand) {
+            let handChanged = false;
+            if (this.gamedatas.hand[card.id]) {
+                delete this.gamedatas.hand[card.id];
+                handChanged = true;
+            }
+            (args.payment_card_ids || []).forEach(pid => {
+                if (this.gamedatas.hand[pid]) {
+                    delete this.gamedatas.hand[pid];
+                    handChanged = true;
+                }
+            });
+            if (handChanged) {
+                this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
+            }
         }
 
         // Add to plantsOnPlanters

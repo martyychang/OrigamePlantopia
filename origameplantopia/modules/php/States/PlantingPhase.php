@@ -139,6 +139,7 @@ class PlantingPhase extends GameState
             "plant_name" => $material['name'],
             "card" => $this->game->plantCards->getCard($cardId),
             "planter_id" => $planterCardId,
+            "payment_card_ids" => $paymentCardIds,
         ]);
 
         // Queue and execute "Lightning" effects
