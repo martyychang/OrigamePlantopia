@@ -959,6 +959,13 @@ class PlantingPhase extends GameState
             "player_id" => $playerId,
             "handCounts" => $handCounts,
         ]);
+        // Mirror the gain_action notification so the player's client resets
+        // status to 0, clears the banana_offer from pending_effects, and
+        // re-renders the planting action buttons.
+        $this->bga->notify->all("playerGainedAction", clienttranslate('${player_name} immediately takes another Planting Phase action.'), [
+            "player_id" => $playerId,
+            "player_name" => $this->game->getPlayerNameById($playerId),
+        ]);
     }
 
     /**

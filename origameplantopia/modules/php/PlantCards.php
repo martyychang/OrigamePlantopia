@@ -663,19 +663,43 @@ class PlantCards
     }
 
     /**
-     * Check if a plant type is a Baby plant.
+     * Resolve a string that may be either a card_type (card name like
+     * 'Cattus') or a plant_type constant (like 'baby_cactus') to its
+     * plant_type constant. Returns null if the input is neither.
+     *
+     * BGA Deck stores the card NAME in the card_type column, so $card['type']
+     * is 'Cattus' — not 'baby_cactus'. Callers that pass card['type'] directly
+     * into isBaby()/isTreevolved() would otherwise silently always get false.
      */
-    public static function isBaby(string $plantType): bool
+    public static function resolvePlantType(string $input): ?string
     {
-        return in_array($plantType, [self::BABY_CACTUS, self::BABY_FLOWER, self::BABY_TREE]);
+        if (in_array($input, self::ALL_TYPES, true)) {
+            return $input;
+        }
+        $types = self::getTypes();
+        return $types[$input]['plant_type'] ?? null;
     }
 
     /**
-     * Check if a plant type is a Treevolved plant.
+     * Check if a plant is a Baby plant. Accepts either a card name
+     * (e.g. 'Cattus') or a plant_type constant (e.g. self::BABY_CACTUS).
      */
-    public static function isTreevolved(string $plantType): bool
+    public static function isBaby(string $cardOrType): bool
     {
-        return in_array($plantType, [self::TRV_CACTUS, self::TRV_FLOWER, self::TRV_TREE]);
+        $plantType = self::resolvePlantType($cardOrType);
+        return $plantType !== null
+            && in_array($plantType, [self::BABY_CACTUS, self::BABY_FLOWER, self::BABY_TREE], true);
+    }
+
+    /**
+     * Check if a plant is a Treevolved plant. Accepts either a card name
+     * or a plant_type constant.
+     */
+    public static function isTreevolved(string $cardOrType): bool
+    {
+        $plantType = self::resolvePlantType($cardOrType);
+        return $plantType !== null
+            && in_array($plantType, [self::TRV_CACTUS, self::TRV_FLOWER, self::TRV_TREE], true);
     }
 
     /**

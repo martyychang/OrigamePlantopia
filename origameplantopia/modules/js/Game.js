@@ -1354,9 +1354,11 @@ export class Game {
 
     async notif_playerGainedAction(args) {
         if (args.player_id == this.bga.players.getCurrentPlayerId()) {
-            this.game.gamedatas.players[args.player_id].planting_status = 0;
-            this.resetSelection();
-            this.onPlayerActivationChange(null, true);
+            this.gamedatas.players[args.player_id].planting_status = 0;
+            this.gamedatas.players[args.player_id].pending_effects = '[]';
+            if (this.bga.states.getCurrentMainStateName() === 'PlantingPhase') {
+                this.plantingPhase.onEnteringState(null, true);
+            }
         }
     }
 
