@@ -1435,9 +1435,11 @@ export class Game {
         }
     }
 
-    async notif_keptCard(args) {
+    async notif_keptCards(args) {
         if (!this.gamedatas.hand) this.gamedatas.hand = {};
-        this.gamedatas.hand[args.card.id] = args.card;
+        (args.cards || []).forEach(card => {
+            this.gamedatas.hand[card.id] = card;
+        });
         this.gamedatas.draftCards = {};
         this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
     }
