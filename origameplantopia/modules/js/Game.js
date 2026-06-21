@@ -369,6 +369,22 @@ class PlantingPhase {
         return ['baby_cactus', 'baby_flower', 'baby_tree'].includes(plantType);
     }
 
+    /**
+     * Surface a "Skip" button on the current pending-effect prompt so the
+     * player can bail out of a planting effect they don't want to resolve.
+     * The server-side actSkipPendingEffect validates the effect type is
+     * one of the skippable ones (level_up / level_up_family /
+     * level_up_matching_adult / gain_weather). See
+     * https://trello.com/c/qcAmX7KC.
+     */
+    addSkipEffectButton() {
+        this.bga.statusBar.addActionButton(
+            _('Skip'),
+            () => this.bga.actions.performAction("actSkipPendingEffect", {}),
+            { color: 'gray' }
+        );
+    }
+
     confirmPlant() {
         this.bga.actions.performAction("actPlant", { 
             cardId: this.selectedCardToPlant,
@@ -424,16 +440,19 @@ class PlantingPhase {
                     this.bga.actions.performAction("actResolveGainWeather", { cardId: el.dataset.id });
                 };
             });
+            this.addSkipEffectButton();
         } else if (effect.type === 'level_up') {
             this.bga.statusBar.setTitle(_('Choose a plant in your garden to grow'));
             this.highlightPlantsToGrow(id => {
                 this.bga.actions.performAction("actResolveLevelUp", { plantCardId: id });
             });
+            this.addSkipEffectButton();
         } else if (effect.type === 'level_up_family') {
             this.bga.statusBar.setTitle(_('Choose a plant family to grow'));
             this.bga.statusBar.addActionButton(_('Tree'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'tree' }), { color: 'green' });
             this.bga.statusBar.addActionButton(_('Flower'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'flower' }), { color: 'red' });
             this.bga.statusBar.addActionButton(_('Cactus'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'cactus' }), { color: 'blue' });
+            this.addSkipEffectButton();
         } else if (effect.type === 'level_up_matching_adult') {
             // Tomato character ability — grow a matching-family Adult Plant in
             // the player's garden by 1 level. The server validates that the
@@ -449,6 +468,7 @@ class PlantingPhase {
             this.highlightPlantsToGrow(id => {
                 this.bga.actions.performAction("actResolveLevelUpMatchingAdult", { plantCardId: id });
             });
+            this.addSkipEffectButton();
         } else if (effect.type === 'banana_offer') {
             // Banana character ability — after the normal Planting Phase
             // action completes, optionally discard 2 Baby Plants from hand

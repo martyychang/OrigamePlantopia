@@ -254,6 +254,114 @@ class PlantingPhase extends GameState
     }
 
     /**
+     * True if the player has at least one Plant of any family in a planter
+     * below max level. Used to decide whether 'level_up_family' is moot.
+     */
+    private function playerHasGrowablePlant(int $playerId): bool
+    {
+        $rows = $this->game->getCollectionFromDb("
+            SELECT pc.card_type_arg
+            FROM plant_card pc
+            JOIN planter_card plc ON plc.card_id = pc.card_location_arg
+            WHERE pc.card_location = 'planter'
+              AND plc.card_location_arg = $playerId
+        ");
+        foreach ($rows as $row) {
+            if ((int)$row['card_type_arg'] < 3) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * True if the player has at least one Plant on a planter, below max
+     * level, that satisfies the level_up effect's target restriction.
+     *
+     *  - LEVEL_UP_ANY:   any growable plant
+     *  - LEVEL_UP_OTHER: any growable plant other than $sourceCardId
+     *  - LEVEL_UP_BABY:  any growable Baby plant
+     *
+     * (LEVEL_UP_THIS is auto-resolved and never reaches this check.)
+     */
+    private function playerHasLevelUpTarget(int $playerId, string $target, ?int $sourceCardId): bool
+    {
+        $rows = $this->game->getCollectionFromDb("
+            SELECT pc.card_id, pc.card_type, pc.card_type_arg
+            FROM plant_card pc
+            JOIN planter_card plc ON plc.card_id = pc.card_location_arg
+            WHERE pc.card_location = 'planter'
+              AND plc.card_location_arg = $playerId
+        ");
+        foreach ($rows as $row) {
+            if ((int)$row['card_type_arg'] >= 3) continue;
+            if ($target === PlantCards::LEVEL_UP_OTHER && (int)$row['card_id'] === (int)$sourceCardId) continue;
+            if ($target === PlantCards::LEVEL_UP_BABY && !PlantCards::isBaby($row['card_type'])) continue;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * True if the pending interactive effect has no valid resolution in
+     * the current state (e.g., a level_up with no plant to target, a
+     * gain_weather with both the typed pool and the entire bonus market
+     * empty). Effects flagged moot are popped silently by
+     * processPendingEffects so the player isn't trapped on a prompt they
+     * cannot fulfill. See https://trello.com/c/qcAmX7KC.
+     */
+    private function isInteractiveEffectMoot(int $playerId, array $effect): bool
+    {
+        switch ($effect['type']) {
+            case 'level_up':
+                if ($effect['target'] === PlantCards::LEVEL_UP_THIS) return false;
+                return !$this->playerHasLevelUpTarget(
+                    $playerId,
+                    $effect['target'],
+                    $effect['source_card_id'] ?? null
+                );
+
+            case 'level_up_family':
+                return !$this->playerHasGrowablePlant($playerId);
+
+            case 'level_up_matching_adult':
+                return !$this->playerHasGrowableAdultOfFamily($playerId, $effect['family']);
+
+            case 'gain_weather':
+                $type = $effect['weather_type'];
+                if ($type !== PlantCards::WEATHER_ANY) {
+                    $typed = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', $type, 'bonus_deck');
+                    if (count($typed) > 0) return false;
+                }
+                $market = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
+                return count($market) === 0;
+
+            case 'discard_cards':
+                return $this->game->plantCards->countCardInLocation('hand', $playerId) === 0;
+
+            default:
+                // draft_cards, draw_cards, gain_action, banana_offer — never moot
+                // by their nature (banana is pre-gated by isBananaEligible).
+                return false;
+        }
+    }
+
+    /**
+     * True if the player can skip the given pending effect via the
+     * client-side "Skip" button. Forced/penalty effects (discard_cards)
+     * are not skippable; choice effects are.
+     */
+    private function isEffectSkippable(array $effect): bool
+    {
+        return in_array($effect['type'], [
+            'level_up',
+            'level_up_family',
+            'level_up_matching_adult',
+            'gain_weather',
+        ], true);
+    }
+
+    /**
      * True if the player has at least one Adult (Treevolved) Plant of the
      * given family in a planter below max level (i.e., growable).
      */
@@ -535,7 +643,20 @@ class PlantingPhase extends GameState
                 array_shift($queue);
             }
             else {
-                // Interactive effect, pause
+                // Normally an interactive effect — but if it has no valid
+                // resolution in the current state (e.g., a level_up with no
+                // plant to target), silently pop it instead of trapping the
+                // player on an unfulfillable prompt. See
+                // https://trello.com/c/qcAmX7KC.
+                if ($this->isInteractiveEffectMoot($playerId, $effect)) {
+                    $this->bga->notify->all("message", clienttranslate('${player_name} skipped the ${effect_name} effect (no valid target).'), [
+                        "player_id" => $playerId,
+                        "player_name" => $this->game->getPlayerNameById($playerId),
+                        "effect_name" => $effect['type'],
+                    ]);
+                    array_shift($queue);
+                    continue;
+                }
                 break;
             }
         }
@@ -986,6 +1107,39 @@ class PlantingPhase extends GameState
         array_shift($queue);
         $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "' WHERE player_id = $playerId");
         $this->markPlayerDone($playerId);
+    }
+
+    /**
+     * Skip the current pending interactive effect. Used by the "Skip"
+     * button surfaced on level_up / level_up_family / level_up_matching_adult
+     * / gain_weather prompts. Forced effects (discard_cards) are not
+     * skippable. See https://trello.com/c/qcAmX7KC.
+     */
+    #[PossibleAction]
+    public function actSkipPendingEffect()
+    {
+        $playerId = (int)$this->game->getCurrentPlayerId();
+        $this->checkActionAllowed($playerId);
+
+        $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
+        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        if (count($queue) === 0) {
+            throw new UserException(clienttranslate("There is no pending effect to skip."));
+        }
+        $effect = $queue[0];
+        if (!$this->isEffectSkippable($effect)) {
+            throw new UserException(clienttranslate("This effect cannot be skipped."));
+        }
+
+        $this->bga->notify->all("message", clienttranslate('${player_name} skipped the ${effect_name} effect.'), [
+            "player_id" => $playerId,
+            "player_name" => $this->game->getPlayerNameById($playerId),
+            "effect_name" => $effect['type'],
+        ]);
+
+        array_shift($queue);
+        $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "' WHERE player_id = $playerId");
+        $this->processPendingEffects($playerId);
     }
 
     function zombie(int $playerId) {
