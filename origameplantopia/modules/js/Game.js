@@ -175,24 +175,29 @@ class PlantingPhase {
             this.bga.statusBar.addActionButton(_('Draw 5 (Keep 2)'), () => this.startAction('draw5'), { color: 'blue' });
         } else if (this.selectedAction === 'plant') {
             this.bga.statusBar.addActionButton(_('Cancel'), () => { this.resetSelection(); this.updateStatusBar(); }, { color: 'gray' });
-            
+
             if (!this.selectedCardToPlant) {
                 this.bga.statusBar.setTitle(_('Select a plant card from your hand to plant'));
                 this.highlightHandCardsForSelection(id => {
                     this.selectedCardToPlant = id;
                     this.updateStatusBar();
                 });
-            } else if (!this.selectedPlanter) {
-                this.bga.statusBar.setTitle(_('Select an empty planter in your garden'));
-                this.highlightEmptyPlanters(id => {
-                    this.selectedPlanter = id;
-                    this.updateStatusBar();
-                });
             } else {
                 const cardInfo = this.game.gamedatas.plantCardTypes[this.game.gamedatas.hand[this.selectedCardToPlant].type];
                 const cost = cardInfo.cost;
-                
+
                 if (this.isBaby(cardInfo.plant_type)) {
+                    // Auto-pick an empty planter for Baby plants. No interactive
+                    // planter step — the planter is just a container slot, and
+                    // forcing a click on it was annoying when only one was free
+                    // (see https://trello.com/c/PJf350MF).
+                    if (!this.selectedPlanter) {
+                        this.selectedPlanter = this.findOpenPlanter();
+                        if (!this.selectedPlanter) {
+                            this.bga.statusBar.setTitle(_('No empty planter available — cancel and choose a different action'));
+                            return;
+                        }
+                    }
                     if (this.selectedPaymentCards.length < cost) {
                         this.bga.statusBar.setTitle(_('Select ${cost} more card(s) to discard as cost').replace('${cost}', cost - this.selectedPaymentCards.length));
                         this.highlightHandCardsForCost(id => {
@@ -213,6 +218,21 @@ class PlantingPhase {
                             this.updateStatusBar();
                         }, cardInfo);
                     } else {
+                        // Auto-pick the planter for the new Treevolved plant.
+                        // Prefer the planter being vacated by the sacrifice
+                        // (most natural — "this plant evolves in place"), and
+                        // fall back to any other empty planter if the sacrifice
+                        // was from garden_level3.
+                        if (!this.selectedPlanter) {
+                            const sacrificedId = this.selectedPaymentCards[0];
+                            const sacrificed = (this.game.gamedatas.plantsOnPlanters || {})[sacrificedId];
+                            const preferPlanterId = sacrificed ? sacrificed.location_arg : null;
+                            this.selectedPlanter = this.findOpenPlanter(preferPlanterId);
+                            if (!this.selectedPlanter) {
+                                this.bga.statusBar.setTitle(_('No empty planter available — cancel and choose a different action'));
+                                return;
+                            }
+                        }
                         this.confirmPlant();
                     }
                 }
@@ -268,23 +288,24 @@ class PlantingPhase {
         });
     }
 
-    highlightEmptyPlanters(callback) {
-        this.cleanupUI();
+    /**
+     * Return the id of an empty planter belonging to the current player,
+     * or null if none are available. If preferPlanterId is one of the
+     * player's planters, it's treated as empty (used for Treevolved
+     * sacrifice — the planter the sacrificed plant is on becomes free).
+     */
+    findOpenPlanter(preferPlanterId = null) {
         const pId = this.bga.players.getCurrentPlayerId();
         const planters = Object.values(this.game.gamedatas.planters).filter(p => p.location_arg == pId);
-        
-        planters.forEach(p => {
-            // Check if empty
-            const plantsOnIt = Object.values(this.game.gamedatas.plantsOnPlanters || {}).filter(pl => pl.location_arg == p.id);
-            if (plantsOnIt.length === 0) {
-                const el = document.getElementById(`planter_${p.id}`);
-                if (el) {
-                    el.classList.add('bga-cards_selectable-card');
-                    el.style.boxShadow = '0 0 10px #f1c40f';
-                    el.onclick = () => callback(p.id);
-                }
-            }
-        });
+        const isOccupied = id => Object.values(this.game.gamedatas.plantsOnPlanters || {})
+            .some(pl => pl.location_arg == id);
+
+        if (preferPlanterId != null) {
+            const preferred = planters.find(p => p.id == preferPlanterId);
+            if (preferred) return preferred.id;
+        }
+        const empty = planters.find(p => !isOccupied(p.id));
+        return empty ? empty.id : null;
     }
 
     highlightHandCardsForCost(callback) {
