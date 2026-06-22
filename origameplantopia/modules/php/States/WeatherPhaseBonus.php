@@ -52,22 +52,26 @@ class WeatherPhaseBonus extends GameState
         $cardIds = $cardIds === '' ? [] : array_map('intval', explode(';', $cardIds));
         
         foreach ($cardIds as $cardId) {
-            // Check card is in hand and is a bonus card
+            // Card must be in the player's public bonus stash (per
+            // https://trello.com/c/B5g3UmED — bonus weather is publicly held,
+            // not in hand, until played).
             $card = $this->game->weatherCards->getCard($cardId);
-            if ($card['location'] !== 'hand' || (int)$card['location_arg'] !== $playerId) {
-                throw new UserException(clienttranslate("You do not have this card in your hand."));
+            if ($card['location'] !== 'weather_public_bonus' || (int)$card['location_arg'] !== $playerId) {
+                throw new UserException(clienttranslate("You do not have this Bonus Weather card."));
             }
             if ($card['type'] !== 'bonus') {
                 throw new UserException(clienttranslate("You can only play bonus weather cards now."));
             }
 
-            // Play the card (move to weather_public_bonus with location_arg = player_id)
-            $this->game->weatherCards->moveCard($cardId, 'weather_public_bonus', $playerId);
+            // Play the card: move from the public stash to the round's "played"
+            // pool. WeatherPhaseGrow reads from weather_played_bonus for growth
+            // contributions and dumps the pool back to bonus_deck at end of phase.
+            $this->game->weatherCards->moveCard($cardId, 'weather_played_bonus', $playerId);
 
             $this->bga->notify->player($playerId, "bonusWeatherPlayed", '', [
                 "card" => $card
             ]);
-            
+
             $this->bga->notify->all("playerPlayedBonus", clienttranslate('${player_name} played a bonus weather card.'), [
                 "player_id" => $playerId,
                 "player_name" => $this->game->getPlayerNameById($playerId),

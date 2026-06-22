@@ -627,11 +627,17 @@ class PlantingPhase extends GameState
                 $cards = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', $effect['weather_type'], 'bonus_deck');
                 if (count($cards) > 0) {
                     $card = array_values($cards)[0];
-                    $this->game->weatherCards->moveCard($card['id'], 'hand', $playerId);
+                    // Bonus weather cards live publicly in 'weather_public_bonus'
+                    // (per https://trello.com/c/B5g3UmED — held visibly per player
+                    // until played, returned to the supply when played). Was 'hand'
+                    // pre-refactor.
+                    $this->game->weatherCards->moveCard($card['id'], 'weather_public_bonus', $playerId);
+                    $card = $this->game->weatherCards->getCard($card['id']);
                     $this->bga->notify->player($playerId, "weatherCardsDrawn", '', ["cards" => [$card]]);
                     $this->bga->notify->all("playerGainedWeather", clienttranslate('${player_name} gained a Bonus ${weather_name} Card.'), [
                         "player_id" => $playerId,
-                        "weather_name" => ucfirst($effect['weather_type'])
+                        "weather_name" => ucfirst($effect['weather_type']),
+                        "card" => $card, // bonus weather card is publicly held — broadcast it
                     ]);
                 } else {
                     $market = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
@@ -747,10 +753,13 @@ class PlantingPhase extends GameState
             throw new UserException(clienttranslate("This weather card is not available."));
         }
 
-        $this->game->weatherCards->moveCard($cardId, 'hand', $playerId);
+        // Bonus weather is held publicly per player (https://trello.com/c/B5g3UmED).
+        $this->game->weatherCards->moveCard($cardId, 'weather_public_bonus', $playerId);
+        $card = $this->game->weatherCards->getCard($cardId);
         $this->bga->notify->player($playerId, "weatherCardsDrawn", '', ["cards" => [$card]]);
         $this->bga->notify->all("playerGainedWeather", clienttranslate('${player_name} gained a Bonus Weather Card.'), [
             "player_id" => $playerId,
+            "card" => $card,
         ]);
 
         $queue[0]['qty']--;

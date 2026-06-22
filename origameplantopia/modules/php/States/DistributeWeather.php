@@ -43,10 +43,13 @@ class DistributeWeather extends GameState
             $this->game->weatherCards->moveCards($cardsToMove, 'hand', $pId);
 
             // Special Mushroom ability: Also give them 1 Bonus Weather Card of each type.
+            // Bonus weather lives publicly in weather_public_bonus per
+            // https://trello.com/c/B5g3UmED.
+            $mushroomBonusCards = [];
             if ($characterType === 'mushroom') {
                 $bonusCards = [];
                 $weatherDeckAfter = $this->game->weatherCards->getCardsInLocation('bonus_deck');
-                
+
                 // Track which conditions we've already given to ensure 1 of each (0, 1, 2)
                 $foundConditions = [];
                 foreach ($weatherDeckAfter as $wCard) {
@@ -58,7 +61,10 @@ class DistributeWeather extends GameState
                         }
                     }
                 }
-                $this->game->weatherCards->moveCards($bonusCards, 'hand', $pId);
+                $this->game->weatherCards->moveCards($bonusCards, 'weather_public_bonus', $pId);
+                foreach ($bonusCards as $bid) {
+                    $mushroomBonusCards[] = $this->game->weatherCards->getCard((int)$bid);
+                }
             }
 
             // Send notification to the player
@@ -66,13 +72,14 @@ class DistributeWeather extends GameState
             $this->bga->notify->player($pId, "receivedWeatherCards", '', [
                 "cards" => $newHand
             ]);
-            
+
             $bonusMarket = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
 
             $this->bga->notify->all("playerReceivedWeather", clienttranslate('${player_name} received their Character Weather cards.'), [
                 "player_id" => $pId,
                 "player_name" => $this->game->getPlayerNameById($pId),
                 "bonusMarket" => $bonusMarket,
+                "bonusCards" => $mushroomBonusCards, // publicly added to weather_public_bonus
             ]);
         }
 

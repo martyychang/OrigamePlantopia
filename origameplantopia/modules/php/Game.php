@@ -180,6 +180,10 @@ class Game extends \Bga\GameFramework\Table
         $result['weatherChosen'] = $this->weatherCards->getCardsInLocation('weather_chosen', $currentPlayerId);
         $result['weatherPublic'] = $this->weatherCards->getCardsInLocation('weather_public');
         $result['weatherPublicBonus'] = $this->weatherCards->getCardsInLocation('weather_public_bonus');
+        // Bonus weather cards a player has *played* this round. Read by
+        // WeatherPhaseGrow for growth contribution and cleared back to
+        // bonus_deck at end of phase. See https://trello.com/c/B5g3UmED.
+        $result['weatherPlayedBonus'] = $this->weatherCards->getCardsInLocation('weather_played_bonus');
 
         // Draft cards (if drafting)
         $result['draftCards'] = $this->plantCards->getCardsInLocation('draft', $currentPlayerId);

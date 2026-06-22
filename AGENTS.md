@@ -547,6 +547,29 @@ When an end-game condition can be triggered mid-round (e.g., a player achieves a
 
 ---
 
+## Bonus Weather Card Locations
+
+Bonus Weather cards have three legal locations and the lifecycle is strict
+(see https://trello.com/c/B5g3UmED). Treat this as the canonical model:
+
+| Location | Meaning | Visibility |
+| --- | --- | --- |
+| `bonus_deck` | Supply pool. Cards are dealt out from here. | Public (count + identity). |
+| `weather_public_bonus` (`location_arg = player_id`) | **Held publicly by a player.** Persists across rounds until the player chooses to play it. | Public. Every player sees every other player's held bonus weather. |
+| `weather_played_bonus` (`location_arg = player_id`) | Played by the player THIS round. Counted toward growth in `WeatherPhaseGrow`, then returned to `bonus_deck`. | Public for the duration of the round. |
+
+Rules:
+
+- **Never** put a Bonus Weather card into `hand`. Bonus weather is public — hand is private.
+- All gain paths (Mushroom claim, plant `gain_weather` effects, `actResolveGainWeather`) target `weather_public_bonus`.
+- `actPlayBonusWeather` validates the card is in `weather_public_bonus` for the calling player, then moves it to `weather_played_bonus`.
+- `WeatherPhaseGrow` reads `weather_played_bonus` for the round's contribution and clears it back to `bonus_deck`. **It does NOT touch `weather_public_bonus`** — held cards persist.
+- The end-of-phase `weatherCleared` notification carries the updated `weatherPublicBonus` snapshot so clients re-sync.
+- Public gain notifications (`playerGainedWeather`, `playerReceivedWeather`) carry the gained card payload so every client can render the new tile, not just the recipient. Bonus weather card identity is not hidden information.
+- The client's `computePlayerStats` counts `weather_public_bonus` only (the *held* count). Cards in `weather_played_bonus` are intentionally excluded because the displayed count should decrement when a card is played.
+
+---
+
 ## Shared Component Synchronization & UI State Persistence
 
 When a backend state transition changes a global shared UI component (like removing cards from a public deck), you must explicitly transmit the updated state of that shared component to all clients via `notify->all`. BGA does not automatically sync physical deck locations dynamically if the frontend is unaware.

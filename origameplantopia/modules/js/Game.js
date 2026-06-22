@@ -685,14 +685,12 @@ class WeatherPhaseBonus {
             return;
         }
 
-        // Find if they have any bonus weather cards
-        const hand = this.game.gamedatas.weatherHand;
-        let hasBonus = false;
-        if (hand) {
-            Object.values(hand).forEach(c => {
-                if (c.type === 'bonus') hasBonus = true;
-            });
-        }
+        // Bonus weather cards are now held in weather_public_bonus (publicly
+        // visible per player) instead of the player's private weather hand.
+        // See https://trello.com/c/B5g3UmED.
+        const myHeld = Object.values(this.game.gamedatas.weatherPublicBonus || {})
+            .filter(c => c.type === 'bonus' && c.location_arg == pId);
+        const hasBonus = myHeld.length > 0;
 
         if (this.selectingBonus) {
             this.selectedBonusCards = this.selectedBonusCards || [];
@@ -716,34 +714,30 @@ class WeatherPhaseBonus {
                 }, { color: 'red' });
             }
 
-            // Highlight bonus weather cards
-            if (hand) {
-                Object.values(hand).forEach(c => {
-                    if (c.type === 'bonus') {
-                        const el = document.getElementById(`weather_${c.id}`);
-                        if (el) {
-                            el.classList.add('bga-cards_selectable-card');
-                            
-                            if (this.selectedBonusCards.includes(c.id)) {
-                                el.style.boxShadow = '0 0 10px #2ecc71';
-                                el.style.border = '2px solid #2ecc71';
-                            } else {
-                                el.style.boxShadow = '0 0 10px #f1c40f';
-                                el.style.border = '';
-                            }
+            // Highlight bonus weather cards in the player's public stash.
+            myHeld.forEach(c => {
+                const el = document.getElementById(`weather_${c.id}`);
+                if (el) {
+                    el.classList.add('bga-cards_selectable-card');
 
-                            el.onclick = () => {
-                                if (this.selectedBonusCards.includes(c.id)) {
-                                    this.selectedBonusCards = this.selectedBonusCards.filter(id => id !== c.id);
-                                } else {
-                                    this.selectedBonusCards.push(c.id);
-                                }
-                                this.onPlayerActivationChange(args, true);
-                            };
-                        }
+                    if (this.selectedBonusCards.includes(c.id)) {
+                        el.style.boxShadow = '0 0 10px #2ecc71';
+                        el.style.border = '2px solid #2ecc71';
+                    } else {
+                        el.style.boxShadow = '0 0 10px #f1c40f';
+                        el.style.border = '';
                     }
-                });
-            }
+
+                    el.onclick = () => {
+                        if (this.selectedBonusCards.includes(c.id)) {
+                            this.selectedBonusCards = this.selectedBonusCards.filter(id => id !== c.id);
+                        } else {
+                            this.selectedBonusCards.push(c.id);
+                        }
+                        this.onPlayerActivationChange(args, true);
+                    };
+                }
+            });
         } else {
             if (hasBonus) {
                 this.bga.statusBar.setTitle(_('${you} may play Bonus Weather cards or proceed to Grow Plants'));
@@ -1086,23 +1080,16 @@ export class Game {
             if (card.location_arg == playerId) bumpPlant(card);
         });
 
-        // Bonus weather: count public bonus stash (visible) for every player,
-        // plus the current player's hand-held bonus (private). Other players'
-        // hand-held bonus counts aren't exposed by the server today; flagged
-        // for a follow-up if Marty wants them surfaced.
+        // Bonus weather is publicly held in weather_public_bonus for every
+        // player (per https://trello.com/c/B5g3UmED — held counts are
+        // visible to everyone, decrement on play). Played-this-round cards
+        // live in weather_played_bonus and are NOT counted toward "held".
         const COND = { 0: 'sun', 1: 'rain', 2: 'wind' };
         Object.values(this.gamedatas.weatherPublicBonus || {}).forEach(card => {
             if (card.location_arg != playerId) return;
             const c = COND[card.type_arg];
             if (c) stats.bonusWeather[c]++;
         });
-        if (playerId == this.bga.players.getCurrentPlayerId()) {
-            Object.values(this.gamedatas.weatherHand || {}).forEach(card => {
-                if (card.type !== 'bonus') return;
-                const c = COND[card.type_arg];
-                if (c) stats.bonusWeather[c]++;
-            });
-        }
         return stats;
     }
 
@@ -1442,34 +1429,25 @@ export class Game {
     async notif_playerPlayedBonus(args) {
         console.log("notif_playerPlayedBonus", args);
         const card = args.card;
-        
-        // Remove from hand if it's our hand
-        if (args.player_id == this.bga.players.getCurrentPlayerId()) {
-            if (this.gamedatas.weatherHand && this.gamedatas.weatherHand[card.id]) {
-                delete this.gamedatas.weatherHand[card.id];
-                this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
-            }
-        }
-        
-        // Update data state
-        if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
-        this.gamedatas.weatherPublicBonus[card.id] = card;
 
-        // Add to player's garden visually
-        const garden = document.getElementById(`player-garden-${args.player_id}`);
-        if (garden) {
-            let cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
-            const body = this.weatherCardBody(card, cardInfo);
-            garden.insertAdjacentHTML('beforeend', `
-                <div id="weather_${card.id}" class="weather-card bonus-weather ${body.extraClass}" ${body.dataAttr} style="position: relative; width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background-color: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
-                    ${body.inner}
-                </div>
-            `);
-            const newCard = document.getElementById(`weather_${card.id}`);
-            if (newCard) {
-                newCard.addEventListener('mouseenter', () => newCard.style.transform = 'translateY(-10px)');
-                newCard.addEventListener('mouseleave', () => newCard.style.transform = 'translateY(0)');
-            }
+        // Per https://trello.com/c/B5g3UmED: playing a Bonus Weather card
+        // moves it out of the player's public held stash and into the
+        // round's played pool. The visible held count goes DOWN by 1 for
+        // every player. The DOM tile is moved to a "played" tray
+        // (styled slightly to distinguish from held) instead of being
+        // removed entirely.
+        if (this.gamedatas.weatherPublicBonus) {
+            delete this.gamedatas.weatherPublicBonus[card.id];
+        }
+        if (!this.gamedatas.weatherPlayedBonus) this.gamedatas.weatherPlayedBonus = {};
+        this.gamedatas.weatherPlayedBonus[card.id] = card;
+
+        const oldTile = document.getElementById(`weather_${card.id}`);
+        if (oldTile) {
+            oldTile.classList.add('bonus-weather-played');
+            oldTile.style.opacity = '0.7';
+            oldTile.style.filter = 'grayscale(40%)';
+            oldTile.style.transform = 'rotate(-4deg)';
         }
         this.refreshAllPlayerPanels();
 
@@ -1531,11 +1509,54 @@ export class Game {
         if (!this.gamedatas.weatherHand) {
             this.gamedatas.weatherHand = {};
         }
-        // Merge new weather cards
+        // Only character weather cards live in the private weatherHand.
+        // Bonus weather cards (card.type === 'bonus') are publicly held in
+        // weather_public_bonus and arrive via notif_playerGainedWeather or
+        // notif_playerReceivedWeather. See https://trello.com/c/B5g3UmED.
         Object.values(args.cards).forEach(c => {
-            this.gamedatas.weatherHand[c.id] = c;
+            if (c.type !== 'bonus') {
+                this.gamedatas.weatherHand[c.id] = c;
+            }
         });
         this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
+        this.refreshAllPlayerPanels();
+    }
+
+    async notif_weatherCardsDrawn(args) {
+        // Private notif when a plant effect grants the player a Bonus
+        // Weather card. The card is publicly held — the visual update is
+        // handled by notif_playerGainedWeather; this handler just keeps
+        // the panel in sync if it arrives independently.
+        this.refreshAllPlayerPanels();
+    }
+
+    async notif_playerGainedWeather(args) {
+        // Public broadcast when any player gains a Bonus Weather card from
+        // a plant effect. The card data is included so every client can add
+        // it to weatherPublicBonus and render it in that player's garden.
+        // See https://trello.com/c/B5g3UmED.
+        const card = args && args.card;
+        if (!card) {
+            this.refreshAllPlayerPanels();
+            return;
+        }
+        if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
+        this.gamedatas.weatherPublicBonus[card.id] = card;
+
+        const garden = document.getElementById(`player-garden-${args.player_id}`);
+        if (garden && !document.getElementById(`weather_${card.id}`)) {
+            let cardInfo = { name: 'Unknown' };
+            if (this.gamedatas.weatherCardTypes[card.type]
+                && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
+                cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
+            }
+            const body = this.weatherCardBody(card, cardInfo);
+            garden.insertAdjacentHTML('beforeend', `
+                <div id="weather_${card.id}" class="weather-card bonus-weather ${body.extraClass}" ${body.dataAttr} style="position: relative; width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background-color: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                    ${body.inner}
+                </div>
+            `);
+        }
         this.refreshAllPlayerPanels();
     }
 
@@ -1543,6 +1564,30 @@ export class Game {
         if (args.bonusMarket) {
             this.gamedatas.bonusWeatherMarket = args.bonusMarket;
             this.renderBonusWeatherMarket(this.gamedatas.bonusWeatherMarket, 'bonus-weather-container');
+        }
+        // Mushroom's distribute-time bonus cards arrive publicly here so every
+        // player can see them. Render them into the recipient's garden and
+        // refresh the panels. See https://trello.com/c/B5g3UmED.
+        const bonusCards = args.bonusCards || [];
+        if (bonusCards.length > 0) {
+            if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
+            const garden = document.getElementById(`player-garden-${args.player_id}`);
+            bonusCards.forEach(card => {
+                this.gamedatas.weatherPublicBonus[card.id] = card;
+                if (!garden || document.getElementById(`weather_${card.id}`)) return;
+                let cardInfo = { name: 'Unknown' };
+                if (this.gamedatas.weatherCardTypes[card.type]
+                    && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
+                    cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
+                }
+                const body = this.weatherCardBody(card, cardInfo);
+                garden.insertAdjacentHTML('beforeend', `
+                    <div id="weather_${card.id}" class="weather-card bonus-weather ${body.extraClass}" ${body.dataAttr} style="position: relative; width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background-color: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                        ${body.inner}
+                    </div>
+                `);
+            });
+            this.refreshAllPlayerPanels();
         }
     }
     
@@ -1556,16 +1601,35 @@ export class Game {
 
     async notif_weatherCleared(args) {
         this.gamedatas.weatherPublic = {};
-        this.gamedatas.weatherPublicBonus = {};
         this.renderPublicWeather(this.gamedatas.weatherPublic);
-        
-        // Remove bonus weather cards from gardens
-        document.querySelectorAll('.weather-card.bonus-weather').forEach(el => el.remove());
+
+        // Per https://trello.com/c/B5g3UmED: end-of-phase cleanup clears only
+        // the played-this-round pool. Held bonus weather (weather_public_bonus)
+        // persists across rounds. The server can authoritatively send the new
+        // held state via args.weatherPublicBonus to keep clients in sync.
+        const playedIds = new Set(Object.keys(this.gamedatas.weatherPlayedBonus || {}));
+        this.gamedatas.weatherPlayedBonus = {};
+
+        if (args.weatherPublicBonus !== undefined) {
+            this.gamedatas.weatherPublicBonus = args.weatherPublicBonus || {};
+        }
+
+        // Tear down DOM tiles for cards no longer in either local pool, then
+        // re-sync the visual state from the new authoritative gamedatas.
+        playedIds.forEach(id => {
+            const el = document.getElementById(`weather_${id}`);
+            if (el) el.remove();
+        });
+        document.querySelectorAll('.weather-card.bonus-weather').forEach(el => {
+            const id = el.id.replace('weather_', '');
+            if (!this.gamedatas.weatherPublicBonus[id]) el.remove();
+        });
 
         if (args.bonusMarket) {
             this.gamedatas.bonusWeatherMarket = args.bonusMarket;
             this.renderBonusWeatherMarket(args.bonusMarket, 'bonus-weather-container');
         }
+        this.refreshAllPlayerPanels();
     }
 
     async notif_weatherChosen(args) {

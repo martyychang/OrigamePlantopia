@@ -33,8 +33,11 @@ class WeatherPhaseGrow extends GameState
 
         // 2. Process growth for each player
         foreach ($players as $pId => $pInfo) {
-            // Player's bonus weather
-            $bonusCards = $this->game->weatherCards->getCardsInLocation('weather_public_bonus', $pId);
+            // Bonus weather contribution = only cards the player PLAYED this
+            // round (weather_played_bonus). Cards in weather_public_bonus are
+            // HELD across rounds and don't count toward growth on their own.
+            // See https://trello.com/c/B5g3UmED.
+            $bonusCards = $this->game->weatherCards->getCardsInLocation('weather_played_bonus', $pId);
             $playerConditions = $baseConditions;
             foreach ($bonusCards as $c) {
                 $playerConditions[(int)$c['type_arg']]++;
@@ -117,12 +120,17 @@ class WeatherPhaseGrow extends GameState
         
         // 3. Clean up
         $this->game->weatherCards->moveAllCardsInLocation('weather_public', 'discard');
-        // Bonus cards go back to supply/deck
-        $this->game->weatherCards->moveAllCardsInLocation('weather_public_bonus', 'bonus_deck'); 
+        // Bonus cards that were PLAYED this round return to the supply (per
+        // rulebook: "Bonus Weather Cards only affect the player who played
+        // them, and once played they return to the stock"). Held cards in
+        // weather_public_bonus persist into the next round.
+        $this->game->weatherCards->moveAllCardsInLocation('weather_played_bonus', 'bonus_deck');
 
         $bonusMarket = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
+        $weatherPublicBonus = $this->game->weatherCards->getCardsInLocation('weather_public_bonus');
         $this->bga->notify->all("weatherCleared", '', [
-            "bonusMarket" => $bonusMarket
+            "bonusMarket" => $bonusMarket,
+            "weatherPublicBonus" => $weatherPublicBonus,
         ]);
 
         // 4. Check for endgame
