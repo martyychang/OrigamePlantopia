@@ -369,42 +369,6 @@ class PlantingPhase {
         return ['baby_cactus', 'baby_flower', 'baby_tree'].includes(plantType);
     }
 
-    isAdult(plantType) {
-        return ['trv_cactus', 'trv_flower', 'trv_tree'].includes(plantType);
-    }
-
-    /**
-     * HTML for the visible inside of a plant card. For Adult (Treevolved)
-     * plants we render the sprite image via the plantopia-adult-card class
-     * and a data-card-type attribute; baby plants keep the text rendering
-     * until per-baby art is delivered. cardKey is the canonical card_type
-     * column value (e.g. "Geometree") — NOT the translated cardInfo.name,
-     * since the CSS sprite is keyed by the untranslated card identity.
-     * levelLabel is an optional in-card indicator (e.g. "Level: 2") for
-     * the planter view. See https://trello.com/c/XynmHHxj.
-     */
-    plantCardBody(cardKey, cardInfo, { showCost = false, levelLabel = null } = {}) {
-        if (this.isAdult(cardInfo.plant_type)) {
-            const badge = levelLabel
-                ? `<div class="plant-level-indicator" style="position: absolute; bottom: 4px; right: 4px; background: rgba(255,255,255,0.88); color: #27ae60; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">${levelLabel}</div>`
-                : '';
-            return {
-                extraClass: 'plantopia-adult-card',
-                dataAttr: `data-card-type="${String(cardKey).replace(/"/g, '&quot;')}"`,
-                inner: badge,
-            };
-        }
-        const nameLine = `<strong style="color: #27ae60; font-size: 1.0em;">${cardInfo.name}</strong>`;
-        const detail = levelLabel
-            ? `<div class="plant-level-indicator" style="margin-top: 5px; font-size: 0.8em; color: #7f8c8d; font-weight: bold;">${levelLabel}</div>`
-            : (showCost ? `<div style="margin-top: 10px; font-size: 0.8em; color: #7f8c8d;">${cardInfo.cost ? 'Cost: ' + cardInfo.cost : ''}</div>` : '');
-        return {
-            extraClass: '',
-            dataAttr: '',
-            inner: `${nameLine}${detail}`,
-        };
-    }
-
     /**
      * Surface a "Skip" button on the current pending-effect prompt so the
      * player can bail out of a planting effect they don't want to resolve.
@@ -1065,6 +1029,42 @@ export class Game {
                 </div>
             `);
         });
+    }
+
+    isAdult(plantType) {
+        return ['trv_cactus', 'trv_flower', 'trv_tree'].includes(plantType);
+    }
+
+    /**
+     * HTML for the visible inside of a plant card. For Adult (Treevolved)
+     * plants we render the sprite image via the plantopia-adult-card class
+     * and a data-card-type attribute; baby plants keep the text rendering
+     * until per-baby art is delivered. cardKey is the canonical card_type
+     * column value (e.g. "Geometree") — NOT the translated cardInfo.name,
+     * since the CSS sprite is keyed by the untranslated card identity.
+     * levelLabel is an optional in-card indicator (e.g. "Level: 2") for
+     * the planter view. See https://trello.com/c/XynmHHxj.
+     */
+    plantCardBody(cardKey, cardInfo, { showCost = false, levelLabel = null } = {}) {
+        if (this.isAdult(cardInfo.plant_type)) {
+            const badge = levelLabel
+                ? `<div class="plant-level-indicator" style="position: absolute; bottom: 4px; right: 4px; background: rgba(255,255,255,0.88); color: #27ae60; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">${levelLabel}</div>`
+                : '';
+            return {
+                extraClass: 'plantopia-adult-card',
+                dataAttr: `data-card-type="${String(cardKey).replace(/"/g, '&quot;')}"`,
+                inner: badge,
+            };
+        }
+        const nameLine = `<strong style="color: #27ae60; font-size: 1.0em;">${cardInfo.name}</strong>`;
+        const detail = levelLabel
+            ? `<div class="plant-level-indicator" style="margin-top: 5px; font-size: 0.8em; color: #7f8c8d; font-weight: bold;">${levelLabel}</div>`
+            : (showCost ? `<div style="margin-top: 10px; font-size: 0.8em; color: #7f8c8d;">${cardInfo.cost ? 'Cost: ' + cardInfo.cost : ''}</div>` : '');
+        return {
+            extraClass: '',
+            dataAttr: '',
+            inner: `${nameLine}${detail}`,
+        };
     }
 
     renderHand(handData, weatherHandData) {
