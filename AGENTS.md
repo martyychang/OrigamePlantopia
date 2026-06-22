@@ -152,6 +152,12 @@ class MyState extends GameState {
   - `setup(gamedatas)`: Build UI from server data, set up notifications
   - `setupNotifications()`: Register notification handlers
 
+**Class scoping gotcha**: `Game.js` declares the outer `Game` class _and_ several inner state-handler classes (`SetupDecisions`, `PlantingPhase`, `WeatherPhaseChoose`, etc.) in the same file. They share lexical scope but **not `this`**:
+- Inside `Game` methods (`setup`, `renderHand`, `renderPlantInPlanter`, `notif_*`), `this` is the Game instance — use `this.gamedatas`, `this.plantingPhase`, `this.bga`. There is no `this.game`.
+- Inside an inner state class (`PlantingPhase.onEnteringState`, `updateStatusBar`, etc.), `this` is the state instance — use `this.game.gamedatas`, `this.game.helperFn`, `this.bga`.
+- Helpers must live on the class whose methods call them. If `renderHand` (on Game) calls `this.plantCardBody(...)`, that helper must be defined on `Game`, not on `PlantingPhase`. Misplacing it surfaces as `"this.X is not a function"` at game load.
+- Notification handlers (`notif_*`) all live on `Game`. To trigger a state re-render from one, delegate explicitly: `this.plantingPhase.onEnteringState(null, true)`.
+
 #### Player Panels & Custom Counters
 - Standard BGA framework updates player scores via `bga.playerPanels.getScoreCounter(playerId).toValue(newScore)`.
 - To display custom counters (e.g., Energy or Hand count), inject HTML directly into `this.bga.playerPanels.getElement(playerId)` during `setup()`, and hook it up using the legacy `ebg.counter()` component.
@@ -225,6 +231,10 @@ async notif_notifName(args) {
     // Animate or update UI
 }
 ```
+
+**Notification name matching is exact.** `setupPromiseNotifications` auto-subscribes every `notif_X` method to the notification named exactly `X` — no fuzzy match, no plural/singular fallback. If the PHP sends `"keptCards"` and the JS handler is `notif_keptCard` (singular), the handler is silently never invoked and the client never re-renders. When renaming a notification on either side, **rename both**, and grep both files for the old name before committing.
+
+**Payload shape changes need the same audit.** If the server payload changes (e.g., `{card: …}` → `{cards: […]}`), grep every `notif_*` handler that reads it. Mismatches produce `args.card.id` → `undefined.id` errors that may or may not be caught depending on whether the path is actually exercised.
 
 ---
 
@@ -371,6 +381,19 @@ The BGA `Deck` component has strict method signatures. Using the wrong number of
 
 Both methods return an array of the picked cards, which is safe to check with `count()` or merge. If you need to manually handle deck reshuffling, verify the count of drawn cards against the requested amount before attempting to draw the remainder.
 
+**`$card['type']` is the card_type column, NOT a plant_type constant.** BGA's Deck library returns the `card_type` column value (e.g. `'Cattus'`, `'Geometree'`) in the `type` field of every card array — that's the human-readable card NAME, not the typed family constant like `'baby_cactus'` or `'trv_tree'`. Any helper that compares against family constants (`PlantCards::isBaby`, `PlantCards::isTreevolved`, `getFamily`) must either be passed the `plant_type` field (looked up via `Game::$PLANT_CARD_TYPES[$card['type']]['plant_type']`) **or** be implemented to accept both forms. The "accepts both" pattern is preferred because it makes every existing call site (which passes `$card['type']` directly) silently correct:
+```php
+public static function resolvePlantType(string $input): ?string {
+    if (in_array($input, self::ALL_TYPES, true)) return $input;
+    return self::getTypes()[$input]['plant_type'] ?? null;
+}
+public static function isBaby(string $cardOrType): bool {
+    $pt = self::resolvePlantType($cardOrType);
+    return $pt !== null && in_array($pt, [self::BABY_CACTUS, ...], true);
+}
+```
+Symptom of getting this wrong: cost-validation branches silently skipped, character abilities never firing, eligibility checks returning `false` despite valid game state — all because `in_array('Cattus', ['baby_cactus', ...])` is always `false`.
+
 ### Deck Construction and Locations
 
 When constructing decks during `setupNewGame`, do not place sub-types of cards (like "bonus" cards or tokens) into the standard `'deck'` location if they should not be randomly drawn with the rest of the deck. Standard deck operations (like `shuffle('deck')` or `pickCardsForLocation(..., 'deck', ...)`) operate blindly on all cards in that location, which can inadvertently draw unwanted sub-types.
@@ -436,6 +459,9 @@ When a single action (like planting a card) triggers a chain of multiple effects
 3. **Process Loop:** Create a single method (e.g., `processPendingEffects()`) that loads the queue and processes non-interactive effects in a `while` loop. 
 4. **Pause for Input:** When an interactive effect is reached (like `draft_cards` or `discard_cards`), `break` out of the loop, set the player's status (e.g., `player_planting_status = 3`), and fire a notification with the current queue to instruct the frontend to render the appropriate UI prompt.
 5. **Resolve and Resume:** The frontend calls a corresponding `actResolve*` method (e.g., `actResolveDraft`) which handles the user's input, removes the effect from the front of the queue (`array_shift`), saves the queue, and immediately calls `processPendingEffects()` to resume the chain.
+6. **Moot-effect short-circuit:** Before pausing for an interactive effect, check whether the current game state can actually satisfy it. Example: a `level_up` with target `LEVEL_UP_OTHER` is moot if the player has no other plants in their garden (Natural Flower planted as the first flower). Pop moot effects silently and `continue` the loop — never trap the player on an unfulfillable prompt. Centralize the checks in an `isInteractiveEffectMoot($playerId, $effect)` helper so each new effect type has one place to opt in.
+7. **Skip button as fallback:** Surface a Skip action (a generic `actSkipPendingEffect` on the server, plus a button on every choice prompt) for *optional* effects (`level_up`, `level_up_family`, `gain_weather`). Gate it server-side with an `isEffectSkippable($effect)` whitelist so forced/penalty effects (e.g., `discard_cards`) and effects with their own bespoke flow (e.g., `banana_offer`'s built-in Skip) aren't accidentally bypassable.
+8. **Re-rendering after a status-only change:** Server actions that reset `player_planting_status` and pop the queue (e.g., `actUseBananaAbility` after the player chose to use Banana) must emit a notification that updates the client's local `gamedatas.players[pId].planting_status` AND re-triggers `onEnteringState`. Without it, the client UI remains stuck on the prior prompt even though the server has moved on. The reusable shape is the existing `playerGainedAction` notification — emit it from any action that grants a fresh planting action, and the corresponding `notif_playerGainedAction` handler refreshes `gamedatas` + delegates to `this.plantingPhase.onEnteringState(null, true)`.
 
 ---
 
@@ -538,6 +564,28 @@ When building custom UI interactions where a player builds up a selection before
 
 **Best Practice:**
 Always clear temporary selection arrays and flags (e.g., `this.selectedCards = []; this.isSelecting = false;`) immediately after calling `this.bga.actions.performAction(...)`, and also when the user clicks a "Pass" or "Cancel" button. Failing to do so will cause the stale selection to persist and reappear the next time the interaction is triggered for that player.
+
+---
+
+## CSS Sprites & Inline-Style Gotchas
+
+BGA renders most card art via CSS sprites (one image, many cells addressed by `background-position`). Two recurring pitfalls:
+
+**1. Never use the `background:` shorthand on a sprite-bearing element.** `background: #e8f8f5` is the shorthand form; it resets *every* `background-*` sub-property to its default — including `background-image`. Inline styles beat external CSS, so a sprite class like `.plantopia-adult-card { background-image: url('img/sprite.png'); }` will be silently clobbered and the cell will render as an empty colored frame. **Always use the individual sub-property** (`background-color: #e8f8f5`) on any element that participates in a sprite class. Sub-properties compose with the CSS-set `background-image` instead of resetting it.
+
+**2. Container-relative sprite addressing.** For a sprite of `N` columns × `M` rows, set `background-size: (N*100)% (M*100)%` so one cell is exactly 100% × 100% of the container, then address cells with:
+```
+background-position: (col / (N - 1) * 100)%  (row / (M - 1) * 100)%
+```
+This formula is container-size-independent — the same CSS works for hand cards (120×180), planter slots (~140 wide), and the level-3 tilted view. Drive the per-card position with an attribute selector so the CSS file is one base class + N flat lines:
+```css
+.adult-card { background-image: url('img/plants_adult.png'); background-size: 700% 300%; background-repeat: no-repeat; }
+.adult-card[data-card-type="Geometree"]   { background-position: 0%       0%; }
+.adult-card[data-card-type="Symmetree"]   { background-position: 16.6667% 0%; }
+/* ... */
+```
+
+**3. Key the sprite by canonical card identity, not the translated display name.** `card.type` from the server is the `card_type` column (untranslated, stable). `cardInfo.name` is the `clienttranslate()` output and will diverge under locale switches. Render `data-card-type="${card.type}"`, not `${cardInfo.name}`, so the attribute selector keeps matching in every locale.
 
 ---
 
