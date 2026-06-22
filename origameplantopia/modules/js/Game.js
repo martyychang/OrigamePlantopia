@@ -842,28 +842,14 @@ export class Game {
 
         // Setting up player boards
         orderedPlayers.forEach(player => {
-            // example of setting up players boards
+            // Player panel: hand count + per-family / per-maturity / per-level
+            // counts + bonus weather counts. Built by renderPlayerPanel below
+            // (called on setup and refreshed after every relevant notification).
+            // See https://trello.com/c/B5g3UmED.
             this.bga.playerPanels.getElement(player.id).insertAdjacentHTML('beforeend', `
-                <div style="margin-top: 5px;">
-                    <span id="hand-count-${player.id}"></span> Hand Cards
-                </div>
-                <div>
-                    <span id="energy-player-counter-${player.id}"></span> Energy
-                </div>
+                <div id="plantopia-panel-${player.id}" class="plantopia-player-panel" style="margin-top: 6px; font-size: 0.85em; line-height: 1.35em; font-family: 'Courier New', monospace;"></div>
             `);
-            
-            if (!this.handCounters) this.handCounters = {};
-            const handCounter = new ebg.counter();
-            handCounter.create(`hand-count-${player.id}`);
-            handCounter.setValue(gamedatas.handCounts ? (gamedatas.handCounts[player.id] || 0) : 0);
-            this.handCounters[player.id] = handCounter;
-
-            const counter = new ebg.counter();
-            counter.create(`energy-player-counter-${player.id}`, {
-                value: player.energy,
-                playerCounter: 'energy',
-                playerId: player.id
-            });
+            this.renderPlayerPanel(player.id);
 
             // example of adding a div for each player
             document.getElementById('player-tables').insertAdjacentHTML('beforeend', `
@@ -1051,6 +1037,96 @@ export class Game {
 
     isAdult(plantType) {
         return ['trv_cactus', 'trv_flower', 'trv_tree'].includes(plantType);
+    }
+
+    /**
+     * Recompute a player's at-a-glance stats from the current gamedatas.
+     * Returns:
+     *   {
+     *     handCount,
+     *     plants: { cactus: {baby: [n0,n1,n2,n3], adult: [...]},
+     *               flower: {...}, tree: {...} },
+     *     bonusWeather: { sun, rain, wind }
+     *   }
+     * Per https://trello.com/c/B5g3UmED.
+     */
+    computePlayerStats(playerId) {
+        const stats = {
+            handCount: (this.gamedatas.handCounts || {})[playerId] || 0,
+            plants: {
+                cactus: { baby: [0,0,0,0], adult: [0,0,0,0] },
+                flower: { baby: [0,0,0,0], adult: [0,0,0,0] },
+                tree:   { baby: [0,0,0,0], adult: [0,0,0,0] },
+            },
+            bonusWeather: { sun: 0, rain: 0, wind: 0 },
+        };
+
+        const FAMILY = { baby_cactus: 'cactus', trv_cactus: 'cactus',
+                         baby_flower: 'flower', trv_flower: 'flower',
+                         baby_tree:   'tree',   trv_tree:   'tree' };
+        const bumpPlant = (card) => {
+            const info = (this.gamedatas.plantCardTypes || {})[card.type];
+            if (!info) return;
+            const family = FAMILY[info.plant_type];
+            if (!family) return;
+            const maturity = this.isAdult(info.plant_type) ? 'adult'
+                          : (this.isBabyType(info.plant_type) ? 'baby' : null);
+            if (!maturity) return;
+            const level = Math.max(0, Math.min(3, parseInt(card.type_arg, 10) || 0));
+            stats.plants[family][maturity][level]++;
+        };
+
+        // Plants on planters — owner is the planter's location_arg.
+        Object.values(this.gamedatas.plantsOnPlanters || {}).forEach(card => {
+            const planter = (this.gamedatas.planters || {})[card.location_arg];
+            if (planter && planter.location_arg == playerId) bumpPlant(card);
+        });
+        // Level-3 plants — owner is the card's own location_arg.
+        Object.values(this.gamedatas.plantsLevel3 || {}).forEach(card => {
+            if (card.location_arg == playerId) bumpPlant(card);
+        });
+
+        // Bonus weather: count public bonus stash (visible) for every player,
+        // plus the current player's hand-held bonus (private). Other players'
+        // hand-held bonus counts aren't exposed by the server today; flagged
+        // for a follow-up if Marty wants them surfaced.
+        const COND = { 0: 'sun', 1: 'rain', 2: 'wind' };
+        Object.values(this.gamedatas.weatherPublicBonus || {}).forEach(card => {
+            if (card.location_arg != playerId) return;
+            const c = COND[card.type_arg];
+            if (c) stats.bonusWeather[c]++;
+        });
+        if (playerId == this.bga.players.getCurrentPlayerId()) {
+            Object.values(this.gamedatas.weatherHand || {}).forEach(card => {
+                if (card.type !== 'bonus') return;
+                const c = COND[card.type_arg];
+                if (c) stats.bonusWeather[c]++;
+            });
+        }
+        return stats;
+    }
+
+    /** Render or refresh the at-a-glance stats panel for one player. */
+    renderPlayerPanel(playerId) {
+        const el = document.getElementById(`plantopia-panel-${playerId}`);
+        if (!el) return;
+        const s = this.computePlayerStats(playerId);
+        const line = (label, arr) => `${label}: ${arr.join(' / ')}`;
+        el.innerHTML = `
+            <div>Hand: <strong>${s.handCount}</strong></div>
+            <div>${line('Baby Cactus ', s.plants.cactus.baby)}</div>
+            <div>${line('Adult Cactus', s.plants.cactus.adult)}</div>
+            <div>${line('Baby Flower ', s.plants.flower.baby)}</div>
+            <div>${line('Adult Flower', s.plants.flower.adult)}</div>
+            <div>${line('Baby Tree   ', s.plants.tree.baby)}</div>
+            <div>${line('Adult Tree  ', s.plants.tree.adult)}</div>
+            <div>Sun ${s.bonusWeather.sun}  Rain ${s.bonusWeather.rain}  Wind ${s.bonusWeather.wind}</div>
+        `;
+    }
+
+    /** Refresh every player's stats panel. Cheap — runs after any state-changing notif. */
+    refreshAllPlayerPanels() {
+        Object.values(this.gamedatas.players || {}).forEach(p => this.renderPlayerPanel(p.id));
     }
 
     /**
@@ -1300,37 +1376,38 @@ export class Game {
         console.log("notif_updateScores", args);
         const scores = args.scores;
         const handCounts = args.handCounts;
-        
+
         for (const playerId in scores) {
             this.gamedatas.players[playerId].score = scores[playerId];
             if (this.bga.playerPanels.getScoreCounter(playerId)) {
                 this.bga.playerPanels.getScoreCounter(playerId).toValue(scores[playerId]);
             }
         }
-        
-        for (const playerId in handCounts) {
-            if (this.handCounters && this.handCounters[playerId]) {
-                this.handCounters[playerId].toValue(handCounts[playerId]);
-            }
+
+        if (handCounts) {
+            if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
+            Object.assign(this.gamedatas.handCounts, handCounts);
         }
+        this.refreshAllPlayerPanels();
     }
-    
+
     async notif_newHand(args) {
         console.log("notif_newHand", args);
         // The server sends the new hand when the player redraws
         this.gamedatas.hand = args.cards;
+        const pId = this.bga.players.getCurrentPlayerId();
+        if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
+        this.gamedatas.handCounts[pId] = Object.keys(args.cards || {}).length;
         this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
+        this.refreshAllPlayerPanels();
     }
 
     async notif_potatoExtraCards(args) {
         console.log("notif_potatoExtraCards", args);
-        // Update every player's hand counter from the server-provided counts.
         const handCounts = args.handCounts || {};
-        for (const playerId in handCounts) {
-            if (this.handCounters && this.handCounters[playerId]) {
-                this.handCounters[playerId].toValue(handCounts[playerId]);
-            }
-        }
+        if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
+        Object.assign(this.gamedatas.handCounts, handCounts);
+        this.refreshAllPlayerPanels();
     }
 
     async notif_mushroomBonusWeather(args) {
@@ -1359,6 +1436,7 @@ export class Game {
                 newCard.addEventListener('mouseleave', () => newCard.style.transform = 'translateY(0)');
             }
         });
+        this.refreshAllPlayerPanels();
     }
 
     async notif_playerPlayedBonus(args) {
@@ -1393,6 +1471,7 @@ export class Game {
                 newCard.addEventListener('mouseleave', () => newCard.style.transform = 'translateY(0)');
             }
         }
+        this.refreshAllPlayerPanels();
 
         if (args.player_id == this.bga.players.getCurrentPlayerId() && this.bga.states.getCurrentMainStateName() === 'WeatherPhaseBonus') {
              this.weatherPhaseBonus.onPlayerActivationChange(null, true);
@@ -1431,6 +1510,23 @@ export class Game {
         }
     }
 
+    async notif_playerDiscardedCards(args) {
+        if (args && args.player_id != null && args.qty != null) {
+            if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
+            this.gamedatas.handCounts[args.player_id] = Math.max(0,
+                (this.gamedatas.handCounts[args.player_id] || 0) - args.qty);
+            this.refreshAllPlayerPanels();
+        }
+    }
+
+    async notif_playerUsedBananaAbility(args) {
+        if (args && args.handCounts) {
+            if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
+            Object.assign(this.gamedatas.handCounts, args.handCounts);
+            this.refreshAllPlayerPanels();
+        }
+    }
+
     async notif_receivedWeatherCards(args) {
         if (!this.gamedatas.weatherHand) {
             this.gamedatas.weatherHand = {};
@@ -1440,6 +1536,7 @@ export class Game {
             this.gamedatas.weatherHand[c.id] = c;
         });
         this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
+        this.refreshAllPlayerPanels();
     }
 
     async notif_playerReceivedWeather(args) {
@@ -1494,11 +1591,19 @@ export class Game {
         Object.values(args.cards).forEach(c => {
             this.gamedatas.hand[c.id] = c;
         });
+        const pId = this.bga.players.getCurrentPlayerId();
+        if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
+        this.gamedatas.handCounts[pId] = (this.gamedatas.handCounts[pId] || 0) + Object.keys(args.cards || {}).length;
         this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
+        this.refreshAllPlayerPanels();
     }
 
     async notif_playerDrewCard(args) {
-        // Simple notification, UI might not need to update much other than opponent hand count
+        if (args && args.player_id) {
+            if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
+            this.gamedatas.handCounts[args.player_id] = (this.gamedatas.handCounts[args.player_id] || 0) + (args.qty || 1);
+            this.refreshAllPlayerPanels();
+        }
     }
 
     async notif_playerGainedAction(args) {
@@ -1539,6 +1644,17 @@ export class Game {
         // Render the plant in the planter
         this.renderPlantInPlanter(card, planterId);
 
+        // Adjust local handCounts for the planter: 1 for the planted card, plus
+        // the payment cards (for Baby plants — Treevolved sacrifices a garden
+        // plant, not a hand card).
+        if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
+        const cardInfo = (this.gamedatas.plantCardTypes || {})[card.type];
+        const isBabyPlant = cardInfo && this.isBabyType(cardInfo.plant_type);
+        const handCardsConsumed = 1 + (isBabyPlant ? (args.payment_card_ids || []).length : 0);
+        this.gamedatas.handCounts[args.player_id] = Math.max(0,
+            (this.gamedatas.handCounts[args.player_id] || 0) - handCardsConsumed);
+        this.refreshAllPlayerPanels();
+
         if (args.player_id == this.bga.players.getCurrentPlayerId()) {
             this.gamedatas.players[args.player_id].planting_status = 1;
             if (this.bga.states.getCurrentMainStateName() === 'PlantingPhase') {
@@ -1577,6 +1693,7 @@ export class Game {
                 }
             }
         }
+        this.refreshAllPlayerPanels();
 
         if (args.player_id == this.bga.players.getCurrentPlayerId()) {
             this.gamedatas.players[args.player_id].planting_status = 1;
@@ -1614,9 +1731,17 @@ export class Game {
         });
         this.gamedatas.draftCards = {};
         this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
+        // The player kept cards from the draft → handCount up by that many.
+        // Tracked via the public playerKeptDraft notif so opponents' panels
+        // update too.
     }
 
     async notif_playerKeptDraft(args) {
+        if (args && args.player_id != null && args.qty != null) {
+            if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
+            this.gamedatas.handCounts[args.player_id] = (this.gamedatas.handCounts[args.player_id] || 0) + args.qty;
+            this.refreshAllPlayerPanels();
+        }
         if (args.player_id == this.bga.players.getCurrentPlayerId()) {
             this.gamedatas.players[args.player_id].planting_status = 1;
             if (this.bga.states.getCurrentMainStateName() === 'PlantingPhase') {

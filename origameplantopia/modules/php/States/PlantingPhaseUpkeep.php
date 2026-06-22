@@ -44,6 +44,7 @@ class PlantingPhaseUpkeep extends GameState
             
             $this->bga->notify->all("playerDrewCard", clienttranslate('${player_name} drew 1 card.'), [
                 "player_id" => $pId,
+                "qty" => count($drawn),
             ]);
         }
 

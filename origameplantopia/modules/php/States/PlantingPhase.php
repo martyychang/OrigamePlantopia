@@ -576,7 +576,7 @@ class PlantingPhase extends GameState
                     $drawn = array_merge($drawn, $drawn2);
                 }
                 $this->bga->notify->player($playerId, "cardsDrawn", '', ["cards" => $drawn]);
-                $this->bga->notify->all("playerDrewCard", clienttranslate('${player_name} drew cards from planting effect.'), ["player_id" => $playerId]);
+                $this->bga->notify->all("playerDrewCard", clienttranslate('${player_name} drew cards from planting effect.'), ["player_id" => $playerId, "qty" => count($drawn)]);
                 array_shift($queue);
             }
             else if ($effect['type'] === 'draft_cards') {
