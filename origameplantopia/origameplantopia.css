@@ -95,3 +95,24 @@
 .plantopia-adult-card[data-card-type="Thornos"] { background-position: 83.3333% 100%; }
 .plantopia-adult-card[data-card-type="Battus"] { background-position: 100% 100%; }
 
+/* Baby Plant card art (Trello https://trello.com/c/iKxuW468). The
+   img/plants_baby.png sprite has 4 cols × 3 rows of 200×300 cells. */
+.plantopia-baby-card {
+    background-image: url('img/plants_baby.png');
+    background-size: 400% 300%;
+    background-repeat: no-repeat;
+    background-position: 0% 0%;
+}
+.plantopia-baby-card[data-card-type="Gum Tree"] { background-position: 0% 0%; }
+.plantopia-baby-card[data-card-type="Pepper Tree"] { background-position: 33.3333% 0%; }
+.plantopia-baby-card[data-card-type="Treegonometree"] { background-position: 66.6667% 0%; }
+.plantopia-baby-card[data-card-type="Tree Tree"] { background-position: 100% 0%; }
+.plantopia-baby-card[data-card-type="Violet"] { background-position: 0% 50%; }
+.plantopia-baby-card[data-card-type="Buttercup"] { background-position: 33.3333% 50%; }
+.plantopia-baby-card[data-card-type="Twolips"] { background-position: 66.6667% 50%; }
+.plantopia-baby-card[data-card-type="Natural Flower"] { background-position: 100% 50%; }
+.plantopia-baby-card[data-card-type="Sand Dollar Cactus"] { background-position: 0% 100%; }
+.plantopia-baby-card[data-card-type="Pointless Cactus"] { background-position: 33.3333% 100%; }
+.plantopia-baby-card[data-card-type="Cattus"] { background-position: 66.6667% 100%; }
+.plantopia-baby-card[data-card-type="Cutetus"] { background-position: 100% 100%; }
+

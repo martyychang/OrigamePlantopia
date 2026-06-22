@@ -1036,22 +1036,26 @@ export class Game {
     }
 
     /**
-     * HTML for the visible inside of a plant card. For Adult (Treevolved)
-     * plants we render the sprite image via the plantopia-adult-card class
-     * and a data-card-type attribute; baby plants keep the text rendering
-     * until per-baby art is delivered. cardKey is the canonical card_type
-     * column value (e.g. "Geometree") — NOT the translated cardInfo.name,
-     * since the CSS sprite is keyed by the untranslated card identity.
-     * levelLabel is an optional in-card indicator (e.g. "Level: 2") for
-     * the planter view. See https://trello.com/c/XynmHHxj.
+     * HTML for the visible inside of a plant card. Adult (Treevolved) and
+     * Baby plants both render via a CSS sprite (plantopia-adult-card /
+     * plantopia-baby-card) addressed by a data-card-type attribute. Any
+     * other type falls back to a text rendering. cardKey is the canonical
+     * card_type column value (e.g. "Geometree") — NOT the translated
+     * cardInfo.name, since the CSS sprite is keyed by the untranslated
+     * card identity. levelLabel is an optional in-card indicator
+     * (e.g. "Level: 2") for the planter view. See
+     * https://trello.com/c/XynmHHxj and https://trello.com/c/iKxuW468.
      */
     plantCardBody(cardKey, cardInfo, { showCost = false, levelLabel = null } = {}) {
-        if (this.isAdult(cardInfo.plant_type)) {
+        const spriteClass = this.isAdult(cardInfo.plant_type)
+            ? 'plantopia-adult-card'
+            : (this.isBabyType(cardInfo.plant_type) ? 'plantopia-baby-card' : null);
+        if (spriteClass) {
             const badge = levelLabel
                 ? `<div class="plant-level-indicator" style="position: absolute; bottom: 4px; right: 4px; background: rgba(255,255,255,0.88); color: #27ae60; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">${levelLabel}</div>`
                 : '';
             return {
-                extraClass: 'plantopia-adult-card',
+                extraClass: spriteClass,
                 dataAttr: `data-card-type="${String(cardKey).replace(/"/g, '&quot;')}"`,
                 inner: badge,
             };
@@ -1065,6 +1069,12 @@ export class Game {
             dataAttr: '',
             inner: `${nameLine}${detail}`,
         };
+    }
+
+    /** Game-scope mirror of PlantingPhase.isBaby — the latter lives on the
+     * inner state class. plantCardBody needs the check here, on Game. */
+    isBabyType(plantType) {
+        return ['baby_cactus', 'baby_flower', 'baby_tree'].includes(plantType);
     }
 
     renderHand(handData, weatherHandData) {
