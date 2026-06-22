@@ -369,6 +369,42 @@ class PlantingPhase {
         return ['baby_cactus', 'baby_flower', 'baby_tree'].includes(plantType);
     }
 
+    isAdult(plantType) {
+        return ['trv_cactus', 'trv_flower', 'trv_tree'].includes(plantType);
+    }
+
+    /**
+     * HTML for the visible inside of a plant card. For Adult (Treevolved)
+     * plants we render the sprite image via the plantopia-adult-card class
+     * and a data-card-type attribute; baby plants keep the text rendering
+     * until per-baby art is delivered. cardKey is the canonical card_type
+     * column value (e.g. "Geometree") — NOT the translated cardInfo.name,
+     * since the CSS sprite is keyed by the untranslated card identity.
+     * levelLabel is an optional in-card indicator (e.g. "Level: 2") for
+     * the planter view. See https://trello.com/c/XynmHHxj.
+     */
+    plantCardBody(cardKey, cardInfo, { showCost = false, levelLabel = null } = {}) {
+        if (this.isAdult(cardInfo.plant_type)) {
+            const badge = levelLabel
+                ? `<div class="plant-level-indicator" style="position: absolute; bottom: 4px; right: 4px; background: rgba(255,255,255,0.88); color: #27ae60; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">${levelLabel}</div>`
+                : '';
+            return {
+                extraClass: 'plantopia-adult-card',
+                dataAttr: `data-card-type="${String(cardKey).replace(/"/g, '&quot;')}"`,
+                inner: badge,
+            };
+        }
+        const nameLine = `<strong style="color: #27ae60; font-size: 1.0em;">${cardInfo.name}</strong>`;
+        const detail = levelLabel
+            ? `<div class="plant-level-indicator" style="margin-top: 5px; font-size: 0.8em; color: #7f8c8d; font-weight: bold;">${levelLabel}</div>`
+            : (showCost ? `<div style="margin-top: 10px; font-size: 0.8em; color: #7f8c8d;">${cardInfo.cost ? 'Cost: ' + cardInfo.cost : ''}</div>` : '');
+        return {
+            extraClass: '',
+            dataAttr: '',
+            inner: `${nameLine}${detail}`,
+        };
+    }
+
     /**
      * Surface a "Skip" button on the current pending-effect prompt so the
      * player can bail out of a planting effect they don't want to resolve.
@@ -563,10 +599,10 @@ class PlantingPhase {
         const list = document.getElementById('draft-cards-list');
         Object.values(draftCards).forEach(c => {
             const cardInfo = this.game.gamedatas.plantCardTypes[c.type];
+            const body = this.game.plantCardBody(c.type, cardInfo, { showCost: true });
             list.insertAdjacentHTML('beforeend', `
-                <div id="draft_${c.id}" class="bga-cards_selectable-card plant-card" style="width: 120px; height: 180px; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer; box-shadow: 0 0 10px #27ae60;">
-                    <strong style="color: #27ae60; font-size: 1.1em;">${cardInfo.name}</strong>
-                    <div style="margin-top: 10px; font-size: 0.8em; color: #7f8c8d;">Cost: ${cardInfo.cost}</div>
+                <div id="draft_${c.id}" class="bga-cards_selectable-card plant-card ${body.extraClass}" ${body.dataAttr} style="position: relative; width: 120px; height: 180px; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer; box-shadow: 0 0 10px #27ae60;">
+                    ${body.inner}
                 </div>
             `);
             
@@ -885,10 +921,10 @@ export class Game {
             const level3Plants = Object.values(gamedatas.plantsLevel3 || {}).filter(c => c.location_arg == player.id);
             level3Plants.forEach(card => {
                 const cardInfo = this.gamedatas.plantCardTypes[card.type];
+                const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Level: ${card.type_arg}` });
                 document.getElementById(`player-garden-${player.id}`).insertAdjacentHTML('beforeend', `
-                    <div id="garden_plant_${card.id}" class="level3-tilted" data-id="${card.id}" style="width: 120px; height: 180px; border: 2px solid #2ecc71; border-radius: 5px; background: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                        <strong style="color: #27ae60; font-size: 0.9em;">${cardInfo.name}</strong>
-                        <div class="plant-level-indicator" style="margin-top: 5px; font-size: 0.8em; color: #7f8c8d; font-weight: bold;">Level: ${card.type_arg}</div>
+                    <div id="garden_plant_${card.id}" class="level3-tilted ${body.extraClass}" ${body.dataAttr} data-id="${card.id}" style="position: relative; width: 120px; height: 180px; border: 2px solid #2ecc71; border-radius: 5px; background: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        ${body.inner}
                     </div>
                 `);
                 this.addPlantTooltip(`garden_plant_${card.id}`, cardInfo);
@@ -1041,12 +1077,10 @@ export class Game {
             Object.values(handData).forEach(card => {
                 // Get the card name from the material data provided by getAllDatas
                 const cardInfo = this.gamedatas.plantCardTypes[card.type] || { name: card.type };
-                
-                // Simple temporary HTML rendering for the card (simulating a BGA card component)
+                const body = this.plantCardBody(card.type, cardInfo, { showCost: true });
                 handContainer.insertAdjacentHTML('beforeend', `
-                    <div id="card_${card.id}" class="plant-card" style="width: 120px; height: 180px; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; text-align: center; background: #e8f8f5; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
-                        <strong style="color: #27ae60; font-size: 1.1em;">${cardInfo.name}</strong>
-                        <div style="margin-top: 10px; font-size: 0.8em; color: #7f8c8d;">${cardInfo.cost ? 'Cost: ' + cardInfo.cost : ''}</div>
+                    <div id="card_${card.id}" class="plant-card ${body.extraClass}" ${body.dataAttr} style="position: relative; width: 120px; height: 180px; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; text-align: center; background: #e8f8f5; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
+                        ${body.inner}
                     </div>
                 `);
                 this.addPlantTooltip(`card_${card.id}`, cardInfo);
@@ -1522,11 +1556,10 @@ export class Game {
         if (!planterEl) return;
 
         const cardInfo = this.gamedatas.plantCardTypes[card.type];
-        
+        const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Level: ${card.type_arg}` });
         planterEl.insertAdjacentHTML('beforeend', `
-            <div id="garden_plant_${card.id}" data-id="${card.id}" style="position: absolute; bottom: 30px; left: 10px; right: 10px; height: 120px; border: 2px solid #2ecc71; border-radius: 5px; background: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s;">
-                <strong style="color: #27ae60; font-size: 0.9em;">${cardInfo.name}</strong>
-                <div class="plant-level-indicator" style="margin-top: 5px; font-size: 0.8em; color: #7f8c8d; font-weight: bold;">Level: ${card.type_arg}</div>
+            <div id="garden_plant_${card.id}" class="${body.extraClass}" ${body.dataAttr} data-id="${card.id}" style="position: absolute; bottom: 30px; left: 10px; right: 10px; height: 120px; border: 2px solid #2ecc71; border-radius: 5px; background: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s;">
+                ${body.inner}
             </div>
         `);
         this.addPlantTooltip(`garden_plant_${card.id}`, cardInfo);

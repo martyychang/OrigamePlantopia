@@ -61,5 +61,37 @@
 */
 
 
-
+/* Adult Plant card art (Trello https://trello.com/c/XynmHHxj). The
+   img/plants_adult.png sprite has 7 cols × 3 rows of 200×300 cells.
+   Element supplies its own width/height; background-size: 700% 300%
+   makes one sprite cell == 100% × 100% of the container, and
+   background-position addresses cells by % of the (cols-1) × (rows-1)
+   grid. */
+.plantopia-adult-card {
+    background-image: url('img/plants_adult.png');
+    background-size: 700% 300%;
+    background-repeat: no-repeat;
+    background-position: 0% 0%;
+}
+.plantopia-adult-card[data-card-type="Geometree"] { background-position: 0% 0%; }
+.plantopia-adult-card[data-card-type="Symmetree"] { background-position: 16.6667% 0%; }
+.plantopia-adult-card[data-card-type="Treenity"] { background-position: 33.3333% 0%; }
+.plantopia-adult-card[data-card-type="Square Root of Tree"] { background-position: 50% 0%; }
+.plantopia-adult-card[data-card-type="Impossible Tree"] { background-position: 66.6667% 0%; }
+.plantopia-adult-card[data-card-type="Boba Tree"] { background-position: 83.3333% 0%; }
+.plantopia-adult-card[data-card-type="Monte Carlo Tree"] { background-position: 100% 0%; }
+.plantopia-adult-card[data-card-type="Arrowhead"] { background-position: 0% 50%; }
+.plantopia-adult-card[data-card-type="Potted Planted Potted Plants"] { background-position: 16.6667% 50%; }
+.plantopia-adult-card[data-card-type="Firecracker Flower"] { background-position: 33.3333% 50%; }
+.plantopia-adult-card[data-card-type="Lily-of-the-Rainbow"] { background-position: 50% 50%; }
+.plantopia-adult-card[data-card-type="Carnation"] { background-position: 66.6667% 50%; }
+.plantopia-adult-card[data-card-type="Call-A-Lily"] { background-position: 83.3333% 50%; }
+.plantopia-adult-card[data-card-type="Money Plant"] { background-position: 100% 50%; }
+.plantopia-adult-card[data-card-type="Captus"] { background-position: 0% 100%; }
+.plantopia-adult-card[data-card-type="Dogtus"] { background-position: 16.6667% 100%; }
+.plantopia-adult-card[data-card-type="Bufftus"] { background-position: 33.3333% 100%; }
+.plantopia-adult-card[data-card-type="Suckulent"] { background-position: 50% 100%; }
+.plantopia-adult-card[data-card-type="Cactie"] { background-position: 66.6667% 100%; }
+.plantopia-adult-card[data-card-type="Thornos"] { background-position: 83.3333% 100%; }
+.plantopia-adult-card[data-card-type="Battus"] { background-position: 100% 100%; }
 
