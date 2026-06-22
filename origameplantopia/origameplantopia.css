@@ -131,3 +131,43 @@
 .plantopia-bonus-weather-card[data-weather-condition="rain"] { background-position: 50%  0%; }
 .plantopia-bonus-weather-card[data-weather-condition="wind"] { background-position: 100% 0%; }
 
+/* Character POWER card art (Trello https://trello.com/c/lfl5AO0s). The
+   img/character_powers.png sprite has 5 cols × 1 row of 200×300 cells,
+   alphabetical: banana, carrot, mushroom, potato, tomato. */
+.plantopia-character-power-card {
+    background-image: url('img/character_powers.png');
+    background-size: 500% 100%;
+    background-repeat: no-repeat;
+    background-position: 0% 0%;
+}
+.plantopia-character-power-card[data-character-type="banana"]   { background-position: 0%   0%; }
+.plantopia-character-power-card[data-character-type="carrot"]   { background-position: 25%  0%; }
+.plantopia-character-power-card[data-character-type="mushroom"] { background-position: 50%  0%; }
+.plantopia-character-power-card[data-character-type="potato"]   { background-position: 75%  0%; }
+.plantopia-character-power-card[data-character-type="tomato"]   { background-position: 100% 0%; }
+
+/* Character WEATHER card art. 5 cols (banana/carrot/mushroom/potato/tomato)
+   × 3 rows (sun/rain/wind). card.type holds the character name and
+   card.type_arg holds the weather condition (0=sun, 1=rain, 2=wind). */
+.plantopia-character-weather-card {
+    background-image: url('img/character_weather.png');
+    background-size: 500% 300%;
+    background-repeat: no-repeat;
+    background-position: 0% 0%;
+}
+.plantopia-character-weather-card[data-character-type="banana"][data-weather-condition="sun"]    { background-position: 0%   0%;   }
+.plantopia-character-weather-card[data-character-type="banana"][data-weather-condition="rain"]   { background-position: 0%   50%;  }
+.plantopia-character-weather-card[data-character-type="banana"][data-weather-condition="wind"]   { background-position: 0%   100%; }
+.plantopia-character-weather-card[data-character-type="carrot"][data-weather-condition="sun"]    { background-position: 25%  0%;   }
+.plantopia-character-weather-card[data-character-type="carrot"][data-weather-condition="rain"]   { background-position: 25%  50%;  }
+.plantopia-character-weather-card[data-character-type="carrot"][data-weather-condition="wind"]   { background-position: 25%  100%; }
+.plantopia-character-weather-card[data-character-type="mushroom"][data-weather-condition="sun"]  { background-position: 50%  0%;   }
+.plantopia-character-weather-card[data-character-type="mushroom"][data-weather-condition="rain"] { background-position: 50%  50%;  }
+.plantopia-character-weather-card[data-character-type="mushroom"][data-weather-condition="wind"] { background-position: 50%  100%; }
+.plantopia-character-weather-card[data-character-type="potato"][data-weather-condition="sun"]    { background-position: 75%  0%;   }
+.plantopia-character-weather-card[data-character-type="potato"][data-weather-condition="rain"]   { background-position: 75%  50%;  }
+.plantopia-character-weather-card[data-character-type="potato"][data-weather-condition="wind"]   { background-position: 75%  100%; }
+.plantopia-character-weather-card[data-character-type="tomato"][data-weather-condition="sun"]    { background-position: 100% 0%;   }
+.plantopia-character-weather-card[data-character-type="tomato"][data-weather-condition="rain"]   { background-position: 100% 50%;  }
+.plantopia-character-weather-card[data-character-type="tomato"][data-weather-condition="wind"]   { background-position: 100% 100%; }
+

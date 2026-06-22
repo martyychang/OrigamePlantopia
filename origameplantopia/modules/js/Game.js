@@ -996,22 +996,39 @@ export class Game {
     renderCharacters(cards, containerId) {
         const container = document.getElementById(containerId);
         if (!container) return;
-        
+
         if (containerId === 'available-characters-container') {
             container.innerHTML = '';
         }
 
         if (!cards) return;
-        
+
         Object.values(cards).forEach(card => {
             const cardInfo = this.gamedatas.characterCardTypes[card.type] || { name: card.type, ability: '' };
+            // Sprite-backed character power card. Name + ability text move into
+            // a tooltip per https://trello.com/c/lfl5AO0s.
             container.insertAdjacentHTML('beforeend', `
-                <div id="character_${card.id}" class="character-card" data-id="${card.id}" style="width: 140px; height: 180px; border: 2px solid #8e44ad; border-radius: 10px; padding: 10px; text-align: center; background: #f4ecf7; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
-                    <strong style="color: #8e44ad; font-size: 1.1em;">${cardInfo.name}</strong>
-                    <div style="font-size: 0.75em; color: #34495e;">${cardInfo.ability}</div>
-                </div>
+                <div id="character_${card.id}" class="character-card plantopia-character-power-card" data-character-type="${card.type}" data-id="${card.id}" style="position: relative; width: 140px; height: 210px; border: 2px solid #8e44ad; border-radius: 10px; background-color: #f4ecf7; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; cursor: help;"></div>
             `);
+            this.addCharacterTooltip(`character_${card.id}`, cardInfo);
         });
+    }
+
+    /**
+     * Add a tooltip to a character power card showing the character name
+     * and the ability text in the standard BGA cardtooltip layout.
+     * See https://trello.com/c/lfl5AO0s.
+     */
+    addCharacterTooltip(nodeId, cardInfo) {
+        if (!cardInfo || !cardInfo.name) return;
+        const html = `
+            <h3 style="margin: 0; color: #8e44ad;">${cardInfo.name}</h3>
+            <hr style="margin: 5px 0;">
+            <div class="cardtooltip">
+                <p>${cardInfo.ability || ''}</p>
+            </div>
+        `;
+        this.bga.gameui.addTooltipHtml(nodeId, html);
     }
 
     renderPlanters(cards, containerId) {
@@ -1080,28 +1097,39 @@ export class Game {
 
     /**
      * HTML for the visible inside of a weather card. Bonus weather cards
-     * (card.type='bonus') get the plantopia-bonus-weather-card sprite class
-     * keyed by the weather condition (sun/rain/wind); the type_arg integer
-     * (0/1/2) drives the data attribute. Non-bonus weather (banana/carrot
-     * character weather and the public market) keeps the text rendering
-     * for now. See https://trello.com/c/NFy9xgyq.
+     * (card.type='bonus') and character weather cards (card.type =
+     * banana/carrot/mushroom/potato/tomato) both render via CSS sprites
+     * addressed by data-weather-condition (sun/rain/wind, derived from
+     * card.type_arg). Character weather cards additionally carry
+     * data-character-type. Any other weather card type falls back to a
+     * text rendering. See https://trello.com/c/NFy9xgyq and
+     * https://trello.com/c/lfl5AO0s.
      */
     weatherCardBody(card, cardInfo) {
-        if (card.type === 'bonus') {
-            const condition = { 0: 'sun', 1: 'rain', 2: 'wind' }[card.type_arg];
-            if (condition) {
-                return {
-                    extraClass: 'plantopia-bonus-weather-card',
-                    dataAttr: `data-weather-condition="${condition}"`,
-                    inner: '',
-                };
-            }
+        const condition = { 0: 'sun', 1: 'rain', 2: 'wind' }[card.type_arg];
+        if (card.type === 'bonus' && condition) {
+            return {
+                extraClass: 'plantopia-bonus-weather-card',
+                dataAttr: `data-weather-condition="${condition}"`,
+                inner: '',
+            };
+        }
+        if (this.isCharacter(card.type) && condition) {
+            return {
+                extraClass: 'plantopia-character-weather-card',
+                dataAttr: `data-character-type="${card.type}" data-weather-condition="${condition}"`,
+                inner: '',
+            };
         }
         return {
             extraClass: '',
             dataAttr: '',
             inner: `<strong style="color: #2980b9; font-size: 1.1em;">${cardInfo.name}</strong>`,
         };
+    }
+
+    isCharacter(type) {
+        return ['banana', 'carrot', 'mushroom', 'potato', 'tomato'].includes(type);
     }
 
     renderHand(handData, weatherHandData) {
@@ -1126,11 +1154,10 @@ export class Game {
 
         if (weatherHandData) {
             Object.values(weatherHandData).forEach(card => {
-                // Hide character weather cards as they are available in the status bar during Weather Phase
-                if (card.type !== 'bonus') {
-                    return;
-                }
-
+                // Show every weather card now that bonus + character art is
+                // wired up. Character weather is still chosen via the status
+                // bar buttons during WeatherPhaseChoose; the hand display is
+                // visual only. See https://trello.com/c/lfl5AO0s.
                 let cardInfo = { name: card.type };
                 if (this.gamedatas.weatherCardTypes[card.type] && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
                     cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
