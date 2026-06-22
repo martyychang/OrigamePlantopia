@@ -910,9 +910,10 @@ export class Game {
                 }
                 const garden = document.getElementById(`player-garden-${player.id}`);
                 if (garden) {
+                    const body = this.weatherCardBody(card, cardInfo);
                     garden.insertAdjacentHTML('beforeend', `
-                        <div id="weather_${card.id}" class="weather-card bonus-weather" style="width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
-                            <strong style="color: #8e44ad; font-size: 1.1em;">${cardInfo.name} (Bonus)</strong>
+                        <div id="weather_${card.id}" class="weather-card bonus-weather ${body.extraClass}" ${body.dataAttr} style="position: relative; width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background-color: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                            ${body.inner}
                         </div>
                     `);
                     const newCard = document.getElementById(`weather_${card.id}`);
@@ -1077,6 +1078,32 @@ export class Game {
         return ['baby_cactus', 'baby_flower', 'baby_tree'].includes(plantType);
     }
 
+    /**
+     * HTML for the visible inside of a weather card. Bonus weather cards
+     * (card.type='bonus') get the plantopia-bonus-weather-card sprite class
+     * keyed by the weather condition (sun/rain/wind); the type_arg integer
+     * (0/1/2) drives the data attribute. Non-bonus weather (banana/carrot
+     * character weather and the public market) keeps the text rendering
+     * for now. See https://trello.com/c/NFy9xgyq.
+     */
+    weatherCardBody(card, cardInfo) {
+        if (card.type === 'bonus') {
+            const condition = { 0: 'sun', 1: 'rain', 2: 'wind' }[card.type_arg];
+            if (condition) {
+                return {
+                    extraClass: 'plantopia-bonus-weather-card',
+                    dataAttr: `data-weather-condition="${condition}"`,
+                    inner: '',
+                };
+            }
+        }
+        return {
+            extraClass: '',
+            dataAttr: '',
+            inner: `<strong style="color: #2980b9; font-size: 1.1em;">${cardInfo.name}</strong>`,
+        };
+    }
+
     renderHand(handData, weatherHandData) {
         const handContainer = document.getElementById('my-hand-container');
         if (!handContainer) return;
@@ -1109,9 +1136,10 @@ export class Game {
                     cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
                 }
 
+                const body = this.weatherCardBody(card, cardInfo);
                 handContainer.insertAdjacentHTML('beforeend', `
-                    <div id="weather_${card.id}" class="weather-card" style="width: 120px; height: 180px; border: 2px solid #3498db; border-radius: 10px; padding: 10px; text-align: center; background: #ebf5fb; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
-                        <strong style="color: #2980b9; font-size: 1.1em;">${cardInfo.name}</strong>
+                    <div id="weather_${card.id}" class="weather-card ${body.extraClass}" ${body.dataAttr} style="position: relative; width: 120px; height: 180px; border: 2px solid #3498db; border-radius: 10px; padding: 10px; text-align: center; background-color: #ebf5fb; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
+                        ${body.inner}
                     </div>
                 `);
             });
@@ -1154,28 +1182,35 @@ export class Game {
                 
                 cards.forEach((card, index) => {
                     const cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
+                    const body = this.weatherCardBody(card, cardInfo);
                     const cardEl = document.createElement('div');
                     cardEl.id = `weather_${card.id}`;
-                    cardEl.className = 'weather-card';
+                    cardEl.className = `weather-card ${body.extraClass}`.trim();
+                    if (body.dataAttr) {
+                        // body.dataAttr looks like 'data-weather-condition="sun"'
+                        const m = body.dataAttr.match(/^([\w-]+)="([^"]*)"$/);
+                        if (m) cardEl.setAttribute(m[1], m[2]);
+                    }
+                    cardEl.style.position = 'relative';
                     cardEl.style.width = '120px';
                     cardEl.style.height = '180px';
                     cardEl.style.border = '2px solid #3498db';
                     cardEl.style.borderRadius = '10px';
                     cardEl.style.padding = '10px';
                     cardEl.style.textAlign = 'center';
-                    cardEl.style.background = '#ebf5fb';
+                    cardEl.style.backgroundColor = '#ebf5fb';
                     cardEl.style.display = 'flex';
                     cardEl.style.flexDirection = 'column';
                     cardEl.style.justifyContent = 'center';
                     cardEl.style.boxShadow = '2px 2px 5px rgba(0,0,0,0.1)';
                     cardEl.style.cursor = 'pointer';
                     cardEl.style.transition = 'transform 0.2s';
-                    
+
                     if (index > 0) {
                         cardEl.style.marginLeft = '-100px';
                     }
-                    
-                    cardEl.innerHTML = `<strong style="color: #2980b9; font-size: 1.1em;">${cardInfo.name}</strong>`;
+
+                    cardEl.innerHTML = body.inner;
                     groupDiv.appendChild(cardEl);
                 });
                 
@@ -1285,9 +1320,10 @@ export class Game {
                 && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
                 cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
             }
+            const body = this.weatherCardBody(card, cardInfo);
             garden.insertAdjacentHTML('beforeend', `
-                <div id="weather_${card.id}" class="weather-card bonus-weather" style="width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
-                    <strong style="color: #8e44ad; font-size: 1.1em;">${cardInfo.name} (Bonus)</strong>
+                <div id="weather_${card.id}" class="weather-card bonus-weather ${body.extraClass}" ${body.dataAttr} style="position: relative; width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background-color: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                    ${body.inner}
                 </div>
             `);
             const newCard = document.getElementById(`weather_${card.id}`);
@@ -1318,9 +1354,10 @@ export class Game {
         const garden = document.getElementById(`player-garden-${args.player_id}`);
         if (garden) {
             let cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
+            const body = this.weatherCardBody(card, cardInfo);
             garden.insertAdjacentHTML('beforeend', `
-                <div id="weather_${card.id}" class="weather-card bonus-weather" style="width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
-                    <strong style="color: #8e44ad; font-size: 1.1em;">${cardInfo.name} (Bonus)</strong>
+                <div id="weather_${card.id}" class="weather-card bonus-weather ${body.extraClass}" ${body.dataAttr} style="position: relative; width: 120px; height: 180px; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background-color: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                    ${body.inner}
                 </div>
             `);
             const newCard = document.getElementById(`weather_${card.id}`);

@@ -116,3 +116,18 @@
 .plantopia-baby-card[data-card-type="Cattus"] { background-position: 66.6667% 100%; }
 .plantopia-baby-card[data-card-type="Cutetus"] { background-position: 100% 100%; }
 
+/* Bonus Weather card art (Trello https://trello.com/c/NFy9xgyq). The
+   img/weather_bonus.png sprite has 3 cols × 1 row of 200×300 cells.
+   Cards are addressed by data-weather-condition (sun/rain/wind) instead of
+   data-card-type because bonus weather cards all share card.type='bonus'
+   and differentiate by card.type_arg (0=sun, 1=rain, 2=wind). */
+.plantopia-bonus-weather-card {
+    background-image: url('img/weather_bonus.png');
+    background-size: 300% 100%;
+    background-repeat: no-repeat;
+    background-position: 0% 0%;
+}
+.plantopia-bonus-weather-card[data-weather-condition="sun"]  { background-position: 0%   0%; }
+.plantopia-bonus-weather-card[data-weather-condition="rain"] { background-position: 50%  0%; }
+.plantopia-bonus-weather-card[data-weather-condition="wind"] { background-position: 100% 0%; }
+
