@@ -355,6 +355,21 @@ class PlantCards
                 'bonus_scoring' => [],
             ],
 
+            'Dogtus' => [
+                'name' => clienttranslate('Dogtus'),
+                'plant_type' => self::TRV_CACTUS,
+                'num_cards' => 2,
+                'cost' => 1,
+                'cost_unit' => self::BABY_CACTUS,
+                'growth' => ['wind' => 1, 'rain' => 0, 'sun' => 2],
+                'points_per_level' => 2,
+                'flavor_text' => clienttranslate('Always barking up the wrong tree.'),
+                'card_effect' => clienttranslate('Treat this plant as being 2 Treevolved Cacti for the purpose of end-game scoring.'),
+                'planting_effect' => [],
+                'treat_as' => [self::TRV_CACTUS => 2],
+                'bonus_scoring' => [],
+            ],
+
             'Suckulent' => [
                 'name' => clienttranslate('Suckulent'),
                 'plant_type' => self::TRV_CACTUS,
@@ -526,21 +541,6 @@ class PlantCards
                     'per_baby_tree' => 2,
                     'per_trv_tree' => 2,
                 ],
-            ],
-
-            'Dogtus' => [
-                'name' => clienttranslate('Dogtus'),
-                'plant_type' => self::TRV_TREE,
-                'num_cards' => 2,
-                'cost' => 1,
-                'cost_unit' => self::BABY_TREE,
-                'growth' => ['wind' => 1, 'rain' => 0, 'sun' => 2],
-                'points_per_level' => 2,
-                'flavor_text' => clienttranslate('Always barking up the wrong tree.'),
-                'card_effect' => clienttranslate('Treat this plant as being 2 Treevolved Cacti for the purpose of end-game scoring.'),
-                'planting_effect' => [],
-                'treat_as' => [self::TRV_CACTUS => 2],
-                'bonus_scoring' => [],
             ],
 
             'Geometree' => [
