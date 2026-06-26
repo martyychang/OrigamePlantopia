@@ -1019,12 +1019,7 @@ export class Game {
 
         Object.values(cards).forEach(card => {
             container.insertAdjacentHTML('beforeend', `
-                <div id="planter_${card.id}" class="planter-card" data-id="${card.id}" style="width: 120px; height: 180px; border: 2px dashed #95a5a6; border-radius: 10px; padding: 10px; text-align: center; background: rgba(255,255,255,0.5); display: flex; flex-direction: column; justify-content: flex-end; position: relative;">
-                    <div style="font-size: 0.8em; color: #7f8c8d; font-weight: bold; margin-bottom: 5px;">PLANTER</div>
-                    <div style="display: flex; justify-content: space-around; margin-top: auto; color: #bdc3c7; font-weight: bold; font-family: monospace;">
-                        <span>3</span><span>2</span><span>1</span><span style="color: #27ae60;">0</span>
-                    </div>
-                </div>
+                <div id="planter_${card.id}" class="planter-card plantopia-planter-card" data-id="${card.id}" style="position: relative; width: 120px; height: 180px; border-radius: 10px; overflow: hidden;"></div>
             `);
         });
     }
@@ -1730,30 +1725,35 @@ export class Game {
     async notif_plantGrown(args) {
         const cardId = args.card_id;
         const level = args.level;
-        
+
         // Update data
         if (this.gamedatas.plantsOnPlanters && this.gamedatas.plantsOnPlanters[cardId]) {
             this.gamedatas.plantsOnPlanters[cardId].type_arg = level;
-            
-            // Move up visually
+
             const el = document.getElementById(`garden_plant_${cardId}`);
             if (el) {
-                el.querySelector('.plant-level-indicator').innerText = `Level: ${level}`;
+                // The CSS rule .plantopia-plant-on-planter[data-level="N"]
+                // controls visible height; the transition handles the
+                // animation. See https://trello.com/c/gcQP1950.
+                el.setAttribute('data-level', String(Math.max(0, Math.min(3, level))));
             }
 
             if (args.max_level) {
-                // Move off planter to garden
+                // Move off planter to the level-3 tilted area. The plant card
+                // graduates from the bottom-anchored planter sprite layout
+                // back to a full-size tilted tile.
                 const card = this.gamedatas.plantsOnPlanters[cardId];
                 delete this.gamedatas.plantsOnPlanters[cardId];
                 if (!this.gamedatas.plantsLevel3) this.gamedatas.plantsLevel3 = {};
                 this.gamedatas.plantsLevel3[cardId] = card;
 
                 if (el) {
+                    el.classList.remove('plantopia-plant-on-planter');
                     el.classList.add('level3-tilted');
-                    el.style.transform = 'rotate(90deg)';
+                    el.style.cssText = 'position: relative; width: 120px; height: 180px; border: 2px solid #2ecc71; border-radius: 5px; background-color: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
                     const planterContainer = el.parentElement;
-                    const gardenContainer = planterContainer.parentElement;
-                    gardenContainer.appendChild(el); // Move out of planter
+                    const gardenContainer = planterContainer && planterContainer.parentElement;
+                    if (gardenContainer) gardenContainer.appendChild(el);
                 }
             }
         }
@@ -1819,10 +1819,20 @@ export class Game {
         if (!planterEl) return;
 
         const cardInfo = this.gamedatas.plantCardTypes[card.type];
-        const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Level: ${card.type_arg}` });
+        // The plant sits on top of the planter (anchored to the bottom) and
+        // covers the level indicators below the plant's height. Its CSS
+        // height is keyed by data-level — the plant literally grows up the
+        // planter as it levels up, with the next-up indicator peeking out
+        // just above the plant body. See https://trello.com/c/gcQP1950.
+        const sprite = this.plantCardBody(card.type, cardInfo);
+        const level = Math.max(0, Math.min(3, parseInt(card.type_arg, 10) || 0));
         planterEl.insertAdjacentHTML('beforeend', `
-            <div id="garden_plant_${card.id}" class="${body.extraClass}" ${body.dataAttr} data-id="${card.id}" style="position: absolute; bottom: 30px; left: 10px; right: 10px; height: 120px; border: 2px solid #2ecc71; border-radius: 5px; background-color: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s;">
-                ${body.inner}
+            <div id="garden_plant_${card.id}"
+                 class="plantopia-plant-on-planter ${sprite.extraClass}"
+                 ${sprite.dataAttr}
+                 data-id="${card.id}"
+                 data-level="${level}"
+                 style="z-index: 10;">
             </div>
         `);
         this.addPlantTooltip(`garden_plant_${card.id}`, cardInfo);

@@ -171,3 +171,34 @@
 .plantopia-character-weather-card[data-character-type="tomato"][data-weather-condition="rain"]   { background-position: 100% 50%;  }
 .plantopia-character-weather-card[data-character-type="tomato"][data-weather-condition="wind"]   { background-position: 100% 100%; }
 
+/* Planter card art (Trello https://trello.com/c/gcQP1950). The planter
+   shows level indicators 3 / 2 / 1 / 0 stacked top-to-bottom. The plant
+   on the planter is anchored to the bottom and grows UP as it levels up,
+   covering the lower indicators (which are now beneath it) while leaving
+   the next-up indicator visible at the plant's top edge. */
+.plantopia-planter-card {
+    background-image: url('img/planter.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: 0% 0%;
+}
+/* Plant on a planter — fixed bottom, height varies by level so the
+   level indicator just above the plant body reads as "current level". */
+.plantopia-plant-on-planter {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 6px;
+    width: 76px;
+    border-radius: 6px;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center bottom;
+    transition: height 0.35s ease-out;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.18);
+}
+.plantopia-plant-on-planter[data-level="0"] { height: 42px;  }
+.plantopia-plant-on-planter[data-level="1"] { height: 74px;  }
+.plantopia-plant-on-planter[data-level="2"] { height: 108px; }
+.plantopia-plant-on-planter[data-level="3"] { height: 138px; }
+
