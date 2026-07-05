@@ -197,33 +197,46 @@
 .plantopia-character-weather-card[data-character-type="tomato"][data-weather-condition="wind"]   { background-position: 100% 100%; }
 
 /* Planter card art (Trello https://trello.com/c/gcQP1950). The planter
-   shows level indicators 3 / 2 / 1 / 0 stacked top-to-bottom. The plant
-   on the planter is anchored to the bottom and grows UP as it levels up,
-   covering the lower indicators (which are now beneath it) while leaving
-   the next-up indicator visible at the plant's top edge. */
+   shows level indicators 3 / 2 / 1 / 0 stacked top-to-bottom. The planted
+   card (see .plantopia-plant-on-planter below) is a full-size card that
+   slides UP on top of this as the plant levels up, revealing the current
+   level's number underneath while covering higher ones. This element's
+   own `overflow: hidden` (set inline where it's rendered) clips the part
+   of the plant card that slides above the planter's own top edge. */
 .plantopia-planter-card {
     background-image: url('img/planter.png');
     background-size: 100% 100%;
     background-repeat: no-repeat;
     background-position: 0% 0%;
 }
-/* Plant on a planter — fixed bottom, height varies by level so the
-   level indicator just above the plant body reads as "current level". */
+/* Plant on a planter (Trello https://trello.com/c/gcQP1950 follow-up).
+   The planted card renders at FULL card size (.plantopia-card-size,
+   120×180 — identical to every other card on screen), horizontally
+   centered over the planter, and slides UP as the plant levels up so
+   the planter's current-level number peeks out underneath while
+   higher numbers stay covered. The planter itself has overflow:hidden
+   (see .plantopia-planter-card above), which clips the portion of the
+   card that slides above the planter's own top edge.
+
+   The planter art (img/planter.png, 120×180 display size) stacks its
+   level numbers 3/2/1/0 top-to-bottom, roughly centered at y ≈ 55 / 92
+   / 125 / 155 out of 180px. `top` below is calculated so the card's
+   BOTTOM edge lands just above the next-higher number's glyph,
+   revealing everything at-or-below the current level:
+     level 0 → card bottom @ y=140 (reveals "0" only)      → top = 140-180 = -40px
+     level 1 → card bottom @ y=109 (reveals "1" and "0")   → top = 109-180 = -71px
+     level 2 → card bottom @ y=74  (reveals "2","1","0")   → top = 74-180  = -106px
+   Level 3 never reaches this rule — plants graduate off the planter
+   entirely at max level (tilted 90° in the garden tray) per the
+   existing level3-tilted handling in notif_plantGrown. */
 .plantopia-plant-on-planter {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    bottom: 6px;
-    width: 76px;
-    border-radius: 6px;
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center bottom;
-    transition: height 0.35s ease-out;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.18);
+    transition: top 0.35s ease-out;
+    z-index: 10;
 }
-.plantopia-plant-on-planter[data-level="0"] { height: 42px;  }
-.plantopia-plant-on-planter[data-level="1"] { height: 74px;  }
-.plantopia-plant-on-planter[data-level="2"] { height: 108px; }
-.plantopia-plant-on-planter[data-level="3"] { height: 138px; }
+.plantopia-plant-on-planter[data-level="0"] { top: -40px;  }
+.plantopia-plant-on-planter[data-level="1"] { top: -71px;  }
+.plantopia-plant-on-planter[data-level="2"] { top: -106px; }
 

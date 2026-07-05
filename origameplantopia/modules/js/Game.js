@@ -1731,15 +1731,16 @@ export class Game {
             const el = document.getElementById(`garden_plant_${cardId}`);
             if (el) {
                 // The CSS rule .plantopia-plant-on-planter[data-level="N"]
-                // controls visible height; the transition handles the
-                // animation. See https://trello.com/c/gcQP1950.
+                // controls the card's vertical slide (top offset), revealing
+                // the planter's current-level number underneath; the
+                // transition animates the move. See https://trello.com/c/gcQP1950.
                 el.setAttribute('data-level', String(Math.max(0, Math.min(3, level))));
             }
 
             if (args.max_level) {
                 // Move off planter to the level-3 tilted area. The plant card
-                // graduates from the bottom-anchored planter sprite layout
-                // back to a full-size tilted tile.
+                // graduates from the sliding planter overlay to a full-size,
+                // 90°-tilted tile sitting in the garden (no planter).
                 const card = this.gamedatas.plantsOnPlanters[cardId];
                 delete this.gamedatas.plantsOnPlanters[cardId];
                 if (!this.gamedatas.plantsLevel3) this.gamedatas.plantsLevel3 = {};
@@ -1817,20 +1818,20 @@ export class Game {
         if (!planterEl) return;
 
         const cardInfo = this.gamedatas.plantCardTypes[card.type];
-        // The plant sits on top of the planter (anchored to the bottom) and
-        // covers the level indicators below the plant's height. Its CSS
-        // height is keyed by data-level — the plant literally grows up the
-        // planter as it levels up, with the next-up indicator peeking out
-        // just above the plant body. See https://trello.com/c/gcQP1950.
-        const sprite = this.plantCardBody(card.type, cardInfo);
+        // Full-size card (same as every other card on screen), slid
+        // vertically up the planter as the plant levels up so the
+        // planter's current-level number peeks out underneath while
+        // higher numbers stay covered. See https://trello.com/c/gcQP1950.
         const level = Math.max(0, Math.min(3, parseInt(card.type_arg, 10) || 0));
+        const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Level: ${level}` });
         planterEl.insertAdjacentHTML('beforeend', `
             <div id="garden_plant_${card.id}"
-                 class="plantopia-plant-on-planter ${sprite.extraClass}"
-                 ${sprite.dataAttr}
+                 class="plantopia-plant-on-planter plantopia-card-size ${body.extraClass}"
+                 ${body.dataAttr}
                  data-id="${card.id}"
                  data-level="${level}"
-                 style="z-index: 10;">
+                 style="border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; text-align: center; background-color: #e8f8f5; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);">
+                ${body.inner}
             </div>
         `);
         this.addPlantTooltip(`garden_plant_${card.id}`, cardInfo);
