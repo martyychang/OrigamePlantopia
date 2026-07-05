@@ -67,8 +67,21 @@
    planter cards — shares this single size so the table reads as one
    consistent deck rather than a patchwork of slightly different
    rectangles. Apply this class instead of repeating width/height inline;
-   only border color / background-color should vary per card family. */
+   only border color / background-color should vary per card family.
+
+   box-sizing: border-box is load-bearing here, not decorative. The
+   default CSS box model (content-box) adds padding OUTSIDE the declared
+   width/height, so a card with `padding: 10px` renders at 140×200
+   (120+2×10, 180+2×10) while a card with no padding (character power
+   cards, planters, level-3 tiles) renders at the literal 120×180 —
+   a real ~10-15% size mismatch, not just a visual illusion. That's
+   exactly what Marty saw: padded cards (hand/draft/bonus/public
+   weather) looked bigger than unpadded ones (character power,
+   planter), and the unpadded ones looked "squished" by contrast in
+   the same row. border-box folds padding INSIDE the declared box so
+   every card is 120×180 on screen regardless of its own padding. */
 .plantopia-card-size {
+    box-sizing: border-box;
     width: 120px;
     height: 180px;
 }
