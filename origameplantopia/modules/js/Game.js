@@ -895,28 +895,10 @@ export class Game {
             this.renderPlantInPlanter(card, card.location_arg);
         });
 
-        // Render Bonus Weather for each player on its own dedicated row.
-        orderedPlayers.forEach(player => {
-            const playerBonusWeather = Object.values(gamedatas.weatherPublicBonus || {}).filter(c => c.location_arg == player.id);
-            playerBonusWeather.forEach(card => {
-                let cardInfo = { name: 'Unknown' };
-                if (this.gamedatas.weatherCardTypes[card.type] && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
-                    cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
-                }
-                const garden = document.getElementById(`player-garden-bonus-${player.id}`);
-                if (garden) {
-                    const body = this.weatherCardBody(card, cardInfo);
-                    garden.insertAdjacentHTML('beforeend', `
-                        <div id="weather_${card.id}" class="weather-card bonus-weather plantopia-card-size ${body.extraClass}" ${body.dataAttr} style="position: relative; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background-color: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
-                            ${body.inner}
-                        </div>
-                    `);
-                    const newCard = document.getElementById(`weather_${card.id}`);
-                    newCard.addEventListener('mouseenter', () => newCard.style.transform = 'translateY(-10px)');
-                    newCard.addEventListener('mouseleave', () => newCard.style.transform = 'translateY(0)');
-                }
-            });
-        });
+        // Bonus Weather held by each player is counted (weatherPublicBonus
+        // feeds the player panel's Sun/Rain/Wind tally via
+        // computePlayerStats) but not displayed as garden tiles.
+        // See https://trello.com/c/uiJWdVTg.
 
         // Add a Bonus Weather section under the player gardens
         document.getElementById('player-tables').insertAdjacentHTML('afterend', `
@@ -1419,30 +1401,18 @@ export class Game {
 
     async notif_mushroomBonusWeather(args) {
         console.log("notif_mushroomBonusWeather", args);
+        // Per https://trello.com/c/uiJWdVTg: Bonus Weather cards are
+        // COUNTED (tracked in gamedatas + the player panel's Sun/Rain/Wind
+        // tally) but not displayed as individual tiles in the garden.
         const cards = args.cards || [];
         if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
-        const garden = document.getElementById(`player-garden-bonus-${args.player_id}`);
         cards.forEach(card => {
-            // Track in local gamedatas so subsequent renders include the card.
             this.gamedatas.weatherPublicBonus[card.id] = card;
-            if (!garden) return;
-            let cardInfo = { name: 'Unknown' };
-            if (this.gamedatas.weatherCardTypes[card.type]
-                && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
-                cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
-            }
-            const body = this.weatherCardBody(card, cardInfo);
-            garden.insertAdjacentHTML('beforeend', `
-                <div id="weather_${card.id}" class="weather-card bonus-weather plantopia-card-size ${body.extraClass}" ${body.dataAttr} style="position: relative; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background-color: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
-                    ${body.inner}
-                </div>
-            `);
-            const newCard = document.getElementById(`weather_${card.id}`);
-            if (newCard) {
-                newCard.addEventListener('mouseenter', () => newCard.style.transform = 'translateY(-10px)');
-                newCard.addEventListener('mouseleave', () => newCard.style.transform = 'translateY(0)');
-            }
         });
+        if (args.bonusMarket) {
+            this.gamedatas.bonusWeatherMarket = args.bonusMarket;
+            this.renderBonusWeatherMarket(args.bonusMarket, 'bonus-weather-container');
+        }
         this.refreshAllPlayerPanels();
     }
 
@@ -1452,23 +1422,16 @@ export class Game {
 
         // Per https://trello.com/c/B5g3UmED: playing a Bonus Weather card
         // moves it out of the player's public held stash and into the
-        // round's played pool. The visible held count goes DOWN by 1 for
-        // every player. The DOM tile is moved to a "played" tray
-        // (styled slightly to distinguish from held) instead of being
-        // removed entirely.
+        // round's played pool — the held count goes DOWN by 1. Bonus
+        // Weather is counted, not displayed as tiles (see
+        // https://trello.com/c/uiJWdVTg), so there's no DOM tile to
+        // restyle here anymore; just update the data.
         if (this.gamedatas.weatherPublicBonus) {
             delete this.gamedatas.weatherPublicBonus[card.id];
         }
         if (!this.gamedatas.weatherPlayedBonus) this.gamedatas.weatherPlayedBonus = {};
         this.gamedatas.weatherPlayedBonus[card.id] = card;
 
-        const oldTile = document.getElementById(`weather_${card.id}`);
-        if (oldTile) {
-            oldTile.classList.add('bonus-weather-played');
-            oldTile.style.opacity = '0.7';
-            oldTile.style.filter = 'grayscale(40%)';
-            oldTile.style.transform = 'rotate(-4deg)';
-        }
         this.refreshAllPlayerPanels();
 
         if (args.player_id == this.bga.players.getCurrentPlayerId() && this.bga.states.getCurrentMainStateName() === 'WeatherPhaseBonus') {
@@ -1552,30 +1515,17 @@ export class Game {
 
     async notif_playerGainedWeather(args) {
         // Public broadcast when any player gains a Bonus Weather card from
-        // a plant effect. The card data is included so every client can add
-        // it to weatherPublicBonus and render it in that player's garden.
-        // See https://trello.com/c/B5g3UmED.
+        // a plant effect. Bonus Weather is counted (weatherPublicBonus +
+        // the player panel's Sun/Rain/Wind tally), not displayed as a
+        // garden tile. See https://trello.com/c/uiJWdVTg.
         const card = args && args.card;
-        if (!card) {
-            this.refreshAllPlayerPanels();
-            return;
+        if (card) {
+            if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
+            this.gamedatas.weatherPublicBonus[card.id] = card;
         }
-        if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
-        this.gamedatas.weatherPublicBonus[card.id] = card;
-
-        const garden = document.getElementById(`player-garden-bonus-${args.player_id}`);
-        if (garden && !document.getElementById(`weather_${card.id}`)) {
-            let cardInfo = { name: 'Unknown' };
-            if (this.gamedatas.weatherCardTypes[card.type]
-                && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
-                cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
-            }
-            const body = this.weatherCardBody(card, cardInfo);
-            garden.insertAdjacentHTML('beforeend', `
-                <div id="weather_${card.id}" class="weather-card bonus-weather plantopia-card-size ${body.extraClass}" ${body.dataAttr} style="position: relative; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background-color: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
-                    ${body.inner}
-                </div>
-            `);
+        if (args.bonusMarket) {
+            this.gamedatas.bonusWeatherMarket = args.bonusMarket;
+            this.renderBonusWeatherMarket(args.bonusMarket, 'bonus-weather-container');
         }
         this.refreshAllPlayerPanels();
     }
@@ -1585,27 +1535,14 @@ export class Game {
             this.gamedatas.bonusWeatherMarket = args.bonusMarket;
             this.renderBonusWeatherMarket(this.gamedatas.bonusWeatherMarket, 'bonus-weather-container');
         }
-        // Mushroom's distribute-time bonus cards arrive publicly here so every
-        // player can see them. Render them into the recipient's garden and
-        // refresh the panels. See https://trello.com/c/B5g3UmED.
+        // Mushroom's distribute-time bonus cards arrive publicly here so
+        // every player's tally stays accurate. Counted only — not
+        // displayed as garden tiles. See https://trello.com/c/uiJWdVTg.
         const bonusCards = args.bonusCards || [];
         if (bonusCards.length > 0) {
             if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
-            const garden = document.getElementById(`player-garden-bonus-${args.player_id}`);
             bonusCards.forEach(card => {
                 this.gamedatas.weatherPublicBonus[card.id] = card;
-                if (!garden || document.getElementById(`weather_${card.id}`)) return;
-                let cardInfo = { name: 'Unknown' };
-                if (this.gamedatas.weatherCardTypes[card.type]
-                    && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
-                    cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
-                }
-                const body = this.weatherCardBody(card, cardInfo);
-                garden.insertAdjacentHTML('beforeend', `
-                    <div id="weather_${card.id}" class="weather-card bonus-weather plantopia-card-size ${body.extraClass}" ${body.dataAttr} style="position: relative; border: 2px solid #9b59b6; border-radius: 10px; padding: 10px; text-align: center; background-color: #f5eef8; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
-                        ${body.inner}
-                    </div>
-                `);
             });
             this.refreshAllPlayerPanels();
         }
@@ -1625,25 +1562,15 @@ export class Game {
 
         // Per https://trello.com/c/B5g3UmED: end-of-phase cleanup clears only
         // the played-this-round pool. Held bonus weather (weather_public_bonus)
-        // persists across rounds. The server can authoritatively send the new
-        // held state via args.weatherPublicBonus to keep clients in sync.
-        const playedIds = new Set(Object.keys(this.gamedatas.weatherPlayedBonus || {}));
+        // persists across rounds. The server sends the new held state via
+        // args.weatherPublicBonus to keep clients' counts in sync. Bonus
+        // Weather is counted only, never rendered as garden tiles — see
+        // https://trello.com/c/uiJWdVTg.
         this.gamedatas.weatherPlayedBonus = {};
 
         if (args.weatherPublicBonus !== undefined) {
             this.gamedatas.weatherPublicBonus = args.weatherPublicBonus || {};
         }
-
-        // Tear down DOM tiles for cards no longer in either local pool, then
-        // re-sync the visual state from the new authoritative gamedatas.
-        playedIds.forEach(id => {
-            const el = document.getElementById(`weather_${id}`);
-            if (el) el.remove();
-        });
-        document.querySelectorAll('.weather-card.bonus-weather').forEach(el => {
-            const id = el.id.replace('weather_', '');
-            if (!this.gamedatas.weatherPublicBonus[id]) el.remove();
-        });
 
         if (args.bonusMarket) {
             this.gamedatas.bonusWeatherMarket = args.bonusMarket;

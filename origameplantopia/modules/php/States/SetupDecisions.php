@@ -146,7 +146,8 @@ class SetupDecisions extends GameState
             case 'mushroom':
                 // Give 1 Bonus Weather Card of each condition (sun / rain / wind),
                 // moved from the public bonus deck into the player's public bonus
-                // weather area (rendered in their garden).
+                // weather holdings (counted, not displayed as tiles — see
+                // https://trello.com/c/uiJWdVTg).
                 $given = [];
                 foreach ([WeatherCards::CONDITION_SUN, WeatherCards::CONDITION_RAIN, WeatherCards::CONDITION_WIND] as $cond) {
                     $candidates = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', $cond, 'bonus_deck');
@@ -156,9 +157,14 @@ class SetupDecisions extends GameState
                         $given[] = $this->game->weatherCards->getCard($cardId);
                     }
                 }
+                // The claim just took up to 3 cards out of the shared bonus
+                // market — broadcast the updated market so every client's
+                // display stays in sync. See https://trello.com/c/uiJWdVTg.
+                $bonusMarket = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
                 $this->bga->notify->all("mushroomBonusWeather", clienttranslate('${player_name} received 1 Bonus Weather Card of each type (Mushroom ability).'), [
                     "player_id" => $playerId,
                     "cards" => $given,
+                    "bonusMarket" => $bonusMarket,
                 ]);
                 break;
 

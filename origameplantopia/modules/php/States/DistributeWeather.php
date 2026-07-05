@@ -39,33 +39,13 @@ class DistributeWeather extends GameState
                 }
             }
 
-            // Move the character weather cards to the player's hand
+            // Move the character weather cards to the player's hand.
+            // NOTE: Mushroom's "1 Bonus Weather Card of each type" ability is
+            // NOT granted here — it's already granted exactly once, at claim
+            // time, in SetupDecisions::applyClaimAbility(). Granting it again
+            // here (as this state previously did) doubled Mushroom's bonus
+            // weather to 6 cards instead of 3. See https://trello.com/c/uiJWdVTg.
             $this->game->weatherCards->moveCards($cardsToMove, 'hand', $pId);
-
-            // Special Mushroom ability: Also give them 1 Bonus Weather Card of each type.
-            // Bonus weather lives publicly in weather_public_bonus per
-            // https://trello.com/c/B5g3UmED.
-            $mushroomBonusCards = [];
-            if ($characterType === 'mushroom') {
-                $bonusCards = [];
-                $weatherDeckAfter = $this->game->weatherCards->getCardsInLocation('bonus_deck');
-
-                // Track which conditions we've already given to ensure 1 of each (0, 1, 2)
-                $foundConditions = [];
-                foreach ($weatherDeckAfter as $wCard) {
-                    if ($wCard['type'] === 'bonus') {
-                        $cond = $wCard['type_arg'];
-                        if (!in_array($cond, $foundConditions)) {
-                            $bonusCards[] = $wCard['id'];
-                            $foundConditions[] = $cond;
-                        }
-                    }
-                }
-                $this->game->weatherCards->moveCards($bonusCards, 'weather_public_bonus', $pId);
-                foreach ($bonusCards as $bid) {
-                    $mushroomBonusCards[] = $this->game->weatherCards->getCard((int)$bid);
-                }
-            }
 
             // Send notification to the player
             $newHand = $this->game->weatherCards->getCardsInLocation('hand', $pId);
@@ -73,13 +53,9 @@ class DistributeWeather extends GameState
                 "cards" => $newHand
             ]);
 
-            $bonusMarket = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
-
             $this->bga->notify->all("playerReceivedWeather", clienttranslate('${player_name} received their Character Weather cards.'), [
                 "player_id" => $pId,
                 "player_name" => $this->game->getPlayerNameById($pId),
-                "bonusMarket" => $bonusMarket,
-                "bonusCards" => $mushroomBonusCards, // publicly added to weather_public_bonus
             ]);
         }
 

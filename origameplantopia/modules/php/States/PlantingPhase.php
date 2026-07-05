@@ -634,10 +634,15 @@ class PlantingPhase extends GameState
                     $this->game->weatherCards->moveCard($card['id'], 'weather_public_bonus', $playerId);
                     $card = $this->game->weatherCards->getCard($card['id']);
                     $this->bga->notify->player($playerId, "weatherCardsDrawn", '', ["cards" => [$card]]);
+                    // The market just lost this card — broadcast the updated
+                    // count so every client's market display stays in sync.
+                    // See https://trello.com/c/uiJWdVTg.
+                    $bonusMarket = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
                     $this->bga->notify->all("playerGainedWeather", clienttranslate('${player_name} gained a Bonus ${weather_name} Card.'), [
                         "player_id" => $playerId,
                         "weather_name" => ucfirst($effect['weather_type']),
                         "card" => $card, // bonus weather card is publicly held — broadcast it
+                        "bonusMarket" => $bonusMarket,
                     ]);
                 } else {
                     $market = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
@@ -757,9 +762,13 @@ class PlantingPhase extends GameState
         $this->game->weatherCards->moveCard($cardId, 'weather_public_bonus', $playerId);
         $card = $this->game->weatherCards->getCard($cardId);
         $this->bga->notify->player($playerId, "weatherCardsDrawn", '', ["cards" => [$card]]);
+        // The market just lost this card — broadcast the updated count. See
+        // https://trello.com/c/uiJWdVTg.
+        $bonusMarket = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
         $this->bga->notify->all("playerGainedWeather", clienttranslate('${player_name} gained a Bonus Weather Card.'), [
             "player_id" => $playerId,
             "card" => $card,
+            "bonusMarket" => $bonusMarket,
         ]);
 
         $queue[0]['qty']--;
