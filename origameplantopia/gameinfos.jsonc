@@ -6,16 +6,16 @@
 */
 {
     // Name of the game in English (will serve as the basis for translation)
-    "game_name": "My Great Game",
+    "game_name": "Plantopia: The Card Game",
 
     // Game publisher (use empty string if there is no publisher)
-    "publisher": "My Publishing Company",
+    "publisher": "Origame",
 
     // Url of game publisher website
-    "publisher_website": "http://www.mypublishingcompany.com/",
+    "publisher_website": "https://www.origame.co/",
 
     // Board Game Geek ID of the publisher
-    "publisher_bgg_id": 1234,
+    "publisher_bgg_id": 43132,
 
     // Board game geek ID of the game
     "bgg_id": 316857,
