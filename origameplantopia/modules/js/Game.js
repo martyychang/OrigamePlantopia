@@ -1235,10 +1235,14 @@ export class Game {
 
         if (weatherHandData) {
             Object.values(weatherHandData).forEach(card => {
-                // Show every weather card now that bonus + character art is
-                // wired up. Character weather is still chosen via the status
-                // bar buttons during WeatherPhaseChoose; the hand display is
-                // visual only. See https://trello.com/c/lfl5AO0s.
+                // Only Bonus Weather cards render in the hand area. Character
+                // weather cards are already presented (and chosen) via the
+                // status bar buttons during WeatherPhaseChoose — showing them
+                // again here duplicates that UI without adding information.
+                // See https://trello.com/c/uiJWdVTg (reverses the "show every
+                // weather card" change from https://trello.com/c/lfl5AO0s).
+                if (card.type !== 'bonus') return;
+
                 let cardInfo = { name: card.type };
                 if (this.gamedatas.weatherCardTypes[card.type] && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
                     cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
