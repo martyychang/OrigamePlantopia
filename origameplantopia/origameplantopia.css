@@ -61,6 +61,18 @@
 */
 
 
+/* Canonical on-screen card footprint (Trello https://trello.com/c/gcQP1950).
+   EVERY card-like element — plant cards (hand/draft/planter/level-3),
+   weather cards (character/bonus/public), character power cards, and
+   planter cards — shares this single size so the table reads as one
+   consistent deck rather than a patchwork of slightly different
+   rectangles. Apply this class instead of repeating width/height inline;
+   only border color / background-color should vary per card family. */
+.plantopia-card-size {
+    width: 120px;
+    height: 180px;
+}
+
 /* Adult Plant card art (Trello https://trello.com/c/XynmHHxj). The
    img/plants_adult.png sprite has 7 cols × 3 rows of 200×300 cells.
    Element supplies its own width/height; background-size: 700% 300%
