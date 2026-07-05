@@ -74,6 +74,16 @@ class SetupDecisions {
             el.style.boxShadow = 'none';
             el.onclick = null;
         });
+
+        // onLeavingState fires once, for the whole table, when the game
+        // moves past SetupDecisions (a MULTIPLE_ACTIVE_PLAYER state) — i.e.
+        // only once every player has made both decisions. That's the right
+        // moment to hide the Characters panel for good; leaving it up
+        // between players (mid-state, via onPlayerActivationChange /
+        // isCurrentPlayerActive branching) is intentional so a player who
+        // finished early can still see others picking. See
+        // https://trello.com/c/ggzwRe3E.
+        document.getElementById('characters-panel').style.display = 'none';
     }
 
     onKeepHand() {
