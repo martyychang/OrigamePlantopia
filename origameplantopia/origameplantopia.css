@@ -196,36 +196,46 @@
 .plantopia-character-weather-card[data-character-type="tomato"][data-weather-condition="rain"]   { background-position: 100% 50%;  }
 .plantopia-character-weather-card[data-character-type="tomato"][data-weather-condition="wind"]   { background-position: 100% 100%; }
 
-/* Planter card art (Trello https://trello.com/c/gcQP1950). The planter
-   shows level indicators 3 / 2 / 1 / 0 stacked top-to-bottom. The planted
-   card (see .plantopia-plant-on-planter below) is a full-size card that
-   slides UP on top of this as the plant levels up, revealing the current
-   level's number underneath while covering higher ones. This element's
-   own `overflow: hidden` (set inline where it's rendered) clips the part
-   of the plant card that slides above the planter's own top edge. */
+/* Planter slot (Trello https://trello.com/c/gcQP1950 follow-up). A
+   planter's visible art (.plantopia-planter-card, 120×180) is bottom-
+   anchored inside this TALLER wrapper so the full-size plant card
+   rendered on top of it (see .plantopia-plant-on-planter below) always
+   has enough headroom above the planter to slide into without ever
+   being clipped — even at its highest reveal position. Extra headroom
+   = 120px (300 total - 180 planter), comfortably more than the 106px
+   the tallest case (level 2) actually needs; see the offset math below.
+   overflow: hidden stays on as a safety net, not because clipping is
+   expected in normal use. */
+.plantopia-planter-slot {
+    position: relative;
+    width: 120px;
+    height: 300px;
+    overflow: hidden;
+}
 .plantopia-planter-card {
     background-image: url('img/planter.png');
     background-size: 100% 100%;
     background-repeat: no-repeat;
     background-position: 0% 0%;
 }
-/* Plant on a planter (Trello https://trello.com/c/gcQP1950 follow-up).
-   The planted card renders at FULL card size (.plantopia-card-size,
-   120×180 — identical to every other card on screen), horizontally
-   centered over the planter, and slides UP as the plant levels up so
-   the planter's current-level number peeks out underneath while
-   higher numbers stay covered. The planter itself has overflow:hidden
-   (see .plantopia-planter-card above), which clips the portion of the
-   card that slides above the planter's own top edge.
+/* Plant on a planter. The planted card renders at FULL card size
+   (.plantopia-card-size, 120×180 — identical to every other card on
+   screen), horizontally centered over the planter, and slides UP as
+   the plant levels up so the planter's current-level number peeks out
+   underneath while higher numbers stay covered.
 
-   The planter art (img/planter.png, 120×180 display size) stacks its
-   level numbers 3/2/1/0 top-to-bottom, roughly centered at y ≈ 55 / 92
-   / 125 / 155 out of 180px. `top` below is calculated so the card's
-   BOTTOM edge lands just above the next-higher number's glyph,
-   revealing everything at-or-below the current level:
-     level 0 → card bottom @ y=140 (reveals "0" only)      → top = 140-180 = -40px
-     level 1 → card bottom @ y=109 (reveals "1" and "0")   → top = 109-180 = -71px
-     level 2 → card bottom @ y=74  (reveals "2","1","0")   → top = 74-180  = -106px
+   The planter art (img/planter.png, 120×180 display size, bottom-
+   anchored within the 300px-tall .plantopia-planter-slot above — see
+   its own local y=0 sitting at slot-y=120) stacks its level numbers
+   3/2/1/0 top-to-bottom, roughly centered at planter-local y ≈ 55 / 92
+   / 125 / 155 out of 180px. `top` below is calculated in SLOT-relative
+   coordinates (planter-local y + 120px headroom) so the card's BOTTOM
+   edge lands just above the next-higher number's glyph, revealing
+   everything at-or-below the current level:
+     level 0 → bottom @ planter-y=140 → slot-y=260 → top = 260-180 = 80px
+     level 1 → bottom @ planter-y=109 → slot-y=229 → top = 229-180 = 49px
+     level 2 → bottom @ planter-y=74  → slot-y=194 → top = 194-180 = 14px
+   All three are comfortably ≥ 0 (well within the slot, never clipped).
    Level 3 never reaches this rule — plants graduate off the planter
    entirely at max level (tilted 90° in the garden tray) per the
    existing level3-tilted handling in notif_plantGrown. */
@@ -236,7 +246,7 @@
     transition: top 0.35s ease-out;
     z-index: 10;
 }
-.plantopia-plant-on-planter[data-level="0"] { top: -40px;  }
-.plantopia-plant-on-planter[data-level="1"] { top: -71px;  }
-.plantopia-plant-on-planter[data-level="2"] { top: -106px; }
+.plantopia-plant-on-planter[data-level="0"] { top: 80px; }
+.plantopia-plant-on-planter[data-level="1"] { top: 49px; }
+.plantopia-plant-on-planter[data-level="2"] { top: 14px; }
 

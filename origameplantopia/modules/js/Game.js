@@ -849,7 +849,7 @@ export class Game {
             document.getElementById('player-tables').insertAdjacentHTML('beforeend', `
                 <div id="player-table-${player.id}" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px;">
                     <h3>${player.name}'s Garden</h3>
-                    <div id="player-garden-${player.id}" style="display: flex; gap: 10px; margin-top: 10px; min-height: 150px;"></div>
+                    <div id="player-garden-${player.id}" style="display: flex; align-items: flex-end; gap: 10px; margin-top: 10px; min-height: 300px;"></div>
                 </div>
             `);
 
@@ -1018,8 +1018,16 @@ export class Game {
         if (!cards) return;
 
         Object.values(cards).forEach(card => {
+            // The planter background art is bottom-anchored inside a TALLER
+            // slot wrapper (.plantopia-planter-slot) so the full-size plant
+            // card rendered on top of it (see renderPlantInPlanter) always
+            // has enough headroom to slide up without being clipped, even
+            // at its highest reveal position (level 2). See
+            // https://trello.com/c/gcQP1950.
             container.insertAdjacentHTML('beforeend', `
-                <div id="planter_${card.id}" class="planter-card plantopia-planter-card plantopia-card-size" data-id="${card.id}" style="position: relative; border-radius: 10px; overflow: hidden;"></div>
+                <div id="planter-slot_${card.id}" class="plantopia-planter-slot">
+                    <div id="planter_${card.id}" class="planter-card plantopia-planter-card plantopia-card-size" data-id="${card.id}" style="position: absolute; bottom: 0; left: 0; border-radius: 10px;"></div>
+                </div>
             `);
         });
     }
@@ -1814,8 +1822,11 @@ export class Game {
     }
 
     renderPlantInPlanter(card, planterId) {
-        const planterEl = document.getElementById(`planter_${planterId}`);
-        if (!planterEl) return;
+        // Appended into the SLOT wrapper (not the inner planter div) so the
+        // card has the wrapper's extra headroom to slide into without being
+        // clipped. See renderPlanters and https://trello.com/c/gcQP1950.
+        const slotEl = document.getElementById(`planter-slot_${planterId}`);
+        if (!slotEl) return;
 
         const cardInfo = this.gamedatas.plantCardTypes[card.type];
         // Full-size card (same as every other card on screen), slid
@@ -1824,7 +1835,7 @@ export class Game {
         // higher numbers stay covered. See https://trello.com/c/gcQP1950.
         const level = Math.max(0, Math.min(3, parseInt(card.type_arg, 10) || 0));
         const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Level: ${level}` });
-        planterEl.insertAdjacentHTML('beforeend', `
+        slotEl.insertAdjacentHTML('beforeend', `
             <div id="garden_plant_${card.id}"
                  class="plantopia-plant-on-planter plantopia-card-size ${body.extraClass}"
                  ${body.dataAttr}
