@@ -312,20 +312,21 @@ class Game extends \Bga\GameFramework\Table
     {
         $players = $this->loadPlayersBasicInfos();
         $handCounts = $this->plantCards->countCardsByLocationArgs('hand');
-        // Per https://trello.com/c/K1iHgIDS: "cards in hand" for the
-        // per_two_cards_in_hand bonus (Battus, Money Plant, Monte Carlo
-        // Tree — all read "including all Weather Cards") must also count
-        // held CHARACTER weather cards. Those live in weatherCards' 'hand'
-        // location; Bonus Weather never does (it's held publicly in
-        // weather_public_bonus per https://trello.com/c/B5g3UmED), so
-        // this naturally excludes Bonus Weather without any extra
-        // filtering — matching the rulebook's distinction between a
-        // player's hidden hand and their public bonus-weather stash.
-        // Kept separate from $handCounts (plant-only) because that
-        // variable is also broadcast in the updateScores notification to
-        // drive the plant-hand-count display — this scoring-only total
-        // must not leak into that.
+        // Per https://trello.com/c/K1iHgIDS (Marty confirmed with worked
+        // examples): "cards in hand" for the per_two_cards_in_hand bonus
+        // (Battus, Money Plant, Monte Carlo Tree — all read "including
+        // all Weather Cards") counts BOTH held character weather cards
+        // (weatherCards' 'hand' location) AND held Bonus Weather cards
+        // (weatherCards' 'weather_public_bonus' location — see
+        // https://trello.com/c/B5g3UmED for why Bonus Weather lives there
+        // instead of 'hand'). "All Weather Cards" really does mean all of
+        // them, regardless of which location holds them for game-state
+        // reasons. Kept separate from $handCounts (plant-only) because
+        // that variable is also broadcast in the updateScores
+        // notification to drive the plant-hand-count display — this
+        // scoring-only total must not leak into that.
         $weatherHandCounts = $this->weatherCards->countCardsByLocationArgs('hand');
+        $weatherBonusCounts = $this->weatherCards->countCardsByLocationArgs('weather_public_bonus');
 
         $planters = $this->planterCards->getCardsInLocation('garden');
         $planterToPlayer = [];
@@ -341,7 +342,9 @@ class Game extends \Bga\GameFramework\Table
         foreach ($players as $playerId => $playerInfo) {
             $playerId = (int)$playerId;
             $score = 0;
-            $cardsInHand = ($handCounts[$playerId] ?? 0) + ($weatherHandCounts[$playerId] ?? 0);
+            $cardsInHand = ($handCounts[$playerId] ?? 0)
+                + ($weatherHandCounts[$playerId] ?? 0)
+                + ($weatherBonusCounts[$playerId] ?? 0);
 
             $playerPlants = [];
             foreach ($plantsOnPlanters as $plant) {

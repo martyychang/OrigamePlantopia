@@ -8,12 +8,15 @@ declare(strict_types=1);
  * score "1 Point per 2 cards in hand at the end of the game (including
  * all Weather Cards)".
  *
+ * Marty's final ruling: "all Weather Cards" means ALL of them — both
+ * held character weather cards (private, weatherCards' 'hand' location)
+ * AND held Bonus Weather cards (public, weatherCards'
+ * 'weather_public_bonus' location — see https://trello.com/c/B5g3UmED
+ * for why Bonus Weather lives there instead of 'hand').
+ *
  * Drives the REAL PlantCards.php card data against calculateAllScores()
  * (a faithful copy in harness.php — see the comment there on why it's a
- * copy rather than requiring the real Game.php). Reproduces Marty's
- * exact example: 0 plant cards in hand, 0 Bonus Weather cards, 3
- * character weather cards in hand → Battus should still score
- * floor(3/2) = 1 point.
+ * copy rather than requiring the real Game.php).
  *
  * Run: php tests/php/BattusScoringTest.php
  */
@@ -38,72 +41,70 @@ function check(string $label, bool $cond, string $detail = ''): void {
 
 Game::$PLANT_CARD_TYPES = PlantCards::getTypes();
 
-// ── Scenario from Marty's clarification ─────────────────────────────
-// Player 1 has a single planted Battus (Treevolved Cactus, level 0 —
-// points_per_level doesn't matter for this test, only bonus_scoring
-// does), ZERO plant cards in hand, ZERO Bonus Weather cards held, and
-// 3 character weather cards (their claimed character's sun/rain/wind)
-// sitting in weatherCards' 'hand' location.
-$game = new Game();
-$game->players[1] = ['name' => 'Alice'];
-$bga = new BgaStub();
-$game->bga = $bga;
+/**
+ * Build a single-player game with one planted Battus and the given hand
+ * composition, then return that player's final score (Battus is the
+ * only scoring source in play, so the returned score IS the
+ * per_two_cards_in_hand bonus for the given card counts).
+ */
+function scoreBattusScenario(int $plantCardsInHand, int $bonusWeatherHeld, int $characterWeatherInHand): int {
+    static $nextPlayerId = 1;
+    $playerId = $nextPlayerId++;
 
-[$planterId] = $game->planterCards->seed('planter', 0, 'garden', 1, 1);
-[$battusId] = $game->plantCards->seed('Battus', 0, 'planter', $planterId, 1);
-// 0 plant cards in hand (none seeded), 0 bonus weather (none seeded).
-// 3 character weather cards in the player's hand:
-$game->weatherCards->seed('banana', 0, 'hand', 1, 1); // sun
-$game->weatherCards->seed('banana', 1, 'hand', 1, 1); // rain
-$game->weatherCards->seed('banana', 2, 'hand', 1, 1); // wind
+    $game = new Game();
+    $game->players[$playerId] = ['name' => "P$playerId"];
+    $game->bga = new \Bga\GameFramework\BgaStub();
 
-$scores = $game->calculateAllScores();
+    [$planterId] = $game->planterCards->seed('planter', 0, 'garden', $playerId, 1);
+    $game->plantCards->seed('Battus', 0, 'planter', $planterId, 1);
 
-echo "--- Marty's example: 0 plant cards, 0 bonus weather, 3 character weather ---\n";
-check('Battus alone scores exactly 1 point (floor(3/2)*1)', ($scores[1] ?? null) == 1, 'got ' . json_encode($scores));
+    if ($plantCardsInHand > 0) {
+        $game->plantCards->seed('Buttercup', 0, 'hand', $playerId, $plantCardsInHand);
+    }
+    if ($bonusWeatherHeld > 0) {
+        $game->weatherCards->seed('bonus', 0, 'weather_public_bonus', $playerId, $bonusWeatherHeld);
+    }
+    if ($characterWeatherInHand > 0) {
+        $game->weatherCards->seed('banana', 0, 'hand', $playerId, $characterWeatherInHand);
+    }
 
-// ── Additional case: Bonus Weather must NOT count (it's public, not hand) ──
-$game2 = new Game();
-$game2->players[1] = ['name' => 'Bob'];
-$game2->bga = new BgaStub();
-[$planterId2] = $game2->planterCards->seed('planter', 0, 'garden', 1, 1);
-[$battusId2] = $game2->plantCards->seed('Battus', 0, 'planter', $planterId2, 1);
-// 0 plant cards in hand, 4 Bonus Weather cards HELD (public stash, not hand),
-// 1 character weather card in hand.
-$game2->weatherCards->seed('bonus', 0, 'weather_public_bonus', 1, 4);
-$game2->weatherCards->seed('banana', 0, 'hand', 1, 1);
+    $scores = $game->calculateAllScores();
+    return (int)round($scores[$playerId] ?? -1);
+}
 
-$scores2 = $game2->calculateAllScores();
-echo "\n--- Bonus Weather (public stash) must not count toward the hand bonus ---\n";
-check('4 held Bonus Weather + 1 character weather → still floor(1/2)=0 points (bonus weather excluded)',
-    ($scores2[1] ?? null) == 0, 'got ' . json_encode($scores2));
+// ── Marty's original clarification example ──────────────────────────
+check(
+    '0 plant + 0 bonus weather + 3 character weather → floor(3/2)=1 point',
+    scoreBattusScenario(0, 0, 3) === 1
+);
 
-// ── Sanity case: plant cards in hand still count as before (no regression) ──
-$game3 = new Game();
-$game3->players[1] = ['name' => 'Carol'];
-$game3->bga = new BgaStub();
-[$planterId3] = $game3->planterCards->seed('planter', 0, 'garden', 1, 1);
-[$battusId3] = $game3->plantCards->seed('Battus', 0, 'planter', $planterId3, 1);
-$game3->plantCards->seed('Buttercup', 0, 'hand', 1, 5); // 5 plant cards in hand
-// no weather cards at all
+// ── Marty's three follow-up examples, confirming Bonus Weather DOES count ──
+check(
+    '1 plant + 1 bonus weather + 3 character weather → floor(5/2)=2 points',
+    scoreBattusScenario(1, 1, 3) === 2
+);
+check(
+    '1 plant + 2 bonus weather + 3 character weather → floor(6/2)=3 points',
+    scoreBattusScenario(1, 2, 3) === 3
+);
+check(
+    '2 plant + 1 bonus weather + 3 character weather → floor(6/2)=3 points',
+    scoreBattusScenario(2, 1, 3) === 3
+);
 
-$scores3 = $game3->calculateAllScores();
-echo "\n--- Plant-card-only hand count still works (no regression) ---\n";
-check('5 plant cards in hand alone → floor(5/2)=2 points', ($scores3[1] ?? null) == 2, 'got ' . json_encode($scores3));
-
-// ── Combined case: plant cards + character weather cards both count ──
-$game4 = new Game();
-$game4->players[1] = ['name' => 'Dave'];
-$game4->bga = new BgaStub();
-[$planterId4] = $game4->planterCards->seed('planter', 0, 'garden', 1, 1);
-[$battusId4] = $game4->plantCards->seed('Battus', 0, 'planter', $planterId4, 1);
-$game4->plantCards->seed('Buttercup', 0, 'hand', 1, 3); // 3 plant cards
-$game4->weatherCards->seed('banana', 0, 'hand', 1, 3);  // 3 character weather cards
-// total 6 cards in hand → floor(6/2) = 3
-
-$scores4 = $game4->calculateAllScores();
-echo "\n--- Plant cards + character weather cards combine correctly ---\n";
-check('3 plant + 3 character weather = 6 total → floor(6/2)=3 points', ($scores4[1] ?? null) == 3, 'got ' . json_encode($scores4));
+// ── No-regression sanity checks ──────────────────────────────────────
+check(
+    '5 plant cards alone (no weather at all) → floor(5/2)=2 points',
+    scoreBattusScenario(5, 0, 0) === 2
+);
+check(
+    '0 of everything → 0 points',
+    scoreBattusScenario(0, 0, 0) === 0
+);
+check(
+    '4 bonus weather alone (no plant, no character weather) → floor(4/2)=2 points',
+    scoreBattusScenario(0, 4, 0) === 2
+);
 
 echo "\n" . ($failures === 0 ? "ALL CHECKS PASSED\n" : "$failures CHECK(S) FAILED\n");
 exit($failures === 0 ? 0 : 1);

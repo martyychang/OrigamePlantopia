@@ -195,17 +195,19 @@ namespace Bga\Games\OrigamePlantopia {
         /**
          * Verbatim copy of Game::calculateAllScores() as of the commit
          * that fixed https://trello.com/c/K1iHgIDS (character weather
-         * cards counting toward per_two_cards_in_hand). Kept here rather
-         * than requiring the real Game.php, which extends BGA's Table
-         * class and pulls in DB/framework dependencies this harness
-         * doesn't stub. If this method changes in the real Game.php,
-         * re-sync this copy — a drifted copy would silently test stale
-         * logic.
+         * AND held Bonus Weather cards both counting toward
+         * per_two_cards_in_hand — Marty confirmed "all Weather Cards"
+         * really does mean all of them). Kept here rather than requiring
+         * the real Game.php, which extends BGA's Table class and pulls
+         * in DB/framework dependencies this harness doesn't stub. If
+         * this method changes in the real Game.php, re-sync this copy —
+         * a drifted copy would silently test stale logic.
          */
         function calculateAllScores(): array {
             $players = $this->loadPlayersBasicInfos();
             $handCounts = $this->plantCards->countCardsByLocationArgs('hand');
             $weatherHandCounts = $this->weatherCards->countCardsByLocationArgs('hand');
+            $weatherBonusCounts = $this->weatherCards->countCardsByLocationArgs('weather_public_bonus');
 
             $planters = $this->planterCards->getCardsInLocation('garden');
             $planterToPlayer = [];
@@ -221,7 +223,9 @@ namespace Bga\Games\OrigamePlantopia {
             foreach ($players as $playerId => $playerInfo) {
                 $playerId = (int)$playerId;
                 $score = 0;
-                $cardsInHand = ($handCounts[$playerId] ?? 0) + ($weatherHandCounts[$playerId] ?? 0);
+                $cardsInHand = ($handCounts[$playerId] ?? 0)
+                    + ($weatherHandCounts[$playerId] ?? 0)
+                    + ($weatherBonusCounts[$playerId] ?? 0);
 
                 $playerPlants = [];
                 foreach ($plantsOnPlanters as $plant) {
