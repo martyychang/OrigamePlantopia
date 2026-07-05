@@ -477,7 +477,7 @@ class PlantingPhase extends GameState
 
         if (count($cardIds) !== $keepQty) {
             if (count($draftCards) > $keepQty) {
-                throw new UserException(clienttranslate("You must choose exactly ${keepQty} card(s)."));
+                throw new UserException(clienttranslate("You must choose exactly {$keepQty} card(s)."));
             } else if (count($cardIds) !== count($draftCards)) {
                 throw new UserException(clienttranslate("You must choose all available cards."));
             }
@@ -709,7 +709,7 @@ class PlantingPhase extends GameState
             // Check if player has enough cards in hand
             $handCount = (int)$this->game->plantCards->countCardInLocation('hand', $playerId);
             if ($handCount >= $qty) {
-                throw new UserException(clienttranslate("You must discard exactly ${qty} cards."));
+                throw new UserException(clienttranslate("You must discard exactly {$qty} cards."));
             } else if (count($cardIds) !== $handCount) {
                 throw new UserException(clienttranslate("You must discard all your cards."));
             }

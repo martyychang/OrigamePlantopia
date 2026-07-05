@@ -612,6 +612,22 @@ This formula is container-size-independent — the same CSS works for hand cards
 
 ---
 
+## Testing State Classes Outside BGA Studio (PHP)
+
+BGA Studio provides no local runtime — no DB, no CLI test harness. To verify server-side game logic without deploying and clicking through Studio, `require` the REAL, unmodified state-class file against a minimal stub of the BGA framework instead of writing a parallel re-implementation.
+
+**Pattern** (see `tests/php/harness.php` + `tests/php/CattusDraftTest.php`):
+- Define fake classes under the *exact* namespaces the state file imports (`Bga\GameFramework\*`, `Bga\Games\OrigamePlantopia\Game`) in a separate file, `require`d *before* the real state file. Because PHP class resolution here is just `require` order (no autoloader), whichever definition loads first under a given fully-qualified name wins — the harness's `FakeGame`/`FakeDeck` satisfy `use Bga\Games\OrigamePlantopia\Game;` without ever touching the real `Game.php` (which depends on the live BGA Table/DB machinery and can't run standalone).
+- A file that declares multiple namespaces MUST use braced `namespace X { ... }` blocks for ALL of them, including top-level global code (e.g. a `clienttranslate()` stub) — PHP forbids mixing bracketed and unbracketed namespace declarations in one file.
+- Model the DB with a plain in-memory array of rows (id/type/type_arg/location/location_arg) mirroring what BGA's Deck component returns — not with the real Deck class.
+- **Fake `player_*` columns must use the REAL DB column names as array keys, not short/friendly aliases.** `DbQuery()`'s stub parses raw SQL text (`UPDATE player SET player_pending_effects = '...' WHERE player_id = 1`) and can only recover the column name that's *literally in the SQL string* — `player_pending_effects`, not `pending_effects`. If `getUniqueValueFromDb()`'s read-side stub uses a different key than the write-side parser produces, every write silently lands on a different array key than every read checks, and the state machine looks completely broken in the test even though the real code (and the real DB) would work fine. This exact mismatch cost real debugging time once — keep read/write key names in lockstep with the schema in `dbmodel.sql`.
+- When parsing `UPDATE ... SET col1 = 'val,with,commas', col2 = 5` style SQL, never `explode(',', ...)` naively — a JSON-encoded column value (e.g. `player_pending_effects`) contains commas, and a naive split shreds it into garbage fragments. Track quote state character-by-character and only split on commas *outside* single-quoted string literals.
+- Run with plain `php path/to/test.php` (no PHPUnit needed for this scale) — Homebrew's `php` cask is sufficient (`brew install php`).
+
+This mirrors the JS-side pattern in `tests/computePlayerStats.test.mjs` (load the live method body, stub the minimum `this` surface, assert against real production code).
+
+---
+
 ## Tooltips & Translations
 
 When implementing tooltips in the BGA Modern Framework, be aware of the following conventions:
