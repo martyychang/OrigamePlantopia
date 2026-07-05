@@ -86,6 +86,32 @@
     height: 180px;
 }
 
+/* Garden row layout (Trello https://trello.com/c/gcQP1950 follow-up).
+   Marty's explicit direction after seeing planters/character/bonus
+   weather all packed into one flex row and shrinking to fit:
+     - Planters + the player's claimed character card share one row.
+     - Level-3 (tilted) plants get their OWN row underneath the
+       planters, instead of trailing off the end of the planter row.
+     - Bonus weather cards get their own row too — same reasoning:
+       an unbounded, ever-growing set of cards must never squish the
+       fixed-size planters/character card it used to share a row with.
+     - EVERY row must always overflow horizontally rather than shrink
+       cards to fit. flex-shrink: 0 on every direct child (rather than
+       repeating it inline everywhere) plus overflow-x: auto achieves
+       that: once a row's content is wider than its container, a
+       horizontal scrollbar appears and every card keeps its full,
+       undistorted .plantopia-card-size footprint. */
+.plantopia-overflow-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+}
+.plantopia-overflow-row > * {
+    flex-shrink: 0;
+}
+
 /* Adult Plant card art (Trello https://trello.com/c/XynmHHxj). The
    img/plants_adult.png sprite has 7 cols × 3 rows of 200×300 cells.
    Element supplies its own width/height; background-size: 700% 300%

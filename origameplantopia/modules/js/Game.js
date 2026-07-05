@@ -54,7 +54,7 @@ class SetupDecisions {
             });
 
             // Highlight the player's own claimed character in their garden to return it
-            const myGarden = document.getElementById(`player-garden-${this.bga.players.getCurrentPlayerId()}`);
+            const myGarden = document.getElementById(`player-garden-planters-${this.bga.players.getCurrentPlayerId()}`);
             if (myGarden) {
                 myGarden.querySelectorAll('.character-card').forEach(el => {
                     el.classList.add('bga-cards_selectable-card');
@@ -845,28 +845,33 @@ export class Game {
             `);
             this.renderPlayerPanel(player.id);
 
-            // example of adding a div for each player
+            // Three dedicated, always-overflowing rows instead of one shared
+            // flex row (Trello https://trello.com/c/gcQP1950 follow-up):
+            // planters+character, then level-3 tilted plants underneath,
+            // then bonus weather. See .plantopia-overflow-row in the CSS.
             document.getElementById('player-tables').insertAdjacentHTML('beforeend', `
                 <div id="player-table-${player.id}" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px;">
                     <h3>${player.name}'s Garden</h3>
-                    <div id="player-garden-${player.id}" style="display: flex; align-items: flex-end; gap: 10px; margin-top: 10px; min-height: 300px;"></div>
+                    <div id="player-garden-planters-${player.id}" class="plantopia-overflow-row" style="margin-top: 10px; min-height: 300px;"></div>
+                    <div id="player-garden-tilted-${player.id}" class="plantopia-overflow-row" style="margin-top: 10px;"></div>
+                    <div id="player-garden-bonus-${player.id}" class="plantopia-overflow-row" style="margin-top: 10px;"></div>
                 </div>
             `);
 
             // Render claimed characters for this player
             const claimed = Object.values(gamedatas.claimedCharacters || {}).filter(c => c.location_arg == player.id);
-            this.renderCharacters(claimed, `player-garden-${player.id}`);
+            this.renderCharacters(claimed, `player-garden-planters-${player.id}`);
 
             // Render planters for this player
             const planters = Object.values(gamedatas.planters || {}).filter(c => c.location_arg == player.id);
-            this.renderPlanters(planters, `player-garden-${player.id}`);
-            
-            // Render Level 3 plants for this player (rendered just directly in the garden container alongside planters)
+            this.renderPlanters(planters, `player-garden-planters-${player.id}`);
+
+            // Render Level 3 plants for this player on their OWN row.
             const level3Plants = Object.values(gamedatas.plantsLevel3 || {}).filter(c => c.location_arg == player.id);
             level3Plants.forEach(card => {
                 const cardInfo = this.gamedatas.plantCardTypes[card.type];
                 const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Level: ${card.type_arg}` });
-                document.getElementById(`player-garden-${player.id}`).insertAdjacentHTML('beforeend', `
+                document.getElementById(`player-garden-tilted-${player.id}`).insertAdjacentHTML('beforeend', `
                     <div id="garden_plant_${card.id}" class="level3-tilted plantopia-card-size ${body.extraClass}" ${body.dataAttr} data-id="${card.id}" style="position: relative; border: 2px solid #2ecc71; border-radius: 5px; background-color: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                         ${body.inner}
                     </div>
@@ -880,7 +885,7 @@ export class Game {
             this.renderPlantInPlanter(card, card.location_arg);
         });
 
-        // Render Bonus Weather for each player directly in their garden
+        // Render Bonus Weather for each player on its own dedicated row.
         orderedPlayers.forEach(player => {
             const playerBonusWeather = Object.values(gamedatas.weatherPublicBonus || {}).filter(c => c.location_arg == player.id);
             playerBonusWeather.forEach(card => {
@@ -888,7 +893,7 @@ export class Game {
                 if (this.gamedatas.weatherCardTypes[card.type] && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
                     cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
                 }
-                const garden = document.getElementById(`player-garden-${player.id}`);
+                const garden = document.getElementById(`player-garden-bonus-${player.id}`);
                 if (garden) {
                     const body = this.weatherCardBody(card, cardInfo);
                     garden.insertAdjacentHTML('beforeend', `
@@ -1402,7 +1407,7 @@ export class Game {
         console.log("notif_mushroomBonusWeather", args);
         const cards = args.cards || [];
         if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
-        const garden = document.getElementById(`player-garden-${args.player_id}`);
+        const garden = document.getElementById(`player-garden-bonus-${args.player_id}`);
         cards.forEach(card => {
             // Track in local gamedatas so subsequent renders include the card.
             this.gamedatas.weatherPublicBonus[card.id] = card;
@@ -1461,7 +1466,7 @@ export class Game {
         const cardId = args.card.id;
         const cardEl = document.getElementById(`character_${cardId}`);
         if (cardEl) {
-            const garden = document.getElementById(`player-garden-${args.player_id}`);
+            const garden = document.getElementById(`player-garden-planters-${args.player_id}`);
             if (garden) {
                 garden.appendChild(cardEl);
                 
@@ -1544,7 +1549,7 @@ export class Game {
         if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
         this.gamedatas.weatherPublicBonus[card.id] = card;
 
-        const garden = document.getElementById(`player-garden-${args.player_id}`);
+        const garden = document.getElementById(`player-garden-bonus-${args.player_id}`);
         if (garden && !document.getElementById(`weather_${card.id}`)) {
             let cardInfo = { name: 'Unknown' };
             if (this.gamedatas.weatherCardTypes[card.type]
@@ -1572,7 +1577,7 @@ export class Game {
         const bonusCards = args.bonusCards || [];
         if (bonusCards.length > 0) {
             if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
-            const garden = document.getElementById(`player-garden-${args.player_id}`);
+            const garden = document.getElementById(`player-garden-bonus-${args.player_id}`);
             bonusCards.forEach(card => {
                 this.gamedatas.weatherPublicBonus[card.id] = card;
                 if (!garden || document.getElementById(`weather_${card.id}`)) return;
@@ -1758,9 +1763,11 @@ export class Game {
                     el.classList.remove('plantopia-plant-on-planter');
                     el.classList.add('level3-tilted', 'plantopia-card-size');
                     el.style.cssText = 'position: relative; border: 2px solid #2ecc71; border-radius: 5px; background-color: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
-                    const planterContainer = el.parentElement;
-                    const gardenContainer = planterContainer && planterContainer.parentElement;
-                    if (gardenContainer) gardenContainer.appendChild(el);
+                    // Moves to the player's OWN dedicated tilted-plants row,
+                    // underneath their planters row, per
+                    // https://trello.com/c/gcQP1950.
+                    const tiltedRow = document.getElementById(`player-garden-tilted-${args.player_id}`);
+                    if (tiltedRow) tiltedRow.appendChild(el);
                 }
             }
         }
