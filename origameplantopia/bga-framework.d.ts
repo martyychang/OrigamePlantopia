@@ -96,7 +96,6 @@ interface Gamedatas<P extends Player = Player> {
 interface Player {
   beginner: boolean;
   color: string;
-  color_back: any | null;
   eliminated: number;
   id: string;
   is_ai: string;
@@ -456,6 +455,173 @@ declare class Notifications {
     }): void;
 }
 
+declare class Display3D {
+        /**
+         * Initializes the 3D display mode.
+         *
+         * @param {Object} [settings]
+         * @param {HTMLElement[]} [settings.elements] Elements transformed by the 3D view.
+         * @param {boolean} [settings.showControls=true] Whether to show the legacy 3D controls.
+         * @param {Object} [settings.view] Initial view values and optional min/max bounds.
+         * @param {boolean|number|Object} [settings.draggable] Enables drag controls, optionally with multipliers.
+         * @param {boolean|number|Object} [settings.zoomByWheel] Enables wheel zoom, optionally with a multiplier.
+         */
+        init3d(settings = undefined): void;
+
+        /**
+         * Replaces the elements transformed by this 3D view.
+         *
+         * @param {HTMLElement[]} elements
+         */
+        setElements(elements: HTMLElement[]): void;
+
+        /**
+         * Add new elements transformed by this 3D view.
+         *
+         * @param {HTMLElement[]} elements
+         */
+        addElements(elements: HTMLElement[]): void;
+
+        /**
+         * Applies relative changes to the current 3D view.
+         *
+         * @param {number} xaxis Relative X-axis rotation delta.
+         * @param {number} xpos Relative X-position delta.
+         * @param {number} ypos Relative Y-position delta.
+         * @param {number} zaxis Relative Z-axis rotation delta.
+         * @param {number} scale Relative zoom delta.
+         */
+        change3d(xaxis: number, xpos: number, ypos: number, zaxis: number, scale: number): void;
+
+        /**
+         * Resets the 3D view to the neutral position, respecting configured bounds.
+         */
+        resetView(): void;
+
+        /**
+         * Applies a relative rotation to the 3D view.
+         *
+         * @param {number} x Relative X-axis rotation delta.
+         * @param {number} y Relative Z-axis rotation delta.
+         */
+        rotate(x: number, y: number): void;
+
+        /**
+         * Applies a relative translation to the 3D view.
+         *
+         * @param {number} x Relative X-position delta.
+         * @param {number} y Relative Y-position delta.
+         */
+        slide(x: number, y: number): void;
+
+        /**
+         * Applies a relative zoom change to the 3D view.
+         *
+         * @param {number} inc Relative zoom delta.
+         */
+        zoom(inc: number): void;
+
+        /**
+         * Sets the zoom to an absolute value.
+         *
+         * @param {number} value
+         */
+        setZoom(value: number): void;
+
+        /**
+         * Enables or disables right-button rotation and middle-button slide dragging.
+         *
+         * @param {boolean|number|Object} [enabled=true] Enable flag, shared multiplier, or settings object.
+         * @param {Object|number} [settings] Drag multipliers, or a shared multiplier.
+         * @param {boolean} [settings.enabled=true] Enable flag when using object form.
+         * @param {number} [settings.multiplier] Shared rotation and slide multiplier.
+         * @param {number} [settings.rotationMultiplier=0.1] Right-button rotation multiplier.
+         * @param {number} [settings.slideMultiplier=1] Middle-button slide multiplier.
+         */
+        setDraggable(enabled: boolean, settings = {}): void;
+
+        /**
+         * Enables or disables mouse wheel zoom.
+         *
+         * @param {boolean|number|Object} [enabled=true] Enable flag, zoom multiplier, or settings object.
+         * @param {Object|number} [settings] Wheel zoom settings, or a zoom multiplier.
+         * @param {boolean} [settings.enabled=true] Enable flag when using object form.
+         * @param {number} [settings.multiplier=0.1] Wheel zoom multiplier.
+         * @param {number} [settings.zoomMultiplier=0.1] Wheel zoom multiplier alias.
+         */
+        setZoomByWheel(enabled: boolean, settings = {}): void;
+
+        /**
+         * Sets the minimum X-axis rotation, or clears it with null.
+         *
+         * @param {?number} [value=null]
+         */
+        setMinXAxis(value?: number): void;
+
+        /**
+         * Sets the maximum X-axis rotation, or clears it with null.
+         *
+         * @param {?number} [value=null]
+         */
+        setMaxXAxis(value?: number): void;
+
+        /**
+         * Sets the minimum Z-axis rotation, or clears it with null.
+         *
+         * @param {?number} [value=null]
+         */
+        setMinZAxis(value?: number): void;
+
+        /**
+         * Sets the maximum Z-axis rotation, or clears it with null.
+         *
+         * @param {?number} [value=null]
+         */
+        setMaxZAxis(value?: number): void;
+
+        /**
+         * Sets the minimum X-position, or clears it with null.
+         *
+         * @param {?number} [value=null]
+         */
+        setMinXPos(value?: number): void;
+
+        /**
+         * Sets the maximum X-position, or clears it with null.
+         *
+         * @param {?number} [value=null]
+         */
+        setMaxXPos(value?: number): void;
+
+        /**
+         * Sets the minimum Y-position, or clears it with null.
+         *
+         * @param {?number} [value=null]
+         */
+        setMinYPos(value?: number): void;
+
+        /**
+         * Sets the maximum Y-position, or clears it with null.
+         *
+         * @param {?number} [value=null]
+         */
+        setMaxYPos(value?: number): void;
+
+        /**
+         * Sets the minimum zoom, or clears it with null.
+         *
+         * @param {?number} [value=null]
+         */
+        setMinZoom(value?: number): void
+
+        /**
+         * Sets the maximum zoom, or clears it with null.
+         *
+         * @param {?number} [value=null]
+         */
+        setMaxZoom(value?: number): void;
+    }
+
 declare class GameArea {
   /**
    * Return the Game Area div (for all displayed game components).
@@ -647,6 +813,7 @@ declare class States {
 
 interface Bga<P extends Player = Player, G extends Gamedatas<P> = Gamedatas<P>> {
   gameui: GameGui<P, G>;
+  display3D: Display3D;
   statusBar: StatusBar;
   images: Images;
   sounds: Sounds;
