@@ -419,8 +419,26 @@ class Game extends \Bga\GameFramework\Table
             }
             
             $scores[$playerId] = $score;
-            
-            $this->DbQuery("UPDATE player SET player_score = $score, player_score_aux = $trvPlantsCount WHERE player_id = $playerId");
+
+            // Tiebreaker rules (https://trello.com/c/DTEJePl6):
+            //   1. Most Adult Plants in Garden wins a tie.
+            //   2. If still tied, most cards left in hand wins — using the
+            //      same "cards in hand" definition Marty confirmed for
+            //      Battus-style scoring (plant hand + character weather
+            //      hand + held Bonus Weather — see https://trello.com/c/K1iHgIDS).
+            //   3. If still tied, all tied players are Champions — BGA
+            //      already treats equal score AND score_aux as a genuine
+            //      tie in the ranking table, so no extra code is needed
+            //      for this leaf case.
+            // BGA exposes only one player_score_aux column for automatic
+            // tie resolution, so both levels are packed into it: Adult
+            // Plants in the thousands place, hand count in the units
+            // place. A single player's hand count never approaches 1000
+            // (the entire game is ~150 cards across all types), so the two
+            // can't collide.
+            $scoreAux = $trvPlantsCount * 1000 + $cardsInHand;
+
+            $this->DbQuery("UPDATE player SET player_score = $score, player_score_aux = $scoreAux WHERE player_id = $playerId");
         }
         
         $this->bga->notify->all("updateScores", "", [

@@ -302,7 +302,13 @@ namespace Bga\Games\OrigamePlantopia {
 
                 $scores[$playerId] = $score;
 
-                $this->DbQuery("UPDATE player SET player_score = $score, player_score_aux = $trvPlantsCount WHERE player_id = $playerId");
+                // Tiebreaker (https://trello.com/c/DTEJePl6): pack Adult
+                // Plants (thousands place) + cards in hand (units place)
+                // into the single player_score_aux column. See the real
+                // Game.php::calculateAllScores for the full rationale.
+                $scoreAux = $trvPlantsCount * 1000 + $cardsInHand;
+
+                $this->DbQuery("UPDATE player SET player_score = $score, player_score_aux = $scoreAux WHERE player_id = $playerId");
             }
 
             $this->bga->notify->all("updateScores", "", [
