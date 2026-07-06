@@ -10,6 +10,7 @@ use Bga\GameFramework\States\PossibleAction;
 use Bga\GameFramework\UserException;
 use Bga\Games\OrigamePlantopia\Game;
 use Bga\Games\OrigamePlantopia\PlantCards;
+use Bga\Games\OrigamePlantopia\WeatherCards;
 
 class PlantingPhase extends GameState
 {
@@ -330,7 +331,7 @@ class PlantingPhase extends GameState
             case 'gain_weather':
                 $type = $effect['weather_type'];
                 if ($type !== PlantCards::WEATHER_ANY) {
-                    $typed = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', $type, 'bonus_deck');
+                    $typed = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', $this->weatherCondition($type), 'bonus_deck');
                     if (count($typed) > 0) return false;
                 }
                 $market = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
@@ -344,6 +345,29 @@ class PlantingPhase extends GameState
                 // by their nature (banana is pre-gated by isBananaEligible).
                 return false;
         }
+    }
+
+    /**
+     * Map a PlantCards::WEATHER_* string (sun/rain/wind) to the
+     * WeatherCards::CONDITION_* int used as a bonus weather card's
+     * type_arg. These are two independently-defined constants for the
+     * same three conditions — passing the PlantCards string straight into
+     * getCardsOfTypeInLocation() (which matches on type_arg) silently
+     * matched zero cards for every planting effect that gains a SPECIFIC
+     * weather type (e.g. Treegonometree's "gain a Bonus Rain card"),
+     * making the effect fall through to the generic "choose any weather
+     * card" prompt instead of auto-granting the intended one. See
+     * https://trello.com/c/xGkeMcXO. Not called for PlantCards::WEATHER_ANY,
+     * which has no matching CONDITION_* and is handled separately by every
+     * caller.
+     */
+    private function weatherCondition(string $plantCardsWeatherType): int
+    {
+        return match ($plantCardsWeatherType) {
+            PlantCards::WEATHER_SUN => WeatherCards::CONDITION_SUN,
+            PlantCards::WEATHER_RAIN => WeatherCards::CONDITION_RAIN,
+            PlantCards::WEATHER_WIND => WeatherCards::CONDITION_WIND,
+        };
     }
 
     /**
@@ -624,7 +648,7 @@ class PlantingPhase extends GameState
                 array_shift($queue);
             }
             else if ($effect['type'] === 'gain_weather' && $effect['weather_type'] !== PlantCards::WEATHER_ANY) {
-                $cards = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', $effect['weather_type'], 'bonus_deck');
+                $cards = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', $this->weatherCondition($effect['weather_type']), 'bonus_deck');
                 if (count($cards) > 0) {
                     $card = array_values($cards)[0];
                     // Bonus weather cards live publicly in 'weather_public_bonus'
