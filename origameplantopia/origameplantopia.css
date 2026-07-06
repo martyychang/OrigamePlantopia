@@ -276,3 +276,37 @@
 .plantopia-plant-on-planter[data-level="1"] { top: 49px; }
 .plantopia-plant-on-planter[data-level="2"] { top: 14px; }
 
+/* Player panel counter icons (Trello https://trello.com/c/3jIZmRy9). Replaces
+   the text labels ("Hand:", "Baby Cactus", "Sun", ...) in the player panel
+   with small icons cropped from the matching cards' own art, so the panel
+   reads with the same visual language as the cards themselves:
+     hand         -> the card-in-hand icon from Cattus's draw-effect row
+     baby_cactus  -> Cattus's plant-family badge (baby = circle)
+     adult_cactus -> Dogtus's plant-family badge (adult = hexagon)
+     baby_flower  -> Twolips's plant-family badge
+     adult_flower -> Carnation's plant-family badge
+     baby_tree    -> Treegonometree's plant-family badge
+     adult_tree   -> Symmetree's plant-family badge
+     sun/rain/wind -> circular crop of the matching Bonus Weather card's
+                      center icon
+   img/player_panel_icons.png is a 5 cols × 2 rows grid of 48×48 cells. */
+.plantopia-panel-icon {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+    background-image: url('img/player_panel_icons.png');
+    background-size: 500% 200%;
+    background-repeat: no-repeat;
+}
+.plantopia-panel-icon[data-icon="hand"]         { background-position: 0%   0%;   }
+.plantopia-panel-icon[data-icon="baby_cactus"]  { background-position: 25%  0%;   }
+.plantopia-panel-icon[data-icon="adult_cactus"] { background-position: 50%  0%;   }
+.plantopia-panel-icon[data-icon="baby_flower"]  { background-position: 75%  0%;   }
+.plantopia-panel-icon[data-icon="adult_flower"] { background-position: 100% 0%;   }
+.plantopia-panel-icon[data-icon="baby_tree"]    { background-position: 0%   100%; }
+.plantopia-panel-icon[data-icon="adult_tree"]   { background-position: 25%  100%; }
+.plantopia-panel-icon[data-icon="sun"]          { background-position: 50%  100%; }
+.plantopia-panel-icon[data-icon="rain"]         { background-position: 75%  100%; }
+.plantopia-panel-icon[data-icon="wind"]         { background-position: 100% 100%; }
+

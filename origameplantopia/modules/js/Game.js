@@ -1098,16 +1098,20 @@ export class Game {
         const el = document.getElementById(`plantopia-panel-${playerId}`);
         if (!el) return;
         const s = this.computePlayerStats(playerId);
-        const line = (label, arr) => `${label}: ${arr.join(' / ')}`;
+        // Icons instead of text labels (Trello https://trello.com/c/3jIZmRy9),
+        // styled after RFTG's counters: icon, a space, then the count — no
+        // colon, no label text.
+        const icon = (name) => `<span class="plantopia-panel-icon" data-icon="${name}"></span>`;
+        const line = (name, arr) => `${icon(name)} ${arr.join(' / ')}`;
         el.innerHTML = `
-            <div>Hand: <strong>${s.handCount}</strong></div>
-            <div>${line('Baby Cactus ', s.plants.cactus.baby)}</div>
-            <div>${line('Adult Cactus', s.plants.cactus.adult)}</div>
-            <div>${line('Baby Flower ', s.plants.flower.baby)}</div>
-            <div>${line('Adult Flower', s.plants.flower.adult)}</div>
-            <div>${line('Baby Tree   ', s.plants.tree.baby)}</div>
-            <div>${line('Adult Tree  ', s.plants.tree.adult)}</div>
-            <div>Sun ${s.bonusWeather.sun}  Rain ${s.bonusWeather.rain}  Wind ${s.bonusWeather.wind}</div>
+            <div>${icon('hand')} ${s.handCount}</div>
+            <div>${line('baby_cactus', s.plants.cactus.baby)}</div>
+            <div>${line('adult_cactus', s.plants.cactus.adult)}</div>
+            <div>${line('baby_flower', s.plants.flower.baby)}</div>
+            <div>${line('adult_flower', s.plants.flower.adult)}</div>
+            <div>${line('baby_tree', s.plants.tree.baby)}</div>
+            <div>${line('adult_tree', s.plants.tree.adult)}</div>
+            <div>${icon('sun')} ${s.bonusWeather.sun} ${icon('rain')} ${s.bonusWeather.rain} ${icon('wind')} ${s.bonusWeather.wind}</div>
         `;
     }
 
