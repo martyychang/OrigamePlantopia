@@ -69,15 +69,8 @@ foreach ($types as $name => $info) {
 // "Treevolved Cactus or Tree"). What it catches is a card whose bonus
 // keys don't match ANY family mentioned in its own text — most likely a
 // copy-paste artifact from a sibling card.
-// KNOWN, FLAGGED mismatch — https://trello.com/c/DAjjn8IT (filed during
-// this audit): Call-A-Lily's card_effect text says "Tree" but its
-// bonus_scoring keys score Flower. Awaiting Marty's call on which side
-// is the bug (text or scoring). Remove this exception once that's fixed.
-const KNOWN_TEXT_MISMATCH_PENDING_CONFIRMATION = ['Call-A-Lily'];
-
 $familyWord = ['cactus' => 'Cactus', 'flower' => 'Flower', 'tree' => 'Tree'];
 foreach ($types as $name => $info) {
-    if (in_array($name, KNOWN_TEXT_MISMATCH_PENDING_CONFIRMATION, true)) continue;
     $bonus = $info['bonus_scoring'] ?? [];
     $text = $info['card_effect'] ?? '';
     $scoredFamilies = [];

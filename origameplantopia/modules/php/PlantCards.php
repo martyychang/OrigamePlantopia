@@ -434,7 +434,7 @@ class PlantCards
                 'growth' => ['wind' => 3, 'rain' => 0, 'sun' => 0],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('Hello? Lily?'),
-                'card_effect' => clienttranslate('Gain 2 points for every Baby and Treevolved Tree at the end of the game (itself included).'),
+                'card_effect' => clienttranslate('Gain 2 points for every Baby and Treevolved Flower at the end of the game (itself included).'),
                 'planting_effect' => [],
                 'bonus_scoring' => [
                     'per_baby_flower' => 2,
