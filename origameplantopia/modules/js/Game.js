@@ -1118,15 +1118,16 @@ export class Game {
         // simple hover tooltip explaining what it means.
         const icon = (name) => `<span class="plantopia-panel-icon" data-icon="${name}" title="${Game.PANEL_ICON_TOOLTIPS[name] || ''}"></span>`;
         const line = (name, arr) => `${icon(name)} ${arr.join(' / ')}`;
+        // Baby/Adult of the same family share a line, and the bonus weather
+        // counters sit alongside the hand count — both per Marty's Trello
+        // feedback (https://trello.com/c/3jIZmRy9). "&nbsp;&nbsp;&nbsp;&nbsp;"
+        // is just breathing room between the two counters on a shared line.
+        const gap = '&nbsp;&nbsp;&nbsp;&nbsp;';
         el.innerHTML = `
-            <div>${icon('hand')} ${s.handCount}</div>
-            <div>${line('baby_cactus', s.plants.cactus.baby)}</div>
-            <div>${line('adult_cactus', s.plants.cactus.adult)}</div>
-            <div>${line('baby_flower', s.plants.flower.baby)}</div>
-            <div>${line('adult_flower', s.plants.flower.adult)}</div>
-            <div>${line('baby_tree', s.plants.tree.baby)}</div>
-            <div>${line('adult_tree', s.plants.tree.adult)}</div>
-            <div>${icon('sun')} ${s.bonusWeather.sun} ${icon('rain')} ${s.bonusWeather.rain} ${icon('wind')} ${s.bonusWeather.wind}</div>
+            <div>${icon('hand')} ${s.handCount}${gap}${icon('sun')} ${s.bonusWeather.sun}${gap}${icon('rain')} ${s.bonusWeather.rain}${gap}${icon('wind')} ${s.bonusWeather.wind}</div>
+            <div>${line('baby_cactus', s.plants.cactus.baby)}${gap}${line('adult_cactus', s.plants.cactus.adult)}</div>
+            <div>${line('baby_flower', s.plants.flower.baby)}${gap}${line('adult_flower', s.plants.flower.adult)}</div>
+            <div>${line('baby_tree', s.plants.tree.baby)}${gap}${line('adult_tree', s.plants.tree.adult)}</div>
         `;
     }
 
