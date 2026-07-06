@@ -10,7 +10,7 @@
  *
  * PlantCards.php
  *
- * Material data for all 32 unique plant card types (102 total cards).
+ * Material data for all 33 unique plant card types (102 total cards).
  * Array keys match the Deck component's card_type values.
  */
 declare(strict_types=1);
@@ -52,7 +52,7 @@ class PlantCards
     ];
 
     /**
-     * Return the full material data array for all 32 plant card types.
+     * Return the full material data array for all 33 plant card types.
      *
      * Each entry is keyed by card name (= Deck card_type) and contains:
      *   name             string  Translatable display name
@@ -286,7 +286,7 @@ class PlantCards
             ],
 
             // ════════════════════════════════════════════════════════════
-            //  TREEVOLVED CACTUS (6 unique, 13 total)
+            //  TREEVOLVED CACTUS (7 unique, 15 total)
             // ════════════════════════════════════════════════════════════
 
             'Battus' => [
@@ -523,7 +523,7 @@ class PlantCards
             ],
 
             // ════════════════════════════════════════════════════════════
-            //  TREEVOLVED TREE (7 unique, 16 total)
+            //  TREEVOLVED TREE (7 unique, 14 total)
             // ════════════════════════════════════════════════════════════
 
             'Boba Tree' => [

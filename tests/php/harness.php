@@ -398,8 +398,30 @@ namespace Bga\Games\OrigamePlantopia {
         }
 
         function getCollectionFromDb(string $sql): array {
-            // Only used by playerHasGrowableBaby/AdultOfFamily — not exercised
-            // by the Cattus scenario (no character claimed). Empty is fine.
+            // The only shape callers actually use (playerHasGrowableBaby/
+            // Plant/AdultOfFamily, playerHasLevelUpTarget): every plant
+            // card on a planter belonging to one player. Real BGA does
+            // this join in SQL — plant_card.card_location_arg is the
+            // planter's card_id, planter_card.card_location_arg is the
+            // owning player. Do the same join directly against the
+            // FakeDeck data so these interactive-effect mootness checks
+            // can actually be exercised by tests instead of always
+            // silently returning "moot" (empty).
+            if (preg_match('/FROM plant_card pc\s+JOIN planter_card plc.*plc\.card_location_arg = (\d+)/s', $sql, $m)) {
+                $playerId = (int)$m[1];
+                $out = [];
+                foreach ($this->plantCards->cards as $card) {
+                    if ($card['location'] !== 'planter') continue;
+                    $planter = $this->planterCards->cards[$card['location_arg']] ?? null;
+                    if (!$planter || (int)$planter['location_arg'] !== $playerId) continue;
+                    $out[] = [
+                        'card_id' => $card['id'],
+                        'card_type' => $card['type'],
+                        'card_type_arg' => $card['type_arg'],
+                    ];
+                }
+                return $out;
+            }
             return [];
         }
     }

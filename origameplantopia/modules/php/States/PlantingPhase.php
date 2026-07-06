@@ -811,7 +811,13 @@ class PlantingPhase extends GameState
 
         $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
         $queue = $currentJson ? json_decode($currentJson, true) : [];
-        if (count($queue) === 0 || ($queue[0]['type'] !== 'level_up' && $queue[0]['type'] !== 'level_up_family')) {
+        // Note: 'level_up_family' (Violet) is resolved by the separate
+        // actResolveLevelUpFamily($family) action below, which grows every
+        // matching plant rather than one $plantCardId — it must NOT be
+        // accepted here, or a client that called this action instead would
+        // silently grow only one plant and pop the effect as if it had
+        // resolved the whole family.
+        if (count($queue) === 0 || $queue[0]['type'] !== 'level_up') {
             throw new UserException(clienttranslate("You do not have a level up effect to resolve."));
         }
 
@@ -831,13 +837,11 @@ class PlantingPhase extends GameState
             throw new UserException(clienttranslate("This plant is already at maximum level."));
         }
 
-        if ($effect['type'] === 'level_up') {
-            if ($effect['target'] === PlantCards::LEVEL_UP_OTHER && $plantCardId === $effect['source_card_id']) {
-                throw new UserException(clienttranslate("You must select a different plant to grow."));
-            }
-            if ($effect['target'] === PlantCards::LEVEL_UP_BABY && !PlantCards::isBaby($plant['type'])) {
-                throw new UserException(clienttranslate("You must select a Baby plant to grow."));
-            }
+        if ($effect['target'] === PlantCards::LEVEL_UP_OTHER && $plantCardId === $effect['source_card_id']) {
+            throw new UserException(clienttranslate("You must select a different plant to grow."));
+        }
+        if ($effect['target'] === PlantCards::LEVEL_UP_BABY && !PlantCards::isBaby($plant['type'])) {
+            throw new UserException(clienttranslate("You must select a Baby plant to grow."));
         }
 
         $newLevel = min(3, $level + $qty);
