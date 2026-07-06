@@ -295,6 +295,7 @@
     width: 18px;
     height: 18px;
     vertical-align: middle;
+    cursor: help;
     background-image: url('img/player_panel_icons.png');
     background-size: 500% 200%;
     background-repeat: no-repeat;

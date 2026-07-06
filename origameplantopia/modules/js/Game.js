@@ -851,7 +851,7 @@ export class Game {
             // (called on setup and refreshed after every relevant notification).
             // See https://trello.com/c/B5g3UmED.
             this.bga.playerPanels.getElement(player.id).insertAdjacentHTML('beforeend', `
-                <div id="plantopia-panel-${player.id}" class="plantopia-player-panel" style="margin-top: 6px; font-size: 0.85em; line-height: 1.35em; font-family: 'Courier New', monospace;"></div>
+                <div id="plantopia-panel-${player.id}" class="plantopia-player-panel" style="margin-top: 6px;"></div>
             `);
             this.renderPlayerPanel(player.id);
 
@@ -1093,6 +1093,20 @@ export class Game {
         return stats;
     }
 
+    /** Text shown on hover for each player-panel icon (Trello https://trello.com/c/3jIZmRy9). */
+    static PANEL_ICON_TOOLTIPS = {
+        hand: 'Cards in hand',
+        baby_cactus: 'Baby Cactus in garden, by level (0 / 1 / 2 / 3)',
+        adult_cactus: 'Adult Cactus in garden, by level (0 / 1 / 2 / 3)',
+        baby_flower: 'Baby Flower in garden, by level (0 / 1 / 2 / 3)',
+        adult_flower: 'Adult Flower in garden, by level (0 / 1 / 2 / 3)',
+        baby_tree: 'Baby Tree in garden, by level (0 / 1 / 2 / 3)',
+        adult_tree: 'Adult Tree in garden, by level (0 / 1 / 2 / 3)',
+        sun: 'Bonus Sun Weather cards held',
+        rain: 'Bonus Rain Weather cards held',
+        wind: 'Bonus Wind Weather cards held',
+    };
+
     /** Render or refresh the at-a-glance stats panel for one player. */
     renderPlayerPanel(playerId) {
         const el = document.getElementById(`plantopia-panel-${playerId}`);
@@ -1100,8 +1114,9 @@ export class Game {
         const s = this.computePlayerStats(playerId);
         // Icons instead of text labels (Trello https://trello.com/c/3jIZmRy9),
         // styled after RFTG's counters: icon, a space, then the count — no
-        // colon, no label text.
-        const icon = (name) => `<span class="plantopia-panel-icon" data-icon="${name}"></span>`;
+        // colon, no label text. Native `title` attribute gives each icon a
+        // simple hover tooltip explaining what it means.
+        const icon = (name) => `<span class="plantopia-panel-icon" data-icon="${name}" title="${Game.PANEL_ICON_TOOLTIPS[name] || ''}"></span>`;
         const line = (name, arr) => `${icon(name)} ${arr.join(' / ')}`;
         el.innerHTML = `
             <div>${icon('hand')} ${s.handCount}</div>
