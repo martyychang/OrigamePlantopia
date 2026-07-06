@@ -347,7 +347,7 @@ class PlantCards
                 'growth' => ['wind' => 1, 'rain' => 0, 'sun' => 2],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('It is safe to pat its head.'),
-                'card_effect' => clienttranslate('Immediately carry out a Planting Phase action.'),
+                'card_effect' => clienttranslate('Immediately carry out a Planting Phase action and draw 2 cards.'),
                 'planting_effect' => [
                     'gain_action' => true,
                     'draw_cards' => 2,
