@@ -1602,9 +1602,13 @@ export class Game {
         Object.values(args.cards).forEach(c => {
             this.gamedatas.hand[c.id] = c;
         });
-        const pId = this.bga.players.getCurrentPlayerId();
-        if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
-        this.gamedatas.handCounts[pId] = (this.gamedatas.handCounts[pId] || 0) + Object.keys(args.cards || {}).length;
+        // Drawing a card fires BOTH this private notif (to the drawer only,
+        // carrying the actual card data) and the public playerDrewCard notif
+        // (to every client, including the drawer's). handCounts must only be
+        // incremented in ONE of them, or the drawer's own client double-counts
+        // their own draw — see https://trello.com/c/vjsQX06a. playerDrewCard
+        // is the single point of truth here, same pattern as
+        // notif_keptCards/notif_playerKeptDraft below.
         this.renderHand(this.gamedatas.hand, this.gamedatas.weatherHand);
         this.refreshAllPlayerPanels();
     }
