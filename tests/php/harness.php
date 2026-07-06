@@ -125,7 +125,14 @@ namespace Bga\Games\OrigamePlantopia {
                 if ($c['location'] !== $location) continue;
                 $counts[$c['location_arg']] = ($counts[$c['location_arg']] ?? 0) + 1;
             }
-            return $counts;
+            // The real BGA Deck component returns these as numeric STRINGS
+            // (raw SQL COUNT results), not ints — see
+            // https://trello.com/c/vjsQX06a, where this mismatch let a
+            // string slip into the client's handCounts and poisoned every
+            // subsequent numeric += into string concatenation. Mirror that
+            // here so callers must (int)-cast before broadcasting counts,
+            // same as production.
+            return array_map('strval', $counts);
         }
 
         function moveCard(int $id, string $location, $locationArg = 0): void {
@@ -205,7 +212,7 @@ namespace Bga\Games\OrigamePlantopia {
          */
         function calculateAllScores(): array {
             $players = $this->loadPlayersBasicInfos();
-            $handCounts = $this->plantCards->countCardsByLocationArgs('hand');
+            $handCounts = array_map('intval', $this->plantCards->countCardsByLocationArgs('hand'));
             $weatherHandCounts = $this->weatherCards->countCardsByLocationArgs('hand');
             $weatherBonusCounts = $this->weatherCards->countCardsByLocationArgs('weather_public_bonus');
 
@@ -374,6 +381,9 @@ namespace Bga\Games\OrigamePlantopia {
             }
             if (preg_match('/SELECT player_banana_used FROM player WHERE player_id = (\d+)/', $sql, $m)) {
                 return $this->players[(int)$m[1]]['player_banana_used'] ?? 0;
+            }
+            if (preg_match('/SELECT player_mulligan_choice FROM player WHERE player_id = (\d+)/', $sql, $m)) {
+                return $this->players[(int)$m[1]]['player_mulligan_choice'] ?? 0;
             }
             if (preg_match('/SELECT card_location_arg FROM planter_card WHERE card_id = (\d+)/', $sql, $m)) {
                 return $this->planterCards->cards[(int)$m[1]]['location_arg'];

@@ -172,8 +172,12 @@ class Game extends \Bga\GameFramework\Table
         // Current player's hand (private info)
         $result['hand'] = $this->plantCards->getCardsInLocation('hand', $currentPlayerId);
         
-        // Hand counts of all players
-        $result['handCounts'] = $this->plantCards->countCardsByLocationArgs('hand');
+        // Hand counts of all players. Cast to int: the BGA Deck component
+        // returns these as numeric strings (raw SQL COUNT results), and the
+        // client does numeric `+=` on them across many notifications — a
+        // stray string here poisons every subsequent update into string
+        // concatenation instead of addition. See https://trello.com/c/vjsQX06a.
+        $result['handCounts'] = array_map('intval', $this->plantCards->countCardsByLocationArgs('hand'));
         
         // Current player's weather hand (private info)
         $result['weatherHand'] = $this->weatherCards->getCardsInLocation('hand', $currentPlayerId);
@@ -311,7 +315,9 @@ class Game extends \Bga\GameFramework\Table
     public function calculateAllScores(): array
     {
         $players = $this->loadPlayersBasicInfos();
-        $handCounts = $this->plantCards->countCardsByLocationArgs('hand');
+        // Cast to int for the same reason as getAllDatas above — this array
+        // is also broadcast to the client in updateScores below.
+        $handCounts = array_map('intval', $this->plantCards->countCardsByLocationArgs('hand'));
         // Per https://trello.com/c/K1iHgIDS (Marty confirmed with worked
         // examples): "cards in hand" for the per_two_cards_in_hand bonus
         // (Battus, Money Plant, Monte Carlo Tree — all read "including

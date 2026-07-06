@@ -1090,7 +1090,11 @@ class PlantingPhase extends GameState
         array_shift($queue);
         $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "' WHERE player_id = $playerId");
 
-        $handCounts = $this->game->plantCards->countCardsByLocationArgs('hand');
+        // Cast to int — see https://trello.com/c/vjsQX06a: the client does
+        // numeric += on these across notifications, and a raw numeric-string
+        // count from the Deck component poisons every later update into
+        // string concatenation.
+        $handCounts = array_map('intval', $this->game->plantCards->countCardsByLocationArgs('hand'));
         $this->bga->notify->player($playerId, "newHand", '', [
             "cards" => $this->game->plantCards->getCardsInLocation('hand', $playerId),
         ]);

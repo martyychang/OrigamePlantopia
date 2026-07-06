@@ -132,7 +132,11 @@ class SetupDecisions extends GameState
                 // Draw 4 extra plant cards into the player's hand.
                 $this->game->plantCards->pickCards(4, 'deck', $playerId);
                 $newHand = $this->game->plantCards->getCardsInLocation('hand', $playerId);
-                $handCounts = $this->game->plantCards->countCardsByLocationArgs('hand');
+                // Cast to int — see https://trello.com/c/vjsQX06a: the client
+                // does numeric += on these across notifications, and a raw
+                // numeric-string count from the Deck component poisons every
+                // later update into string concatenation.
+                $handCounts = array_map('intval', $this->game->plantCards->countCardsByLocationArgs('hand'));
 
                 $this->bga->notify->player($playerId, "newHand", '', [
                     "cards" => $newHand,
