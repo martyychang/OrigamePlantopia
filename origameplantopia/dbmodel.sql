@@ -60,8 +60,22 @@ CREATE TABLE IF NOT EXISTS `planter_card` (
 
 ALTER TABLE `player` ADD `player_mulligan_choice` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=undecided, 1=keep, 2=redraw';
 
-ALTER TABLE `player` ADD `player_planting_status` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=undecided, 1=decided, 2=drafting, 3=resolving_effects';
+-- See States\PlantingPlayerSubstate — this column is that enum's sole
+-- source of truth. Value 2 is intentionally absent: it was checked by an
+-- earlier version of PlantingPhase's action guard but never actually
+-- written anywhere, so it's been dropped rather than kept as a
+-- placeholder for a meaning it never had.
+ALTER TABLE `player` ADD `player_planting_status` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=ready, 1=done, 3=resolving_effects';
 
 ALTER TABLE `player` ADD `player_pending_effects` TEXT NULL COMMENT 'JSON array of pending effects to resolve';
+
+-- See States\WeatherPhaseBonusSubstate. Deliberately a SEPARATE column
+-- from player_planting_status even though both are "readiness gate"
+-- values for a MULTIPLE_ACTIVE_PLAYER state — they track unrelated facts
+-- (finished planting vs. passed on playing more Bonus Weather) that only
+-- happen to share a shape, not a meaning. See "Player substates — pattern
+-- & rules" in the BGA Studio State Machine doc for why sharing one column
+-- across state families was rejected.
+ALTER TABLE `player` ADD `player_bonus_weather_status` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=deciding, 1=passed';
 
 ALTER TABLE `player` ADD `player_banana_used` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Banana character ability: 0=unused this Planting Phase, 1=used. Reset at PlantingPhaseStart.';

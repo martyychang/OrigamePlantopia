@@ -26,7 +26,10 @@ class WeatherPhaseBonus extends GameState
         $players = $this->game->loadPlayersBasicInfos();
         $statuses = [];
         foreach ($players as $pId => $pInfo) {
-            $statuses[$pId] = (int)$this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $pId");
+            // ::from() throws if the DB ever holds a value this enum
+            // doesn't define — fail fast rather than send the client a
+            // meaningless status number.
+            $statuses[$pId] = WeatherPhaseBonusSubstate::from((int)$this->game->getUniqueValueFromDb("SELECT player_bonus_weather_status FROM player WHERE player_id = $pId"))->value;
         }
         return [
             'planting_statuses' => $statuses
@@ -35,7 +38,7 @@ class WeatherPhaseBonus extends GameState
 
     public function onEnteringState(int $activePlayerId)
     {
-        $this->game->DbQuery("UPDATE player SET player_planting_status = 0");
+        $this->game->DbQuery("UPDATE player SET player_bonus_weather_status = " . WeatherPhaseBonusSubstate::Deciding->value);
         $this->game->gamestate->setAllPlayersMultiactive();
     }
 
@@ -44,8 +47,7 @@ class WeatherPhaseBonus extends GameState
     {
         $playerId = (int)$this->game->getCurrentPlayerId();
 
-        $status = $this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $playerId");
-        if ((int)$status === 1) {
+        if ($this->substateOf($playerId) === WeatherPhaseBonusSubstate::Passed) {
             throw new UserException(clienttranslate("You have already passed."));
         }
 
@@ -80,21 +82,36 @@ class WeatherPhaseBonus extends GameState
         }
         
         // After playing, automatically pass
-        $this->game->DbQuery("UPDATE player SET player_planting_status = 1 WHERE player_id = $playerId");
-        $this->checkIfAllPlayersReady();
+        $this->markPlayerPassed($playerId);
     }
 
     #[PossibleAction]
     public function actPassBonus()
     {
         $playerId = (int)$this->game->getCurrentPlayerId();
-        
-        $status = $this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $playerId");
-        if ((int)$status === 1) {
+
+        if ($this->substateOf($playerId) === WeatherPhaseBonusSubstate::Passed) {
             throw new UserException(clienttranslate("You have already passed."));
         }
 
-        $this->game->DbQuery("UPDATE player SET player_planting_status = 1 WHERE player_id = $playerId");
+        $this->markPlayerPassed($playerId);
+    }
+
+    private function substateOf(int $playerId): WeatherPhaseBonusSubstate
+    {
+        return WeatherPhaseBonusSubstate::from((int)$this->game->getUniqueValueFromDb("SELECT player_bonus_weather_status FROM player WHERE player_id = $playerId"));
+    }
+
+    /**
+     * The ONLY method allowed to conclude a player's substate for this
+     * state — actPlayBonusWeather, actPassBonus, and zombie() all funnel
+     * through here rather than writing player_bonus_weather_status and
+     * calling checkIfAllPlayersReady() independently, so there's exactly
+     * one place this transition can go wrong.
+     */
+    private function markPlayerPassed(int $playerId): void
+    {
+        $this->game->DbQuery("UPDATE player SET player_bonus_weather_status = " . WeatherPhaseBonusSubstate::Passed->value . " WHERE player_id = $playerId");
         $this->checkIfAllPlayersReady();
     }
 
@@ -102,10 +119,9 @@ class WeatherPhaseBonus extends GameState
     {
         $players = $this->game->loadPlayersBasicInfos();
         $allReady = true;
-        
+
         foreach ($players as $pId => $pInfo) {
-            $status = $this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $pId");
-            if ((int)$status === 0) {
+            if ($this->substateOf((int)$pId) === WeatherPhaseBonusSubstate::Deciding) {
                 $allReady = false;
                 break;
             }
@@ -120,7 +136,6 @@ class WeatherPhaseBonus extends GameState
     }
 
     function zombie(int $playerId) {
-        $this->game->DbQuery("UPDATE player SET player_planting_status = 1 WHERE player_id = $playerId");
-        $this->checkIfAllPlayersReady();
+        $this->markPlayerPassed($playerId);
     }
 }

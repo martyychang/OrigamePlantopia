@@ -385,6 +385,9 @@ namespace Bga\Games\OrigamePlantopia {
             if (preg_match('/SELECT player_planting_status FROM player WHERE player_id = (\d+)/', $sql, $m)) {
                 return $this->players[(int)$m[1]]['player_planting_status'] ?? 0;
             }
+            if (preg_match('/SELECT player_bonus_weather_status FROM player WHERE player_id = (\d+)/', $sql, $m)) {
+                return $this->players[(int)$m[1]]['player_bonus_weather_status'] ?? 0;
+            }
             if (preg_match('/SELECT player_banana_used FROM player WHERE player_id = (\d+)/', $sql, $m)) {
                 return $this->players[(int)$m[1]]['player_banana_used'] ?? 0;
             }
