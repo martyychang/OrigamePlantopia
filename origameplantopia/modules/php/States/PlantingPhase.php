@@ -28,7 +28,10 @@ class PlantingPhase extends GameState
         $players = $this->game->loadPlayersBasicInfos();
         $statuses = [];
         foreach ($players as $pId => $pInfo) {
-            $statuses[$pId] = (int)$this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $pId");
+            // ::from() throws if the DB ever holds a value this enum doesn't
+            // define — fail fast instead of silently sending the client a
+            // meaningless status number.
+            $statuses[$pId] = PlantingPlayerSubstate::from((int)$this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $pId"))->value;
         }
         return [
             'planting_statuses' => $statuses
@@ -45,7 +48,7 @@ class PlantingPhase extends GameState
     {
         $paymentCardIds = $paymentCardIds === '' ? [] : array_map('intval', explode(';', $paymentCardIds));
         $playerId = (int)$this->game->getCurrentPlayerId();
-        $this->checkActionAllowed($playerId);
+        $this->requireReadyForNewAction($playerId);
 
         // 1. Check card is in hand
         $card = $this->game->plantCards->getCard($cardId);
@@ -414,7 +417,7 @@ class PlantingPhase extends GameState
     {
         $paymentCardIds = $paymentCardIds === '' ? [] : array_map('intval', explode(';', $paymentCardIds));
         $playerId = (int)$this->game->getCurrentPlayerId();
-        $this->checkActionAllowed($playerId);
+        $this->requireReadyForNewAction($playerId);
 
         // 1. Check plant is in player's garden and not already max level
         $plant = $this->game->plantCards->getCard($plantCardId);
@@ -473,7 +476,7 @@ class PlantingPhase extends GameState
     public function actRequestDraw5()
     {
         $playerId = (int)$this->game->getCurrentPlayerId();
-        $this->checkActionAllowed($playerId);
+        $this->requireReadyForNewAction($playerId);
 
         $this->bga->notify->all("playerStartedDrafting", clienttranslate('${player_name} chose to draw 5 and keep 2.'), [
             "player_id" => $playerId,
@@ -699,7 +702,7 @@ class PlantingPhase extends GameState
         $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "' WHERE player_id = $playerId");
         
         if (count($queue) > 0) {
-            $this->game->DbQuery("UPDATE player SET player_planting_status = 3 WHERE player_id = $playerId");
+            $this->game->DbQuery("UPDATE player SET player_planting_status = " . PlantingPlayerSubstate::ResolvingEffects->value . " WHERE player_id = $playerId");
             $this->bga->notify->player($playerId, "pendingEffects", '', [
                 "effects" => $queue
             ]);
@@ -707,11 +710,11 @@ class PlantingPhase extends GameState
                 "player_id" => $playerId,
             ]);
         } else {
-            $status = (int)$this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $playerId");
-            if (!$gainedAction && $status !== 1) {
+            $status = $this->substateOf($playerId);
+            if (!$gainedAction && $status !== PlantingPlayerSubstate::Done) {
                 $this->tryMarkPlayerDone($playerId);
             } else if ($gainedAction) {
-                $this->game->DbQuery("UPDATE player SET player_planting_status = 0 WHERE player_id = $playerId");
+                $this->game->DbQuery("UPDATE player SET player_planting_status = " . PlantingPlayerSubstate::Ready->value . " WHERE player_id = $playerId");
                 $this->bga->notify->all("playerGainedAction", clienttranslate('${player_name} immediately takes another Planting Phase action.'), [
                     "player_id" => $playerId,
                     "player_name" => $this->game->getPlayerNameById($playerId),
@@ -988,20 +991,60 @@ class PlantingPhase extends GameState
         $this->processPendingEffects($playerId);
     }
 
+    /**
+     * Guard for the "resolve a pending effect" actions (actResolveLevelUp,
+     * actResolveGainWeather, actResolveDiscard, actResolveLevelUpFamily,
+     * actResolveLevelUpMatchingAdult, actSkipPendingEffect): rejects only a
+     * player who has already fully finished their turn. Deliberately does
+     * NOT reject ResolvingEffects — these actions are exactly how a player
+     * gets OUT of that substate, and each one independently validates the
+     * front of player_pending_effects matches what it expects, so a
+     * Ready player (empty queue) is already caught by that check with a
+     * more specific error message.
+     */
     private function checkActionAllowed(int $playerId)
     {
-        $status = $this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $playerId");
-        if ((int)$status === 1) {
+        $status = $this->substateOf($playerId);
+        if ($status === PlantingPlayerSubstate::Done) {
             throw new UserException(clienttranslate("You have already performed your planting action."));
-        }
-        if ((int)$status === 2) {
-            throw new UserException(clienttranslate("You must choose a card to keep."));
         }
     }
 
+    /**
+     * Guard for the "start a brand-new top-level action" actions (actPlant,
+     * actGrow, actRequestDraw5): rejects unless the player's substate is
+     * exactly Ready. This is stricter than checkActionAllowed() on purpose
+     * — it also rejects ResolvingEffects, closing a real bug found while
+     * documenting this pattern: without this, a player could start a
+     * second planting action while their first one's interactive effect
+     * (e.g. an unresolved level_up choice) was still pending, silently
+     * appending the new card's effects onto the same queue as the
+     * unresolved one. See "Player substates — pattern & rules" in the BGA
+     * Studio State Machine doc.
+     */
+    private function requireReadyForNewAction(int $playerId): void
+    {
+        if ($this->substateOf($playerId) !== PlantingPlayerSubstate::Ready) {
+            throw new UserException(clienttranslate("You must resolve your pending effect before taking another action."));
+        }
+    }
+
+    private function substateOf(int $playerId): PlantingPlayerSubstate
+    {
+        return PlantingPlayerSubstate::from((int)$this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $playerId"));
+    }
+
+    /**
+     * The ONLY method allowed to call setPlayerNonMultiactive() for this
+     * state — every code path that concludes a player's Planting Phase
+     * turn (actGrow, actDeclineBananaAbility, the zombie/AFK handler, and
+     * processPendingEffects once the effect queue drains with no gained
+     * action) funnels through here rather than calling the framework
+     * directly, so there's exactly one place this transition can go wrong.
+     */
     private function markPlayerDone(int $playerId)
     {
-        $this->game->DbQuery("UPDATE player SET player_planting_status = 1 WHERE player_id = $playerId");
+        $this->game->DbQuery("UPDATE player SET player_planting_status = " . PlantingPlayerSubstate::Done->value . " WHERE player_id = $playerId");
         $this->game->gamestate->setPlayerNonMultiactive($playerId, WeatherPhaseStart::class);
     }
 
@@ -1024,7 +1067,7 @@ class PlantingPhase extends GameState
         }
 
         $this->appendEffect($playerId, ['type' => 'banana_offer']);
-        $this->game->DbQuery("UPDATE player SET player_planting_status = 3 WHERE player_id = $playerId");
+        $this->game->DbQuery("UPDATE player SET player_planting_status = " . PlantingPlayerSubstate::ResolvingEffects->value . " WHERE player_id = $playerId");
 
         $queue = json_decode(
             $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId") ?: '[]',
@@ -1114,7 +1157,7 @@ class PlantingPhase extends GameState
         // Mark Banana used for the rest of this Planting Phase, then
         // reset planting status so the player gains a new action and
         // pop the banana_offer off the queue.
-        $this->game->DbQuery("UPDATE player SET player_banana_used = 1, player_planting_status = 0 WHERE player_id = $playerId");
+        $this->game->DbQuery("UPDATE player SET player_banana_used = 1, player_planting_status = " . PlantingPlayerSubstate::Ready->value . " WHERE player_id = $playerId");
         array_shift($queue);
         $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "' WHERE player_id = $playerId");
 
