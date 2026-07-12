@@ -743,14 +743,43 @@ class WeatherPhaseBonus {
             this.selectedBonusCards = this.selectedBonusCards || [];
             this.bga.statusBar.setTitle(_('${you} must select Bonus Weather cards to play'));
 
-            if (this.selectedBonusCards.length > 0) {
-                this.bga.statusBar.addActionButton(_('Done'), () => {
-                    this.justActed = true;
-                    this.bga.actions.performAction("actPlayBonusWeather", { cardIds: this.selectedBonusCards.join(';') });
-                    this.selectingBonus = false;
-                    this.selectedBonusCards = [];
-                    this.onPlayerActivationChange(null, false);
+            // Per https://trello.com/c/Tyxs3bcd: present choices as status
+            // actions, the same way WeatherPhaseChoose presents Sun/Rain/
+            // Wind buttons for the character weather card to play — not by
+            // clicking a card tile. Bonus weather cards haven't been
+            // rendered as clickable board tiles since
+            // https://trello.com/c/uiJWdVTg ("counted only, not displayed
+            // as garden tiles"), so the old tile-click flow here was
+            // silently dead code: myHeld.forEach found no DOM element for
+            // any card, `if (el)` skipped every one, and there was no way
+            // to actually select a card to play at all.
+            //
+            // One button per weather condition (☀️/💧/🌬️, same labels and
+            // type_arg mapping as WeatherPhaseChoose), shown only while the
+            // player still holds an unselected card of that type. Clicking
+            // adds ONE held card of that condition to this turn's
+            // selection — which card instance doesn't matter, they're
+            // interchangeable by type.
+            const CONDITION_LABELS = { 0: '☀️ Sun', 1: '💧 Rain', 2: '🌬️ Wind' };
+            const remaining = myHeld.filter(c => !this.selectedBonusCards.includes(c.id));
+            [0, 1, 2].forEach(condition => {
+                const card = remaining.find(c => c.type_arg == condition);
+                if (!card) return;
+                this.bga.statusBar.addActionButton(_(CONDITION_LABELS[condition]), () => {
+                    this.selectedBonusCards.push(card.id);
+                    // If every held card is now selected, there's nothing
+                    // left to choose — proceed exactly as if Done had been
+                    // clicked instead of waiting for an explicit click.
+                    if (this.selectedBonusCards.length === myHeld.length) {
+                        this.submitSelectedBonusCards();
+                    } else {
+                        this.onPlayerActivationChange(args, true);
+                    }
                 }, { color: 'blue' });
+            });
+
+            if (this.selectedBonusCards.length > 0) {
+                this.bga.statusBar.addActionButton(_('Done'), () => this.submitSelectedBonusCards(), { color: 'green' });
             } else {
                 this.bga.statusBar.addActionButton(_('Skip'), () => {
                     this.justActed = true;
@@ -760,31 +789,6 @@ class WeatherPhaseBonus {
                     this.onPlayerActivationChange(null, false);
                 }, { color: 'red' });
             }
-
-            // Highlight bonus weather cards in the player's public stash.
-            myHeld.forEach(c => {
-                const el = document.getElementById(`weather_${c.id}`);
-                if (el) {
-                    el.classList.add('bga-cards_selectable-card');
-
-                    if (this.selectedBonusCards.includes(c.id)) {
-                        el.style.boxShadow = '0 0 10px #2ecc71';
-                        el.style.border = '2px solid #2ecc71';
-                    } else {
-                        el.style.boxShadow = '0 0 10px #f1c40f';
-                        el.style.border = '';
-                    }
-
-                    el.onclick = () => {
-                        if (this.selectedBonusCards.includes(c.id)) {
-                            this.selectedBonusCards = this.selectedBonusCards.filter(id => id !== c.id);
-                        } else {
-                            this.selectedBonusCards.push(c.id);
-                        }
-                        this.onPlayerActivationChange(args, true);
-                    };
-                }
-            });
         } else {
             if (hasBonus) {
                 this.bga.statusBar.setTitle(_('${you} may play Bonus Weather cards or proceed to Grow Plants'));
@@ -802,6 +806,14 @@ class WeatherPhaseBonus {
                 this.onPlayerActivationChange(null, false); // Manually trigger waiting UI immediately
             }, { color: 'green' });
         }
+    }
+
+    submitSelectedBonusCards() {
+        this.justActed = true;
+        this.bga.actions.performAction("actPlayBonusWeather", { cardIds: this.selectedBonusCards.join(';') });
+        this.selectingBonus = false;
+        this.selectedBonusCards = [];
+        this.onPlayerActivationChange(null, false);
     }
 
     onLeavingState(args, isCurrentPlayerActive) {
