@@ -628,6 +628,14 @@ When a server action moves/discards a SECONDARY card as a side effect of the mai
 
 ---
 
+## Append-Only Shared Containers Need ONE Canonical Insertion Order Across Every Code Path
+
+When two different code paths both append into the same DOM container — e.g. `setup()` on page load/reload vs. a live `notif_*` handler during play — insertion order (and therefore left-to-right visual order) is whatever order that specific path happened to call things in. If `setup()` and the live notification populate the container in a different order, the same end state (say, N planters + 1 claimed character) renders differently depending on which path last built it, and it looks like a nondeterministic bug even though each path is individually correct. See https://trello.com/c/nBsWlxlT: `setup()` called `renderCharacters()` before `renderPlanters()` into the shared per-player row (`player-garden-planters-<id>`), so a page load put the character card first (left of the planters). But `notif_characterClaimed` does `garden.appendChild(cardEl)` AFTER planters already exist in that row, putting it last (right of the planters) for a character claimed live during play — hence one player's character card sat on a different side than the other's.
+
+**Pattern:** pick the notification handler's order as canonical (it's the one that fires during live play, so it's the order players actually see most), and make every other code path that populates the same container — most commonly `setup()` — match it exactly. Regression test: `tests/characterCardPlacement.test.mjs` (extracts the real per-player render block plus the real render helpers, runs them through headless Chrome, and asserts final child order).
+
+---
+
 ## UI Action State Resets
 
 When building custom UI interactions where a player builds up a selection before submitting (like selecting multiple cards), you must explicitly reset your local state variables immediately upon submission or cancellation.

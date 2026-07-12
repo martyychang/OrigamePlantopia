@@ -868,13 +868,21 @@ export class Game {
                 </div>
             `);
 
-            // Render claimed characters for this player
-            const claimed = Object.values(gamedatas.claimedCharacters || {}).filter(c => c.location_arg == player.id);
-            this.renderCharacters(claimed, `player-garden-planters-${player.id}`);
-
             // Render planters for this player
             const planters = Object.values(gamedatas.planters || {}).filter(c => c.location_arg == player.id);
             this.renderPlanters(planters, `player-garden-planters-${player.id}`);
+
+            // Render claimed characters for this player AFTER planters, so
+            // they consistently land to the right. Both renderCharacters and
+            // notif_characterClaimed insert via append (insertAdjacentHTML
+            // 'beforeend' / appendChild) into this same shared row, so
+            // whichever runs second determines left/right placement. A page
+            // load/reload used to render characters first (left of planters)
+            // while claiming live during play appended after (right of
+            // planters) — inconsistent depending on when the client last
+            // rendered. See https://trello.com/c/nBsWlxlT.
+            const claimed = Object.values(gamedatas.claimedCharacters || {}).filter(c => c.location_arg == player.id);
+            this.renderCharacters(claimed, `player-garden-planters-${player.id}`);
 
             // Render Level 3 plants for this player on their OWN row.
             const level3Plants = Object.values(gamedatas.plantsLevel3 || {}).filter(c => c.location_arg == player.id);
