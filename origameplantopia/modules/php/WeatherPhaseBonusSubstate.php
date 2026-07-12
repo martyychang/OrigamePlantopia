@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bga\Games\OrigamePlantopia\States;
+namespace Bga\Games\OrigamePlantopia;
 
 /**
  * Per-player substate within WeatherPhaseBonus. Each active player
@@ -17,6 +17,14 @@ namespace Bga\Games\OrigamePlantopia\States;
  * the game that only happen to share the same readiness-gate SHAPE, not
  * the same meaning. Sharing one column across both would couple two
  * state families that have no reason to know about each other.
+ *
+ * Deliberately lives in modules/php/, NOT modules/php/States/ — BGA
+ * Studio's game-creation bootstrap scans every class under States/ and
+ * fatals if it doesn't extend GameState (found via a live Express Start
+ * failure — https://trello.com/c/NuwHfekb). PlantCards/WeatherCards/
+ * CharacterCards already draw this same line between "material/data
+ * type" and "state machine class"; this enum is the same kind of thing
+ * they are, not a GameState.
  */
 enum WeatherPhaseBonusSubstate: int
 {

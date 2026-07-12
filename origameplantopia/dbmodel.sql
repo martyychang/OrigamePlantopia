@@ -60,7 +60,9 @@ CREATE TABLE IF NOT EXISTS `planter_card` (
 
 ALTER TABLE `player` ADD `player_mulligan_choice` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=undecided, 1=keep, 2=redraw';
 
--- See States\PlantingPlayerSubstate — this column is that enum's sole
+-- See PlantingPlayerSubstate (modules/php/, not modules/php/States/ —
+-- BGA Studio's game-creation bootstrap fatals if a States/ class doesn't
+-- extend GameState) — this column is that enum's sole
 -- source of truth. Value 2 is intentionally absent: it was checked by an
 -- earlier version of PlantingPhase's action guard but never actually
 -- written anywhere, so it's been dropped rather than kept as a
@@ -69,7 +71,8 @@ ALTER TABLE `player` ADD `player_planting_status` INT UNSIGNED NOT NULL DEFAULT 
 
 ALTER TABLE `player` ADD `player_pending_effects` TEXT NULL COMMENT 'JSON array of pending effects to resolve';
 
--- See States\WeatherPhaseBonusSubstate. Deliberately a SEPARATE column
+-- See WeatherPhaseBonusSubstate (modules/php/, same reason as above).
+-- Deliberately a SEPARATE column
 -- from player_planting_status even though both are "readiness gate"
 -- values for a MULTIPLE_ACTIVE_PLAYER state — they track unrelated facts
 -- (finished planting vs. passed on playing more Bonus Weather) that only

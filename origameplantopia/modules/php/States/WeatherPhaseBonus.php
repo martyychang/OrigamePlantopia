@@ -9,6 +9,7 @@ use Bga\GameFramework\States\GameState;
 use Bga\GameFramework\States\PossibleAction;
 use Bga\GameFramework\UserException;
 use Bga\Games\OrigamePlantopia\Game;
+use Bga\Games\OrigamePlantopia\WeatherPhaseBonusSubstate;
 
 class WeatherPhaseBonus extends GameState
 {

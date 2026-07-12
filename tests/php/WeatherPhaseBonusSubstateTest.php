@@ -14,7 +14,7 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/harness.php';
-require __DIR__ . '/../../origameplantopia/modules/php/States/WeatherPhaseBonusSubstate.php';
+require __DIR__ . '/../../origameplantopia/modules/php/WeatherPhaseBonusSubstate.php';
 require __DIR__ . '/../../origameplantopia/modules/php/States/WeatherPhaseBonus.php';
 // Note: WeatherPhaseGrow.php is intentionally NOT required — WeatherPhaseBonus
 // only references WeatherPhaseGrow::class as a ::class literal (a compile-time
@@ -22,7 +22,7 @@ require __DIR__ . '/../../origameplantopia/modules/php/States/WeatherPhaseBonus.
 
 use Bga\Games\OrigamePlantopia\Game;
 use Bga\Games\OrigamePlantopia\States\WeatherPhaseBonus;
-use Bga\Games\OrigamePlantopia\States\WeatherPhaseBonusSubstate;
+use Bga\Games\OrigamePlantopia\WeatherPhaseBonusSubstate;
 use Bga\GameFramework\BgaStub;
 use Bga\GameFramework\UserException;
 

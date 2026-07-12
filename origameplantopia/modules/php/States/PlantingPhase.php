@@ -10,6 +10,7 @@ use Bga\GameFramework\States\PossibleAction;
 use Bga\GameFramework\UserException;
 use Bga\Games\OrigamePlantopia\Game;
 use Bga\Games\OrigamePlantopia\PlantCards;
+use Bga\Games\OrigamePlantopia\PlantingPlayerSubstate;
 use Bga\Games\OrigamePlantopia\WeatherCards;
 
 class PlantingPhase extends GameState

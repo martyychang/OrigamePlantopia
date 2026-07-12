@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bga\Games\OrigamePlantopia\States;
+namespace Bga\Games\OrigamePlantopia;
 
 /**
  * Per-player substate within the Planting Phase state family (PlantingPhase
@@ -21,6 +21,14 @@ namespace Bga\Games\OrigamePlantopia\States;
  * Note the backing values are 0, 1, 3 — not 0, 1, 2. A status value of 2
  * existed only as a dead check in the pre-enum code (never actually set
  * anywhere); left out here rather than assigned a meaning it never had.
+ *
+ * Deliberately lives in modules/php/, NOT modules/php/States/ — BGA
+ * Studio's game-creation bootstrap scans every class under States/ and
+ * fatals if it doesn't extend GameState (found via a live Express Start
+ * failure — https://trello.com/c/NuwHfekb). PlantCards/WeatherCards/
+ * CharacterCards already draw this same line between "material/data
+ * type" and "state machine class"; this enum is the same kind of thing
+ * they are, not a GameState.
  */
 enum PlantingPlayerSubstate: int
 {
