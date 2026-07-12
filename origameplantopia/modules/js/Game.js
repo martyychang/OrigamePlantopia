@@ -663,37 +663,43 @@ class WeatherPhaseBonus {
         this.game = game;
         this.bga = bga;
         this.selectingBonus = false;
+        // Purely local to this state-class instance — deliberately NOT
+        // stored on the shared gamedatas.players[pId] object. This used to
+        // reuse gamedatas.players[pId].planting_status (PlantingPhase's own
+        // field, whose value of 1 coincidentally ALSO means "done"), so a
+        // value left over from this round's PlantingPhase — which just
+        // finished for both players right before this state began — could
+        // immediately misrender both players as "waiting" the instant
+        // WeatherPhaseBonus started, before either had acted. See
+        // https://trello.com/c/DCpOIanp. Reset every entry; exists purely
+        // to give immediate local feedback right after MY OWN action,
+        // before BGA's own multiactive-player tracking
+        // (isCurrentPlayerActive) catches up over the network round-trip.
+        this.justActed = false;
     }
 
     onEnteringState(args, isCurrentPlayerActive) {
         this.selectingBonus = false;
-
-        if (args && args.planting_statuses) {
-            Object.entries(args.planting_statuses).forEach(([pId, status]) => {
-                if (this.game.gamedatas.players[pId]) {
-                    this.game.gamedatas.players[pId].planting_status = status;
-                }
-            });
-        }
-
+        this.justActed = false;
         this.onPlayerActivationChange(args, isCurrentPlayerActive);
     }
 
     onPlayerActivationChange(args, isCurrentPlayerActive) {
         this.bga.statusBar.removeActionButtons();
         this.cleanupUI();
-        
-        if (!isCurrentPlayerActive) {
+
+        // isCurrentPlayerActive is BGA's own authoritative tracking of the
+        // multiactive-player set for this state — always trust it over any
+        // custom client cache. justActed only ever pushes further TOWARD
+        // waiting (immediately after my own action, before the framework's
+        // tracking has caught up) — never the reverse. See
+        // https://trello.com/c/DCpOIanp.
+        if (!isCurrentPlayerActive || this.justActed) {
             this.bga.statusBar.setTitle(_('Waiting for other players to finish playing Bonus Weather...'));
             return;
         }
 
         const pId = this.bga.players.getCurrentPlayerId();
-        const status = this.game.gamedatas.players[pId].planting_status;
-        if (status == 1) {
-            this.bga.statusBar.setTitle(_('Waiting for other players to finish playing Bonus Weather...'));
-            return;
-        }
 
         // Bonus weather cards are now held in weather_public_bonus (publicly
         // visible per player) instead of the player's private weather hand.
@@ -708,7 +714,7 @@ class WeatherPhaseBonus {
 
             if (this.selectedBonusCards.length > 0) {
                 this.bga.statusBar.addActionButton(_('Done'), () => {
-                    this.game.gamedatas.players[pId].planting_status = 1; // UPDATE LOCAL CACHE
+                    this.justActed = true;
                     this.bga.actions.performAction("actPlayBonusWeather", { cardIds: this.selectedBonusCards.join(';') });
                     this.selectingBonus = false;
                     this.selectedBonusCards = [];
@@ -716,7 +722,7 @@ class WeatherPhaseBonus {
                 }, { color: 'blue' });
             } else {
                 this.bga.statusBar.addActionButton(_('Skip'), () => {
-                    this.game.gamedatas.players[pId].planting_status = 1; // UPDATE LOCAL CACHE
+                    this.justActed = true;
                     this.bga.actions.performAction("actPassBonus");
                     this.selectingBonus = false;
                     this.selectedBonusCards = [];
@@ -760,7 +766,7 @@ class WeatherPhaseBonus {
                 this.bga.statusBar.setTitle(_('${you} must proceed to Grow Plants'));
             }
             this.bga.statusBar.addActionButton(_('Proceed to Grow Plants'), () => {
-                this.game.gamedatas.players[pId].planting_status = 1; // UPDATE LOCAL CACHE
+                this.justActed = true;
                 this.bga.actions.performAction("actPassBonus");
                 this.onPlayerActivationChange(null, false); // Manually trigger waiting UI immediately
             }, { color: 'green' });

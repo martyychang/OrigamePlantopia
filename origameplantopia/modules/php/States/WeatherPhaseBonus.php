@@ -24,22 +24,32 @@ class WeatherPhaseBonus extends GameState
 
     public function getArgs(): array
     {
-        $players = $this->game->loadPlayersBasicInfos();
-        $statuses = [];
-        foreach ($players as $pId => $pInfo) {
-            // ::from() throws if the DB ever holds a value this enum
-            // doesn't define — fail fast rather than send the client a
-            // meaningless status number.
-            $statuses[$pId] = WeatherPhaseBonusSubstate::from((int)$this->game->getUniqueValueFromDb("SELECT player_bonus_weather_status FROM player WHERE player_id = $pId"))->value;
-        }
-        return [
-            'planting_statuses' => $statuses
-        ];
+        // Nothing to send: the client derives everything it needs from
+        // isCurrentPlayerActive (BGA's own authoritative multiactive-player
+        // tracking) rather than a synced status blob. A previous version of
+        // this method returned player_bonus_weather_status under the key
+        // 'planting_statuses' — reused from PlantingPhase's own getArgs() —
+        // and the client wrote the result into the SAME shared
+        // gamedatas.players[pId].planting_status field PlantingPhase uses
+        // for its own, unrelated "done planting" status. That collision
+        // (plus a redundant client-side check that could override
+        // isCurrentPlayerActive) is what caused both players to see
+        // "Waiting for other players..." right after entering this state,
+        // fixable only by a page reload. See https://trello.com/c/DCpOIanp
+        // and the "MULTIPLE_ACTIVE_PLAYER Client State: isCurrentPlayerActive
+        // Is the Only Truth" note in AGENTS.md.
+        return [];
     }
 
     public function onEnteringState(int $activePlayerId)
     {
-        $this->game->DbQuery("UPDATE player SET player_bonus_weather_status = " . WeatherPhaseBonusSubstate::Deciding->value);
+        // Deliberately does NOT reset player_bonus_weather_status here —
+        // that DB write now happens in WeatherPhaseReveal::onEnteringState()
+        // (the OUTGOING transition into this state), not here. See the
+        // comment there and "State Transitions & Frontend Synchronization"
+        // in AGENTS.md for why a reset performed inside a
+        // MULTIPLE_ACTIVE_PLAYER state's own onEnteringState() races with
+        // getArgs() and can transmit a stale value to clients.
         $this->game->gamestate->setAllPlayersMultiactive();
     }
 
