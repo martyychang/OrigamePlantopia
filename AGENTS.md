@@ -549,6 +549,38 @@ A survey of every other per-player client field (`mulligan_choice`, `pending_eff
     }
 ```
 
+### Client-Side: Data Needed the Instant a State Renders Must Come From `getArgs()`, Not a Notification
+
+A notification fired by an EARLIER, auto-transitioning `GAME` state is not guaranteed to have been processed by the client by the time a LATER state's UI renders. BGA Studio documents that notifications are queued and paced separately from state-transition rendering (for animation purposes), while a state's `getArgs()` is evaluated synchronously as part of entering that exact state. If a `MULTIPLE_ACTIVE_PLAYER` state's UI depends on some `gamedatas` slice being current, and that slice is *only* kept in sync via notifications, there's a window where the state can render before the relevant notification's queued processing has actually landed — the UI looks wrong (missing/stale data) with nothing to repair it until something re-fetches everything synchronously. A page reload always "fixes" it for exactly that reason (`getAllDatas()` + `setup()` bypasses the notification queue entirely) — same tell as the `getArgs()`-race bug above, different mechanism.
+
+This is what caused https://trello.com/c/61uLM9hR: `WeatherPhaseBonus`'s selection UI (https://trello.com/c/Tyxs3bcd) reads `gamedatas.weatherPublicBonus` to build its Sun/Rain/Wind buttons, but that slice was kept in sync *entirely* via notifications — incremental add/delete on gain/play, plus a full resync from the `weatherCleared` notification fired one state earlier by `WeatherPhaseGrow`. A player who played some (not all) held Bonus Weather cards in one round, then reached the next round's `WeatherPhaseBonus`, could see "Play Bonus Weather" but no condition buttons for the cards they still held — `weatherCleared`'s queued processing hadn't caught up yet. Reloading always fixed it.
+
+**Fix: treat this exactly like the player-substate reset rule above — the destination state's own `getArgs()` should return the data fresh, and `onEnteringState()` should resync `gamedatas` from `args` unconditionally, every entry**, rather than trusting whatever a notification already wrote:
+
+```php
+// WeatherPhaseBonus.php
+public function getArgs(): array
+{
+    return [
+        'weatherPublicBonus' => $this->game->weatherCards->getCardsInLocation('weather_public_bonus'),
+    ];
+}
+```
+
+```javascript
+// Game.js — WeatherPhaseBonus
+onEnteringState(args, isCurrentPlayerActive) {
+    this.selectingBonus = false;
+    this.justActed = false;
+    if (args && args.weatherPublicBonus !== undefined) {
+        this.game.gamedatas.weatherPublicBonus = args.weatherPublicBonus;
+    }
+    this.onPlayerActivationChange(args, isCurrentPlayerActive);
+}
+```
+
+This doesn't replace the notification-driven incremental updates (`notif_playerPlayedBonus`, `notif_weatherCleared`, etc.) — those still matter for keeping the UI live and responsive *while a state is already showing*. It adds a synchronous, race-free resync at the one moment (state entry) where staleness is actually visible and otherwise unrecoverable without a reload. **Any `MULTIPLE_ACTIVE_PLAYER` state whose UI depends on a `gamedatas` slice populated by a notification from an earlier state is a candidate for this same treatment** — not just player-substate columns.
+
 ---
 
 ## MULTIPLE_ACTIVE_PLAYER Deactivation Gotchas

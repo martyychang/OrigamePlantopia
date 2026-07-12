@@ -81,6 +81,35 @@ $bonusOnlyState->onEnteringState(0);
 check('WeatherPhaseBonus::onEnteringState() does NOT reset player_bonus_weather_status (that is WeatherPhaseReveal\'s job now)',
     (int)$revealGame->players[1]['player_bonus_weather_status'] === WeatherPhaseBonusSubstate::Passed->value);
 
+// ── Regression coverage for https://trello.com/c/61uLM9hR: "no way to
+// select a bonus weather card until page reload" — getArgs() must return
+// fresh weather_public_bonus data synchronously as part of entering this
+// state, rather than leaving the client to rely entirely on the
+// weatherCleared notification (fired one state earlier, by
+// WeatherPhaseGrow) having already been processed. BGA paces notifications
+// separately from state-transition rendering; a page reload always worked
+// because it re-fetches everything synchronously via getAllDatas(), which
+// is exactly what getArgs() now also does for this state. ──
+echo "\n--- getArgs() returns fresh weather_public_bonus data ---\n";
+$argsGame = new Game();
+$argsGame->players[7] = ['name' => 'Carol', 'player_bonus_weather_status' => WeatherPhaseBonusSubstate::Deciding->value];
+[$sunCardId] = $argsGame->weatherCards->seed('bonus', 0, 'weather_public_bonus', 7, 1);
+[$rainCardId] = $argsGame->weatherCards->seed('bonus', 1, 'weather_public_bonus', 7, 1);
+// A card belonging to a DIFFERENT player must also come back — every
+// player's held bonus weather is public (see "Bonus Weather Card
+// Locations" in AGENTS.md) — proving no locationArg filter was
+// accidentally added when this method started returning real data.
+[$otherPlayerCardId] = $argsGame->weatherCards->seed('bonus', 2, 'weather_public_bonus', 12, 1);
+
+$argsState = new WeatherPhaseBonus($argsGame);
+$argsState->bga = new BgaStub();
+$args = $argsState->getArgs();
+
+check('getArgs() returns a weatherPublicBonus key', array_key_exists('weatherPublicBonus', $args));
+check('getArgs() includes the Sun card', array_key_exists($sunCardId, $args['weatherPublicBonus'] ?? []));
+check('getArgs() includes the Rain card', array_key_exists($rainCardId, $args['weatherPublicBonus'] ?? []));
+check('getArgs() includes the OTHER player\'s card too (no locationArg filter)', array_key_exists($otherPlayerCardId, $args['weatherPublicBonus'] ?? []));
+
 // ── Two players; player 1 passes immediately, player 2 plays a card then is auto-passed ──
 echo "\n--- normal play: pass / play-then-auto-pass / double-pass rejected ---\n";
 $game = new Game();

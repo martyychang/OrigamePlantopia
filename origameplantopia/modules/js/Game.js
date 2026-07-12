@@ -712,6 +712,21 @@ class WeatherPhaseBonus {
     onEnteringState(args, isCurrentPlayerActive) {
         this.selectingBonus = false;
         this.justActed = false;
+
+        // Resync from getArgs() rather than trusting whatever the
+        // weatherCleared notification (fired one state earlier, by
+        // WeatherPhaseGrow) already applied to gamedatas.weatherPublicBonus.
+        // BGA queues/paces notifications separately from state-transition
+        // rendering, so this state's UI could render before that
+        // notification's queued processing actually lands — the player's
+        // held cards would then look empty until a reload forced a full
+        // resync. args is evaluated synchronously as part of entering this
+        // exact state, so it's always current. See
+        // https://trello.com/c/61uLM9hR.
+        if (args && args.weatherPublicBonus !== undefined) {
+            this.game.gamedatas.weatherPublicBonus = args.weatherPublicBonus;
+        }
+
         this.onPlayerActivationChange(args, isCurrentPlayerActive);
     }
 

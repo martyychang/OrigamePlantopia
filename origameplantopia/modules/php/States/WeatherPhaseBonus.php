@@ -24,21 +24,40 @@ class WeatherPhaseBonus extends GameState
 
     public function getArgs(): array
     {
-        // Nothing to send: the client derives everything it needs from
-        // isCurrentPlayerActive (BGA's own authoritative multiactive-player
-        // tracking) rather than a synced status blob. A previous version of
-        // this method returned player_bonus_weather_status under the key
-        // 'planting_statuses' — reused from PlantingPhase's own getArgs() —
-        // and the client wrote the result into the SAME shared
-        // gamedatas.players[pId].planting_status field PlantingPhase uses
-        // for its own, unrelated "done planting" status. That collision
-        // (plus a redundant client-side check that could override
-        // isCurrentPlayerActive) is what caused both players to see
-        // "Waiting for other players..." right after entering this state,
-        // fixable only by a page reload. See https://trello.com/c/DCpOIanp
-        // and the "MULTIPLE_ACTIVE_PLAYER Client State: isCurrentPlayerActive
-        // Is the Only Truth" note in AGENTS.md.
-        return [];
+        // No player-status blob (see the https://trello.com/c/DCpOIanp
+        // history below) — but DOES return fresh, authoritative
+        // weather_public_bonus data. This is deliberately NOT left to the
+        // weatherCleared notification (fired one state earlier, by
+        // WeatherPhaseGrow) to keep the client in sync: BGA queues/paces
+        // notifications separately from state-transition rendering (for
+        // animation), so a client can render this state's UI before that
+        // notification's queued processing has actually applied — the
+        // player's held cards would look empty/stale until something else
+        // (like a reload, which re-fetches everything synchronously)
+        // forced a resync. getArgs() is evaluated synchronously as part of
+        // entering this exact state, so args always reflects current DB
+        // truth by the time the client renders. See
+        // https://trello.com/c/61uLM9hR and "State Transitions & Frontend
+        // Synchronization" in AGENTS.md.
+        //
+        // Separately: no player-status blob here at all — the client
+        // derives whether a player is active from isCurrentPlayerActive
+        // (BGA's own authoritative multiactive-player tracking), not a
+        // synced status value. A previous version of this method returned
+        // player_bonus_weather_status under the key 'planting_statuses' —
+        // reused from PlantingPhase's own getArgs() — and the client wrote
+        // the result into the SAME shared gamedatas.players[pId].planting_status
+        // field PlantingPhase uses for its own, unrelated "done planting"
+        // status. That collision (plus a redundant client-side check that
+        // could override isCurrentPlayerActive) is what caused both
+        // players to see "Waiting for other players..." right after
+        // entering this state, fixable only by a page reload. See
+        // https://trello.com/c/DCpOIanp and the "MULTIPLE_ACTIVE_PLAYER
+        // Client State: isCurrentPlayerActive Is the Only Truth" note in
+        // AGENTS.md.
+        return [
+            'weatherPublicBonus' => $this->game->weatherCards->getCardsInLocation('weather_public_bonus'),
+        ];
     }
 
     public function onEnteringState(int $activePlayerId)
