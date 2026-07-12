@@ -1672,6 +1672,23 @@ export class Game {
             }
         }
 
+        // A Treevolved plant is paid for by sacrificing an existing Baby (or
+        // Treevolved) plant from the garden, not a hand card — the server
+        // already discarded it (PlantingPhase::actPlant), but the client's
+        // DOM element and gamedatas entry for it are still there. Left
+        // alone, the new adult gets appended on top of it (renderPlantInPlanter
+        // only ever appends, never clears a slot first) and the old card
+        // peeks out from behind. See https://trello.com/c/wVzDccUu. Safe to
+        // run unconditionally: for a Baby plant, payment_card_ids are hand
+        // card ids that were never in plantsOnPlanters/plantsLevel3, so this
+        // is a no-op.
+        (args.payment_card_ids || []).forEach(pid => {
+            if (this.gamedatas.plantsOnPlanters) delete this.gamedatas.plantsOnPlanters[pid];
+            if (this.gamedatas.plantsLevel3) delete this.gamedatas.plantsLevel3[pid];
+            const staleEl = document.getElementById(`garden_plant_${pid}`);
+            if (staleEl) staleEl.remove();
+        });
+
         // Add to plantsOnPlanters
         if (!this.gamedatas.plantsOnPlanters) this.gamedatas.plantsOnPlanters = {};
         this.gamedatas.plantsOnPlanters[card.id] = card;

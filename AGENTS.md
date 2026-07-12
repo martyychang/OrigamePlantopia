@@ -620,6 +620,14 @@ Additionally, when custom dynamic UI states depend on transient card locations (
 
 ---
 
+## Notification Handlers Must Clean Up Side-Effect Cards, Not Just the Primary Card
+
+When a server action moves/discards a SECONDARY card as a side effect of the main card's transition — e.g. planting a Treevolved adult by sacrificing an existing Baby (or Treevolved) plant already in the garden — the `notif_*` handler must remove that secondary card's DOM element and `gamedatas` entry too, not just render the primary card. See https://trello.com/c/wVzDccUu (`notif_plantPlanted` in `Game.js`): the server (`PlantingPhase::actPlant`) already discarded the sacrificed plant correctly, and the notification payload already carried its id (`payment_card_ids`), but the client only ever cleaned up HAND entries for those ids — never a GARDEN entry. Renderers like `renderPlantInPlanter` only ever `insertAdjacentHTML('beforeend', ...)` into a slot; they never clear it first. Left alone, the new card visually stacks on top of the still-present old one instead of replacing it.
+
+**Pattern:** for every id in a "these were consumed to pay for this" list, unconditionally try both the hand cleanup AND the on-board cleanup (`delete gamedatas.plantsOnPlanters[id]`, `delete gamedatas.plantsLevel3[id]`, `document.getElementById(...)?.remove()`) — it's safe to run the board cleanup even when the consumed id was actually a hand card, since a hand card was never in `plantsOnPlanters`/`plantsLevel3` to begin with. Regression test: `tests/plantPlantedStaleElement.test.mjs` (drives the real extracted method body through headless Chrome, since DOM removal can't be verified with a plain object-diff test).
+
+---
+
 ## UI Action State Resets
 
 When building custom UI interactions where a player builds up a selection before submitting (like selecting multiple cards), you must explicitly reset your local state variables immediately upon submission or cancellation.
