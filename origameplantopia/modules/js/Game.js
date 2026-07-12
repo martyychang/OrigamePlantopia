@@ -1355,9 +1355,18 @@ export class Game {
             if (this.gamedatas.weatherCardTypes[card.type] && this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg]) {
                 cardInfo = this.gamedatas.weatherCardTypes[card.type].cards[card.type_arg];
             }
+            // Every weather card in the deck is either a character card
+            // (banana/carrot/mushroom/potato/tomato) or a bonus card — there
+            // is no plain sun/rain/wind type — so weatherCardBody always has
+            // a sprite for whatever lands in weather_public. This used to
+            // hardcode a text-only rendering instead of reusing
+            // weatherCardBody like the hand/bonus-market renderers do, so
+            // public character weather cards showed as a name in a box
+            // rather than their art. See https://trello.com/c/rwdYylsO.
+            const body = this.weatherCardBody(card, cardInfo);
             container.insertAdjacentHTML('beforeend', `
-                <div id="weather_${card.id}" class="weather-card public-weather plantopia-card-size" style="background-color: #fdf2e9; border: 2px solid #e67e22; border-radius: 10px; padding: 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
-                    <strong style="color: #d35400; font-size: 1.1em;">${cardInfo.name}</strong>
+                <div id="weather_${card.id}" class="weather-card public-weather plantopia-card-size ${body.extraClass}" ${body.dataAttr} style="background-color: #fdf2e9; border: 2px solid #e67e22; border-radius: 10px; padding: 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                    ${body.inner}
                 </div>
             `);
         });

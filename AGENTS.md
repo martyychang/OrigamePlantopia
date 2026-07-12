@@ -665,6 +665,8 @@ This formula is container-size-independent — the same CSS works for hand cards
 
 **3. Key the sprite by canonical card identity, not the translated display name.** `card.type` from the server is the `card_type` column (untranslated, stable). `cardInfo.name` is the `clienttranslate()` output and will diverge under locale switches. Render `data-card-type="${card.type}"`, not `${cardInfo.name}`, so the attribute selector keeps matching in every locale.
 
+**4. Route every render site for a card family through the SAME body-builder helper, not a bespoke copy.** `weatherCardBody(card, cardInfo)` already knows how to emit sprite class + data-attrs for every weather card type (bonus and character alike) and is used correctly by the hand and bonus-market renderers. `renderPublicWeather()` predated it and had its own hardcoded `<strong>${cardInfo.name}</strong>` text-only rendering instead of calling it — so a character weather card (e.g. Carrot Rain) landing in the public weather area showed as a name in a box instead of art, even though the exact same card type already rendered correctly everywhere else. See https://trello.com/c/rwdYylsO. When a card family gets sprite support, grep for every place that renders that family's cards (`weather_${card.id}`, `card_${card.id}`, etc.) and confirm they all call the shared helper — a card type can be "fixed" in one render path and still broken in another.
+
 ---
 
 ## Testing State Classes Outside BGA Studio (PHP)
