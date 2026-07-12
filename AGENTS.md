@@ -16,11 +16,25 @@ SFTP. All game code changes go in that folder.
 origameplantopia/
 ├── modules/
 │   ├── php/
-│   │   ├── Game.php              # Main server-side game class
-│   │   └── States/               # One PHP class per game state
-│   │       ├── PlayerTurn.php    # Active-player state (id: 10)
-│   │       ├── NextPlayer.php    # Game-logic state (id: 90)
-│   │       └── EndScore.php      # Pre-end-game state (id: 98)
+│   │   ├── Game.php                       # Main server-side game class
+│   │   ├── PlantCards.php                 # Material data: 33 plant card types
+│   │   ├── WeatherCards.php                # Material data: character + bonus weather cards
+│   │   ├── CharacterCards.php              # Material data: the 5 characters
+│   │   ├── PlantingPlayerSubstate.php      # Per-player substate enum for PlantingPhase — see "Player Substates" below
+│   │   ├── WeatherPhaseBonusSubstate.php   # Per-player substate enum for WeatherPhaseBonus
+│   │   └── States/                        # One PHP class per game state — every file
+│   │       │                              # here MUST extend GameState (see gotcha below)
+│   │       ├── SetupDecisions.php          # Mulligan + character claim (id: 20)
+│   │       ├── DistributeWeather.php       # Deal character weather cards (id: 13)
+│   │       ├── PlantingPhaseStart.php      # Scoring + status reset (id: 29)
+│   │       ├── PlantingPhaseUpkeep.php     # Draw 1 card per player (id: 30)
+│   │       ├── PlantingPhase.php           # Main planting actions (id: 31)
+│   │       ├── WeatherPhaseStart.php       # Weather phase entry
+│   │       ├── WeatherPhaseReveal.php      # Reveal public weather cards
+│   │       ├── WeatherPhaseChoose.php      # Players choose a weather card
+│   │       ├── WeatherPhaseBonus.php       # Play Bonus Weather cards (id: 43)
+│   │       ├── WeatherPhaseGrow.php        # Apply growth from chosen + bonus weather
+│   │       └── EndScore.php                # Pre-end-game state (id: 98)
 │   ├── js/
 │   │   └── Game.js               # Client-side game logic (bundled output)
 │   └── css/                      # (empty — CSS compiled from SCSS or written directly)
@@ -241,12 +255,15 @@ async notif_notifName(args) {
 ## Database Design
 
 ### Schema (`dbmodel.sql`)
-- Currently uses the default template (no custom tables yet)
 - Standard tables provided by framework: `global`, `stats`, `gamelog`, `player`
-- Common patterns:
-  - **Card table** (for Deck component): `card_id`, `card_type`, `card_type_arg`, `card_location`, `card_location_arg`
-  - **Token table** (general purpose): `token_key` (VARCHAR PK), `token_location` (VARCHAR), `token_state` (INT)
-- Keep it simple — usually 1–2 tables with ≤5 columns
+- **Four Deck-component tables**, one per card family, all the same shape (`card_id`, `card_type`, `card_type_arg`, `card_location`, `card_location_arg`): `plant_card`, `weather_card`, `character_card`, `planter_card`.
+- **Custom `player` columns** (`ALTER TABLE player ADD ...`), each with an inline `COMMENT` naming its value meanings:
+  - `player_mulligan_choice` — 0=undecided, 1=keep, 2=redraw
+  - `player_planting_status` — the `PlantingPlayerSubstate` enum's sole source of truth (see "Player Substates" below)
+  - `player_pending_effects` — JSON array, the effect queue (see "Complex Multi-Step State Machines & Effect Queues")
+  - `player_bonus_weather_status` — the `WeatherPhaseBonusSubstate` enum's sole source of truth
+  - `player_banana_used` — per-round character-ability flag
+- Don't assume "keep it simple, 1–2 tables" as a hard ceiling — this project outgrew that early and it was fine. What matters is each table/column staying single-purpose (see "Player Substates" for a case where sharing one column across two unrelated concepts caused a real bug).
 - **String Length Gotcha**: If your game features long names (e.g., card names exceeding 32 characters like "Abnormal Potted Planted Potted Plants"), be sure to increase the standard `VARCHAR(32)` limit to `VARCHAR(64)` or higher in `dbmodel.sql` for columns like `card_type`. Otherwise, BGA will throw a fatal "Data too long for column" error during game setup.
 
 ### Material Data
@@ -344,7 +361,7 @@ Use reverse-DNS-style naming: `meeple_ff0000_7`, `card_yellow_magic_2`
 - [ ] Zombie mode works for all states
 - [ ] Meaningful statistics defined and tracked
 - [ ] Game logs explain all actions
-- [ ] Tiebreaker implemented (aux score)
+- [x] Tiebreaker implemented (aux score) — Trello DTEJePl6: Adult Plants × 1000 + cards-in-hand packed into `player_score_aux`
 - [ ] All UI strings marked for translation
 - [ ] All image elements have tooltips
 - [ ] Copyright headers updated
@@ -457,11 +474,31 @@ When a single action (like planting a card) triggers a chain of multiple effects
 1. **Database Queue:** Add a JSON column to the `player` table (e.g., `player_pending_effects`).
 2. **Push Effects:** When the card is played, construct an array of effect objects and serialize it into this column.
 3. **Process Loop:** Create a single method (e.g., `processPendingEffects()`) that loads the queue and processes non-interactive effects in a `while` loop. 
-4. **Pause for Input:** When an interactive effect is reached (like `draft_cards` or `discard_cards`), `break` out of the loop, set the player's status (e.g., `player_planting_status = 3`), and fire a notification with the current queue to instruct the frontend to render the appropriate UI prompt.
+4. **Pause for Input:** When an interactive effect is reached (like `draft_cards` or `discard_cards`), `break` out of the loop, set the player's substate to "resolving effects" (e.g., `PlantingPlayerSubstate::ResolvingEffects->value` — see "Player Substates" below, don't hand-write the raw int), and fire a notification with the current queue to instruct the frontend to render the appropriate UI prompt.
 5. **Resolve and Resume:** The frontend calls a corresponding `actResolve*` method (e.g., `actResolveDraft`) which handles the user's input, removes the effect from the front of the queue (`array_shift`), saves the queue, and immediately calls `processPendingEffects()` to resume the chain.
 6. **Moot-effect short-circuit:** Before pausing for an interactive effect, check whether the current game state can actually satisfy it. Example: a `level_up` with target `LEVEL_UP_OTHER` is moot if the player has no other plants in their garden (Natural Flower planted as the first flower). Pop moot effects silently and `continue` the loop — never trap the player on an unfulfillable prompt. Centralize the checks in an `isInteractiveEffectMoot($playerId, $effect)` helper so each new effect type has one place to opt in.
 7. **Skip button as fallback:** Surface a Skip action (a generic `actSkipPendingEffect` on the server, plus a button on every choice prompt) for *optional* effects (`level_up`, `level_up_family`, `gain_weather`). Gate it server-side with an `isEffectSkippable($effect)` whitelist so forced/penalty effects (e.g., `discard_cards`) and effects with their own bespoke flow (e.g., `banana_offer`'s built-in Skip) aren't accidentally bypassable.
 8. **Re-rendering after a status-only change:** Server actions that reset `player_planting_status` and pop the queue (e.g., `actUseBananaAbility` after the player chose to use Banana) must emit a notification that updates the client's local `gamedatas.players[pId].planting_status` AND re-triggers `onEnteringState`. Without it, the client UI remains stuck on the prior prompt even though the server has moved on. The reusable shape is the existing `playerGainedAction` notification — emit it from any action that grants a fresh planting action, and the corresponding `notif_playerGainedAction` handler refreshes `gamedatas` + delegates to `this.plantingPhase.onEnteringState(null, true)`.
+
+---
+
+## Player Substates
+
+A `MULTIPLE_ACTIVE_PLAYER` state that requires player action is best modeled as each active player independently working through their own **substate machine**, with the shared `GameState` only advancing once every player's substate reaches a concluded value. This is the formalization of the effect-queue pattern above, generalized: `player_planting_status` (Ready / Done / ResolvingEffects) is PlantingPhase's substate; `player_bonus_weather_status` (Deciding / Passed) is WeatherPhaseBonus's.
+
+**Four rules, for minimal room for error** (established while fixing two real bugs this pattern was designed to prevent — see below):
+
+1. **Durable source of truth only.** A player's substate lives in one DB column, never reconstructed by the client from replaying notifications. This is what makes page-reload rendering trustworthy for free — a fresh `getAllDatas()`/`getArgs()` read and the live notification-driven UI both read the exact same column, so they can't disagree.
+
+2. **One named PHP enum per state family, not magic ints.** Define it as a plain `enum ... : int` (`PlantingPlayerSubstate`, `WeatherPhaseBonusSubstate`) with named cases and a doc comment on the column's meaning. Read every DB value through `::from()` (throws on an undefined value — fail fast on drift) rather than casting a raw int.
+
+   > **Gotcha — do NOT put substate enum files in `modules/php/States/`.** BGA Studio's game-creation bootstrap scans every class file in that directory and fatals Express Start if it finds one that doesn't extend `\Bga\GameFramework\States\GameState` ("Class X does not extends \Bga\GameFramework\States\GameState"). A plain enum isn't a GameState — it broke game creation entirely the first time this project tried it. Put substate enums in `modules/php/` directly, alongside `PlantCards.php`/`WeatherCards.php`/`CharacterCards.php` — they're the same kind of thing (a material/data type), not state machine classes.
+
+3. **One funnel to `setPlayerNonMultiactive()` per state.** Every code path that concludes a player's turn (a normal action, a zombie/AFK handler, an effect queue draining to empty) should call one private method (e.g. `markPlayerDone()`) rather than each calling the framework directly — see "MULTIPLE_ACTIVE_PLAYER Deactivation Gotchas" below for what goes wrong if you don't.
+
+4. **Distinguish "start a new top-level action" from "resolve a pending effect" with two different guards.** A player mid-`ResolvingEffects` must be blocked from starting a brand-new action (`actPlant`/`actGrow`/etc.) but must NOT be blocked from the `actResolve*` methods that are the intended way *out* of that substate. Use a stricter guard (reject anything but the Ready case) for the former and a looser one (reject only Done) for the latter — conflating them either traps players who are mid-resolution, or lets them start a second action while the first is still pending, silently interleaving two effect chains on the same queue. This was a real, live bug found while writing this section down, not a hypothetical.
+
+**Don't put two unrelated per-player facts on one column just because they're both readiness gates.** `player_planting_status` and `player_bonus_weather_status` were briefly the same column (`WeatherPhaseBonus` reused `PlantingPhase`'s), and it worked by coincidence — until it wouldn't have (a future third value on either side would collide with the other's meaning). "Finished planting" and "passed on Bonus Weather" are different facts that only share a shape; give each state family its own column and enum.
 
 ---
 
@@ -485,7 +522,7 @@ Attempting to forcefully reset local variables inside `onEnteringState` in `Game
 Because of how the BGA framework broadcasts `MULTIPLE_ACTIVE_PLAYER` transitions, `getArgs()` is evaluated *before or simultaneously* with the state's `onEnteringState()`. If you execute `UPDATE player SET planting_status = 0` inside `onEnteringState()`, `getArgs()` might read the *stale* value from the DB and transmit that stale value to all clients, permanently locking them.
 
 **Best Practice for Syncing State Variables:**
-1. **Reset in the Previous State:** Perform database updates that reset player statuses (e.g., `UPDATE player SET player_planting_status = 0`) in the *outgoing* transition of the previous state (e.g., in `WeatherPhaseReveal` before `return WeatherPhaseBonus::class;`), or in a dedicated intermediate `GAME` state.
+1. **Reset in the Previous State:** Perform database updates that reset player statuses (e.g., `UPDATE player SET player_planting_status = 0`, or `PlantingPlayerSubstate::Ready->value` if you're in PHP and have the enum in scope — same value, don't hand-write the magic number where you don't have to) in the *outgoing* transition of the previous state (e.g., in `WeatherPhaseReveal` before `return WeatherPhaseBonus::class;`), or in a dedicated intermediate `GAME` state.
 2. **Transmit True State via `getArgs()`:** In the destination state, read the *live* database values in `getArgs()` and return them (e.g., `return ['planting_statuses' => $statuses];`).
 3. **Sync in Frontend:** In the frontend's `onEnteringState`, use the provided `args` to strictly overwrite local cache before calling `onPlayerActivationChange`.
    * **Crucial JS Syntax:** The BGA framework unpacks the returned array keys directly into the `args` parameter. You must access them as `args.planting_statuses`, **NOT** `args.args.planting_statuses`.
@@ -506,6 +543,8 @@ Because of how the BGA framework broadcasts `MULTIPLE_ACTIVE_PLAYER` transitions
 ---
 
 ## MULTIPLE_ACTIVE_PLAYER Deactivation Gotchas
+
+> See "Player Substates" above for the broader pattern this fits into — the rule there ("one funnel to `setPlayerNonMultiactive()` per state") is what keeps the anti-pattern below from creeping back in as a state gains more ways for a player to finish their turn.
 
 When a player finishes their action in a `MULTIPLE_ACTIVE_PLAYER` state, you must call `$this->game->gamestate->setPlayerNonMultiactive($playerId, NextState::class)`. The framework will locally deactivate the player and, if they are the **last** active player, synchronously transition the global game state to `NextState::class`.
 
@@ -625,6 +664,8 @@ BGA Studio provides no local runtime — no DB, no CLI test harness. To verify s
 - Run with plain `php path/to/test.php` (no PHPUnit needed for this scale) — Homebrew's `php` cask is sufficient (`brew install php`).
 
 This mirrors the JS-side pattern in `tests/computePlayerStats.test.mjs` (load the live method body, stub the minimum `this` surface, assert against real production code).
+
+**Table-driven audit tests catch a whole class of bug at once, not just the one instance someone reported.** `PlantingEffectKeysTest.php`/`BonusScoringKeysTest.php` iterate every card's material data (`PlantCards::getTypes()`) and assert every `planting_effect`/`bonus_scoring`/`treat_as` key is one the engine actually recognizes. This is the general form of the bug that made https://trello.com/c/xGkeMcXO possible — a card's data referenced a value the handling code silently didn't wire up — generalized to all 33 cards instead of relying on someone noticing one broken card in play-testing. Worth reaching for this shape whenever a bug turns out to be "the data says X but the code handling X doesn't fully agree": don't just fix and test the one card, write a test that iterates the whole catalog and would have caught it regardless of which card hit it first.
 
 ---
 
