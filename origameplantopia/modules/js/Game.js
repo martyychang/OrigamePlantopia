@@ -112,9 +112,25 @@ class PlantingPhase {
         this.selectedPlanter = null;
         this.selectedPaymentCards = [];
         this.selectedPlantToGrow = null;
+        // Purely local to this state-class instance — see the identical
+        // field on WeatherPhaseBonus and "Client-Side: isCurrentPlayerActive
+        // Is the Only Truth" in AGENTS.md (https://trello.com/c/DCpOIanp).
+        // This class used to layer a redundant `planting_status == 1`
+        // ("Done") check on top of isCurrentPlayerActive, written by several
+        // notif_* handlers below (notif_plantPlanted, notif_plantGrown,
+        // notif_playerKeptDraft) into the SHARED gamedatas.players[pId]
+        // object — the exact shape of bug that caused DCpOIanp elsewhere.
+        // It never actually broke here (this class owns planting_status;
+        // there was no cross-state collision), but the same latent race
+        // applies: if a live onEnteringState ever ran with stale/partial
+        // args, the redundant check could win over isCurrentPlayerActive
+        // and wrongly lock the player into "waiting" until a reload. See
+        // https://trello.com/c/e55vsa8Q.
+        this.justActed = false;
     }
 
     onEnteringState(args, isCurrentPlayerActive) {
+        this.justActed = false;
         if (args && args.planting_statuses) {
             Object.entries(args.planting_statuses).forEach(([pId, status]) => {
                 if (this.game.gamedatas.players[pId]) {
@@ -128,17 +144,25 @@ class PlantingPhase {
     onPlayerActivationChange(args, isCurrentPlayerActive) {
         this.bga.statusBar.removeActionButtons();
 
-        if (!isCurrentPlayerActive) {
+        // isCurrentPlayerActive is BGA's own authoritative tracking of the
+        // multiactive-player set — always trust it over any custom client
+        // cache. justActed only ever pushes further TOWARD waiting
+        // (immediately after my own action, before the framework's
+        // tracking has caught up) — never the reverse. See
+        // https://trello.com/c/e55vsa8Q.
+        if (!isCurrentPlayerActive || this.justActed) {
             this.bga.statusBar.setTitle(_('Waiting for other players to finish Planting...'));
             return;
         }
 
         const player = this.game.gamedatas.players[this.bga.players.getCurrentPlayerId()];
+        // PlantingPlayerSubstate (PHP) only defines Ready=0 / Done=1 /
+        // ResolvingEffects=3 — there has never been a 2 (see the doc
+        // comment on that enum). Done=1 is now handled entirely via
+        // isCurrentPlayerActive/justActed above, not by reading this value.
         const status = player.planting_status;
-        
-        if (status == 1) {
-            this.bga.statusBar.setTitle(_('Waiting for other players to finish Planting...'));
-        } else if (status == 2 || status == 3) {
+
+        if (status == 3) {
             let pending = [];
             try { pending = JSON.parse(player.pending_effects || '[]'); } catch(e) {}
             if (pending.length > 0) {
@@ -1666,8 +1690,14 @@ export class Game {
 
     async notif_playerGainedAction(args) {
         if (args.player_id == this.bga.players.getCurrentPlayerId()) {
+            // Ready=0 still matters here — it's the real, server-authoritative
+            // way out of ResolvingEffects=3 (see PlantingPlayerSubstate.php).
+            // justActed=false is separate: this player just gained a fresh
+            // action, so any earlier "I just acted" optimistic waiting must
+            // be cleared too.
             this.gamedatas.players[args.player_id].planting_status = 0;
             this.gamedatas.players[args.player_id].pending_effects = '[]';
+            this.plantingPhase.justActed = false;
             if (this.bga.states.getCurrentMainStateName() === 'PlantingPhase') {
                 this.plantingPhase.onEnteringState(null, true);
             }
@@ -1731,9 +1761,14 @@ export class Game {
         this.refreshAllPlayerPanels();
 
         if (args.player_id == this.bga.players.getCurrentPlayerId()) {
-            this.gamedatas.players[args.player_id].planting_status = 1;
+            // justActed=true, then onPlayerActivationChange directly — NOT
+            // onEnteringState, which would immediately reset justActed back
+            // to false (it's meant for fresh state entry, not a
+            // just-acted confirmation). Same pattern as
+            // notif_playerPlayedBonus for WeatherPhaseBonus.
+            this.plantingPhase.justActed = true;
             if (this.bga.states.getCurrentMainStateName() === 'PlantingPhase') {
-                this.plantingPhase.onEnteringState(null, true);
+                this.plantingPhase.onPlayerActivationChange(null, true);
             }
         }
     }
@@ -1779,9 +1814,11 @@ export class Game {
         this.refreshAllPlayerPanels();
 
         if (args.player_id == this.bga.players.getCurrentPlayerId()) {
-            this.gamedatas.players[args.player_id].planting_status = 1;
+            // See notif_plantPlanted above for why onPlayerActivationChange,
+            // not onEnteringState.
+            this.plantingPhase.justActed = true;
             if (this.bga.states.getCurrentMainStateName() === 'PlantingPhase') {
-                this.plantingPhase.onEnteringState(null, true);
+                this.plantingPhase.onPlayerActivationChange(null, true);
             }
         }
     }
@@ -1826,9 +1863,11 @@ export class Game {
             this.refreshAllPlayerPanels();
         }
         if (args.player_id == this.bga.players.getCurrentPlayerId()) {
-            this.gamedatas.players[args.player_id].planting_status = 1;
+            // See notif_plantPlanted above for why onPlayerActivationChange,
+            // not onEnteringState.
+            this.plantingPhase.justActed = true;
             if (this.bga.states.getCurrentMainStateName() === 'PlantingPhase') {
-                this.plantingPhase.onEnteringState(null, true);
+                this.plantingPhase.onPlayerActivationChange(null, true);
             }
         }
     }
