@@ -590,11 +590,30 @@ class PlantingPhase {
             <div id="draft-container" style="padding: 20px; background: rgba(0,0,0,0.8); border-radius: 10px; margin-bottom: 20px; text-align: center; color: white;">
                 <h2>Choose ${keepQty} Card(s) to Keep</h2>
                 <div style="display: flex; justify-content: center; gap: 15px; margin-top: 15px;" id="draft-cards-list"></div>
-                <div style="margin-top: 20px;" id="draft-actions"></div>
             </div>
         `);
 
         const list = document.getElementById('draft-cards-list');
+
+        // Per https://trello.com/c/YJXNQMHM: Confirm belongs in the status
+        // bar like every other action in this game, not as a raw HTML
+        // <button> stretched across the draft modal. Shown only once the
+        // right number of cards is selected — the same "add the button
+        // only when ready" pattern already used by Confirm Discard/
+        // Done/Skip elsewhere in this file (see renderPendingEffect's
+        // discard_cards branch and WeatherPhaseBonus), which gives the
+        // same "can't confirm prematurely" behavior as a disabled button
+        // without this framework needing to expose a disabled-button API.
+        const updateConfirmButton = () => {
+            this.bga.statusBar.removeActionButtons();
+            if (this.selectedDraftCards.length === keepQty || this.selectedDraftCards.length === Object.keys(draftCards).length) {
+                this.bga.statusBar.addActionButton(_('Confirm'), () => {
+                    this.bga.actions.performAction("actResolveDraft", { cardIdsStr: this.selectedDraftCards.join(';') });
+                    document.getElementById('draft-container').remove();
+                }, { color: 'blue' });
+            }
+        };
+
         Object.values(draftCards).forEach(c => {
             const cardInfo = this.game.gamedatas.plantCardTypes[c.type];
             const body = this.game.plantCardBody(c.type, cardInfo, { showCost: true });
@@ -605,7 +624,7 @@ class PlantingPhase {
             `);
 
             this.game.addPlantTooltip(`draft_${c.id}`, cardInfo);
-            
+
             const el = document.getElementById(`draft_${c.id}`);
             el.onclick = () => {
                 if (this.selectedDraftCards.includes(c.id)) {
@@ -619,19 +638,7 @@ class PlantingPhase {
                         el.style.border = '4px solid #f1c40f';
                     }
                 }
-                
-                const actions = document.getElementById('draft-actions');
-                actions.innerHTML = '';
-                if (this.selectedDraftCards.length === keepQty || this.selectedDraftCards.length === Object.keys(draftCards).length) {
-                    const btn = document.createElement('button');
-                    btn.className = 'bga-button bga-button_blue';
-                    btn.innerText = 'Confirm';
-                    btn.onclick = () => {
-                        this.bga.actions.performAction("actResolveDraft", { cardIdsStr: this.selectedDraftCards.join(';') });
-                        document.getElementById('draft-container').remove();
-                    };
-                    actions.appendChild(btn);
-                }
+                updateConfirmButton();
             };
         });
     }

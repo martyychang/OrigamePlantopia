@@ -221,6 +221,8 @@ class MyStateHandler {
 this.bga.states.register('MyState', new MyStateHandler(this, bga));
 ```
 
+**Always render actions via `this.bga.statusBar.addActionButton(...)`, never a raw HTML `<button>` built by hand.** `renderDraftModal`'s Confirm button used to be `document.createElement('button')` with a `bga-button` class, appended into a plain `<div>` inside a custom modal — visually an oddly stretched full-width button, unlike every other action in the game (all of which go through the status bar and render as compact, consistently-styled buttons). See https://trello.com/c/YJXNQMHM. For a "don't let them confirm until N items are selected" gate specifically, the established pattern here is to only *call* `addActionButton` once the selection is valid — call `removeActionButtons()` first and conditionally re-add — same as `renderPendingEffect`'s `discard_cards` branch and `WeatherPhaseBonus`'s Done/Skip buttons. That gives the same outcome as a disabled button without this framework needing to expose a disabled-button state.
+
 ### Notifications
 
 **Server side** (PHP):
