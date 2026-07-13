@@ -690,6 +690,20 @@ class PlantingPhase extends GameState
                 array_shift($queue);
             }
             else if ($effect['type'] === 'gain_weather' && $effect['weather_type'] !== PlantCards::WEATHER_ANY) {
+                // A typed gain_weather effect (e.g. Treegonometree: "gain a
+                // Bonus Rain Card") grants ONLY that specific weather type —
+                // unlike Geometree's "gain any Bonus Weather Card" (queued
+                // with WEATHER_ANY from the start, handled by the
+                // isInteractiveEffectMoot branch below), there is no player
+                // choice and no fallback to a different type if the typed
+                // pool is empty. This used to downgrade to WEATHER_ANY and
+                // present an interactive "choose any weather card" prompt
+                // whenever the OVERALL market was non-empty — silently
+                // handing out a different type than the card promises, and
+                // when the whole market WAS empty too, silently dropping
+                // the effect with no notification at all, leaving the
+                // player's client stuck showing the last-rendered prompt.
+                // See https://trello.com/c/ngnBJhnS.
                 $cards = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', $this->weatherCondition($effect['weather_type']), 'bonus_deck');
                 if (count($cards) > 0) {
                     $card = array_values($cards)[0];
@@ -711,11 +725,11 @@ class PlantingPhase extends GameState
                         "bonusMarket" => $bonusMarket,
                     ]);
                 } else {
-                    $market = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
-                    if (count($market) > 0) {
-                        $queue[0]['weather_type'] = PlantCards::WEATHER_ANY;
-                        continue;
-                    }
+                    $this->bga->notify->all("message", clienttranslate('${player_name} could not gain a Bonus ${weather_name} Card — none remain.'), [
+                        "player_id" => $playerId,
+                        "player_name" => $this->game->getPlayerNameById($playerId),
+                        "weather_name" => ucfirst($effect['weather_type']),
+                    ]);
                 }
                 array_shift($queue);
             }
