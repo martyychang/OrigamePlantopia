@@ -57,10 +57,11 @@ echo "--- Buttercup (LEVEL_UP_ANY, qty 2) ---\n";
 [$targetId] = $game->plantCards->seed('Cutetus', 0, 'planter', 6001, 1); // existing Baby Cactus, level 0
 [$targetPlanterId] = $game->planterCards->seed('planter', 0, 'garden', 1, 1);
 $game->plantCards->cards[$targetId]['location_arg'] = $targetPlanterId;
-[$buttercupId] = $game->plantCards->seed('Buttercup', 0, 'hand', 1, 1); // cost 0, no payment needed
+[$buttercupId] = $game->plantCards->seed('Buttercup', 0, 'hand', 1, 1);
 [$buttercupPlanterId] = $game->planterCards->seed('planter', 0, 'garden', 1, 1);
+$buttercupPaymentIds = $game->plantCards->pickCards(2, 'deck', 1); // Buttercup costs 2 cards — see https://trello.com/c/2CxvEj22
 
-$state->actPlant($buttercupId, $buttercupPlanterId, '');
+$state->actPlant($buttercupId, $buttercupPlanterId, implode(';', array_keys($buttercupPaymentIds)));
 $queue = json_decode($game->players[1]['player_pending_effects'], true);
 check('Buttercup queues exactly 1 interactive level_up effect', count($queue) === 1 && $queue[0]['type'] === 'level_up', json_encode($queue));
 check('effect targets LEVEL_UP_ANY with qty 2', $queue[0]['target'] === PlantCards::LEVEL_UP_ANY && $queue[0]['qty'] === 2);

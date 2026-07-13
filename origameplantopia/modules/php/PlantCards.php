@@ -148,7 +148,15 @@ class PlantCards
                 'name' => clienttranslate('Buttercup'),
                 'plant_type' => self::BABY_FLOWER,
                 'num_cards' => 4,
-                'cost' => 0,
+                // Was 0 — https://trello.com/c/2CxvEj22 reported planting
+                // Buttercup for free. actPlant()'s cost validation
+                // (`count($paymentCardIds) !== $cost`) is correct and was
+                // simply enforcing whatever this field said; the field
+                // itself was wrong. Also the only Baby Flower with a
+                // cost this low relative to a fairly strong effect
+                // ("grow ANY plant by 2 levels immediately") — every other
+                // plant family has zero cost-0 Baby Plants.
+                'cost' => 2,
                 'cost_unit' => self::COST_CARD,
                 'growth' => ['wind' => 2, 'rain' => 0, 'sun' => 0],
                 'points_per_level' => 1,

@@ -64,9 +64,10 @@ echo "--- actPlant is rejected while a previous effect is still unresolved ---\n
 [$targetPlanterId] = $game->planterCards->seed('planter', 0, 'garden', 1, 1);
 $game->plantCards->cards[$targetId]['location_arg'] = $targetPlanterId;
 
-[$buttercupId] = $game->plantCards->seed('Buttercup', 0, 'hand', 1, 1); // queues an interactive level_up, cost 0
+[$buttercupId] = $game->plantCards->seed('Buttercup', 0, 'hand', 1, 1); // queues an interactive level_up
 [$planterA] = $game->planterCards->seed('planter', 0, 'garden', 1, 1);
-$state->actPlant($buttercupId, $planterA, '');
+$buttercupPayment = $game->plantCards->pickCards(2, 'deck', 1); // Buttercup costs 2 cards — see https://trello.com/c/2CxvEj22
+$state->actPlant($buttercupId, $planterA, implode(';', array_keys($buttercupPayment)));
 
 check(
     'planting Buttercup leaves the player ResolvingEffects (interactive level_up pending)',
