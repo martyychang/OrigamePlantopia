@@ -1912,6 +1912,25 @@ export class Game {
                 // the planter's current-level number underneath; the
                 // transition animates the move. See https://trello.com/c/gcQP1950.
                 el.setAttribute('data-level', String(Math.max(0, Math.min(3, level))));
+
+                // Regenerate the "Level: N" text badge on EVERY growth step,
+                // not just the level-3/graduation one below — it's baked
+                // into this element's innerHTML once, by plantCardBody, at
+                // planting time ("Level: 0"), and the data-level attribute
+                // update above only drives the sliding-reveal CSS
+                // animation, it never touches that baked-in text. See
+                // https://trello.com/c/UlEhJIr5. (The max_level branch
+                // below used to be the ONLY place this got regenerated —
+                // fixed for that one transition by
+                // https://trello.com/c/7CO2tan1 — which is exactly why
+                // level-3/tilted cards already showed the right number
+                // while every intermediate step, 0→1 and 1→2, stayed
+                // frozen at "Level: 0".)
+                const cardInfo = this.gamedatas.plantCardTypes[this.gamedatas.plantsOnPlanters[cardId].type];
+                if (cardInfo) {
+                    const body = this.plantCardBody(this.gamedatas.plantsOnPlanters[cardId].type, cardInfo, { levelLabel: `Level: ${level}` });
+                    el.innerHTML = body.inner;
+                }
             }
 
             if (args.max_level) {
@@ -1947,19 +1966,11 @@ export class Game {
                     el.classList.remove('plantopia-plant-on-planter');
                     el.classList.add('level3-tilted', 'plantopia-card-size');
                     el.style.cssText = 'position: relative; border: 2px solid #2ecc71; border-radius: 5px; background-color: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
-
-                    // Regenerate the "Level: N" badge — it was baked into
-                    // this element's innerHTML at planting time (level 0),
-                    // and the data-level attribute update above only
-                    // drives the on-planter sliding-reveal animation, not
-                    // this tilted view's own text label, which was
-                    // otherwise left frozen at "Level: 0" forever. See
-                    // https://trello.com/c/7CO2tan1.
-                    const cardInfo = this.gamedatas.plantCardTypes[card.type];
-                    if (cardInfo) {
-                        const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Level: ${level}` });
-                        el.innerHTML = body.inner;
-                    }
+                    // The "Level: N" badge was already regenerated above
+                    // (now unconditional, not just for this max_level
+                    // branch — see https://trello.com/c/UlEhJIr5) — the
+                    // classList/cssText changes here don't touch innerHTML,
+                    // so it's still correct.
 
                     // Moves to the player's OWN dedicated tilted-plants row,
                     // underneath their planters row, per
