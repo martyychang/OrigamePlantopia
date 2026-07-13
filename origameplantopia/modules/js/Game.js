@@ -800,6 +800,18 @@ class WeatherPhaseBonus {
                 if (!card) return;
                 this.bga.statusBar.addActionButton(_(CONDITION_LABELS[condition]), () => {
                     this.selectedBonusCards.push(card.id);
+                    // Apply immediately — don't wait for the server
+                    // round-trip / playerPlayedBonus notification. Once a
+                    // card is added to this turn's selection it WILL be
+                    // played (submitSelectedBonusCards sends the whole
+                    // selection, and there's no way to deselect), so it's
+                    // safe to show it as played right away: garden tile +
+                    // player panel count drop. Without this, the status
+                    // button for this condition already disappears (real
+                    // local state), but the panel and garden looked
+                    // unchanged until the WHOLE selection was submitted —
+                    // see https://trello.com/c/rvSEQag1.
+                    this.game.applyBonusWeatherPlayed(card, pId);
                     // If every held card is now selected, there's nothing
                     // left to choose — proceed exactly as if Done had been
                     // clicked instead of waiting for an explicit click.
@@ -966,6 +978,12 @@ export class Game {
             const claimed = Object.values(gamedatas.claimedCharacters || {}).filter(c => c.location_arg == player.id);
             this.renderCharacters(claimed, `player-garden-planters-${player.id}`);
 
+            // Render this player's Bonus Weather cards played so far THIS
+            // round, AFTER the character card so they land even further
+            // right. See https://trello.com/c/rvSEQag1.
+            const playedBonus = Object.values(gamedatas.weatherPlayedBonus || {}).filter(c => c.location_arg == player.id);
+            this.renderPlayedBonusWeather(playedBonus, `player-garden-planters-${player.id}`);
+
             // Render Level 3 plants for this player on their OWN row.
             const level3Plants = Object.values(gamedatas.plantsLevel3 || {}).filter(c => c.location_arg == player.id);
             level3Plants.forEach(card => {
@@ -1096,6 +1114,55 @@ export class Game {
             </div>
         `;
         this.bga.gameui.addTooltipHtml(nodeId, html);
+    }
+
+    /**
+     * A player's PLAYED (not held) Bonus Weather cards for the current
+     * round, shown to the right of their character card in the same
+     * planters+character row (character cards already render last/
+     * rightmost in that row — see https://trello.com/c/nBsWlxlT — so
+     * appending here lands played bonus weather even further right).
+     * Idempotent: skips any card id that already has a rendered element,
+     * so it's safe to call both optimistically (the instant a player
+     * chooses to play a card) and again when the server confirms via
+     * notif_playerPlayedBonus — see applyBonusWeatherPlayed. Cleared by
+     * notif_weatherCleared once WeatherPhaseGrow returns these cards to
+     * the supply. See https://trello.com/c/rvSEQag1.
+     */
+    renderPlayedBonusWeather(cards, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container || !cards) return;
+
+        cards.forEach(card => {
+            if (document.getElementById(`garden_weatherbonus_${card.id}`)) return;
+            const body = this.weatherCardBody(card, { name: 'Bonus Weather' });
+            container.insertAdjacentHTML('beforeend', `
+                <div id="garden_weatherbonus_${card.id}" class="weather-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} data-id="${card.id}" style="position: relative; border: 2px solid #3498db; border-radius: 10px; background-color: #ebf5fb; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);"></div>
+            `);
+        });
+    }
+
+    /**
+     * Single funnel for "this Bonus Weather card is now played" — moves it
+     * from held to played in gamedatas, renders its garden tile, and
+     * refreshes player panels (so the held count drops immediately).
+     * Idempotent (see renderPlayedBonusWeather), so it's safe to call both
+     * optimistically, right when WeatherPhaseBonus's status button is
+     * clicked (before the server round-trip confirms it — the player's
+     * own click can't end up NOT playing the card, since it's already
+     * been added to that turn's selection), and again from
+     * notif_playerPlayedBonus when the server does confirm. Without the
+     * optimistic call, the player panel's held count and this garden tile
+     * wouldn't update until the WHOLE selection was submitted (Done /
+     * auto-submit), even though the status button for that condition had
+     * already disappeared — see https://trello.com/c/rvSEQag1.
+     */
+    applyBonusWeatherPlayed(card, playerId) {
+        if (this.gamedatas.weatherPublicBonus) delete this.gamedatas.weatherPublicBonus[card.id];
+        if (!this.gamedatas.weatherPlayedBonus) this.gamedatas.weatherPlayedBonus = {};
+        this.gamedatas.weatherPlayedBonus[card.id] = card;
+        this.renderPlayedBonusWeather([card], `player-garden-planters-${playerId}`);
+        this.refreshAllPlayerPanels();
     }
 
     renderPlanters(cards, containerId) {
@@ -1537,21 +1604,17 @@ export class Game {
 
     async notif_playerPlayedBonus(args) {
         console.log("notif_playerPlayedBonus", args);
-        const card = args.card;
 
         // Per https://trello.com/c/B5g3UmED: playing a Bonus Weather card
         // moves it out of the player's public held stash and into the
-        // round's played pool — the held count goes DOWN by 1. Bonus
-        // Weather is counted, not displayed as tiles (see
-        // https://trello.com/c/uiJWdVTg), so there's no DOM tile to
-        // restyle here anymore; just update the data.
-        if (this.gamedatas.weatherPublicBonus) {
-            delete this.gamedatas.weatherPublicBonus[card.id];
-        }
-        if (!this.gamedatas.weatherPlayedBonus) this.gamedatas.weatherPlayedBonus = {};
-        this.gamedatas.weatherPlayedBonus[card.id] = card;
-
-        this.refreshAllPlayerPanels();
+        // round's played pool — the held count goes DOWN by 1, and it
+        // renders in the player's garden (https://trello.com/c/rvSEQag1).
+        // applyBonusWeatherPlayed is idempotent, so this is a safe no-op
+        // re-application for the acting player's own client, which already
+        // applied this optimistically the instant they clicked the status
+        // button (see WeatherPhaseBonus below) — this call is what makes
+        // it visible to every OTHER (observing) client.
+        this.applyBonusWeatherPlayed(args.card, args.player_id);
 
         if (args.player_id == this.bga.players.getCurrentPlayerId() && this.bga.states.getCurrentMainStateName() === 'WeatherPhaseBonus') {
              this.weatherPhaseBonus.onPlayerActivationChange(null, true);
@@ -1682,9 +1745,18 @@ export class Game {
         // Per https://trello.com/c/B5g3UmED: end-of-phase cleanup clears only
         // the played-this-round pool. Held bonus weather (weather_public_bonus)
         // persists across rounds. The server sends the new held state via
-        // args.weatherPublicBonus to keep clients' counts in sync. Bonus
-        // Weather is counted only, never rendered as garden tiles — see
-        // https://trello.com/c/uiJWdVTg.
+        // args.weatherPublicBonus to keep clients' counts in sync.
+        //
+        // WeatherPhaseGrow has already moved every played-this-round Bonus
+        // Weather card back to the supply server-side (weather_played_bonus
+        // -> bonus_deck) by the time this notif fires — remove their garden
+        // tiles (rendered by applyBonusWeatherPlayed while the round was in
+        // progress — see https://trello.com/c/rvSEQag1) before clearing the
+        // data they were keyed from.
+        Object.keys(this.gamedatas.weatherPlayedBonus || {}).forEach(cardId => {
+            const el = document.getElementById(`garden_weatherbonus_${cardId}`);
+            if (el) el.remove();
+        });
         this.gamedatas.weatherPlayedBonus = {};
 
         if (args.weatherPublicBonus !== undefined) {
