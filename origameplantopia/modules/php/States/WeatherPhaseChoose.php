@@ -23,7 +23,36 @@ class WeatherPhaseChoose extends GameState
 
     public function getArgs(): array
     {
-        return [];
+        // Fresh, authoritative "your hand of character weather cards" —
+        // read synchronously as part of entering this exact state, the
+        // same "sync via getArgs() on state entry, don't rely on
+        // notification timing" pattern used for WeatherPhaseBonus (see
+        // https://trello.com/c/61uLM9hR and "State Transitions & Frontend
+        // Synchronization" in AGENTS.md). This state's UI (one button per
+        // held character weather card) previously depended entirely on
+        // gamedatas.weatherHand having already been populated by the
+        // receivedWeatherCards notification fired by WeatherPhaseGrow, a
+        // full interactive PlantingPhase round earlier — the same shape of
+        // risk that broke WeatherPhaseBonus, just with a longer (and so
+        // less likely, but not impossible) gap before it matters.
+        //
+        // weatherHand is PRIVATE (each player's own hand), so it must go
+        // through the `_private` mechanism (keyed by the requesting
+        // player's id) rather than the top-level array WeatherPhaseBonus
+        // uses for its PUBLIC weather_public_bonus data — returning it
+        // directly would leak every player's hand to every other player.
+        // _merge_private flattens it into the client's `args` object
+        // (args.weatherHand) instead of args._private.weatherHand, so it
+        // reads identically to the public-data case on the JS side.
+        $playerId = (int)$this->game->getCurrentPlayerId();
+        return [
+            '_private' => [
+                $playerId => [
+                    'weatherHand' => $this->game->weatherCards->getCardsInLocation('hand', $playerId),
+                ],
+            ],
+            '_merge_private' => true,
+        ];
     }
 
     public function onEnteringState(int $activePlayerId)

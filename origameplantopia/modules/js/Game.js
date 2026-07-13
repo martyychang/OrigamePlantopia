@@ -138,6 +138,17 @@ class PlantingPhase {
                 }
             });
         }
+        // Resync from getArgs() rather than trusting whatever the
+        // cardsDrawn notification (fired by the immediately preceding
+        // PlantingPhaseUpkeep state) already applied — same "sync via
+        // getArgs() on state entry" pattern as WeatherPhaseBonus/
+        // WeatherPhaseChoose. Explicitly re-render, since the whole point
+        // is not depending on the notification having already done so.
+        // See https://trello.com/c/61uLM9hR.
+        if (args && args.hand !== undefined) {
+            this.game.gamedatas.hand = args.hand;
+            this.game.renderHand(this.game.gamedatas.hand, this.game.gamedatas.weatherHand);
+        }
         this.onPlayerActivationChange(args, isCurrentPlayerActive);
     }
 
@@ -651,12 +662,19 @@ class WeatherPhaseChoose {
     }
 
     onEnteringState(args, isCurrentPlayerActive) {
+        // Resync from getArgs() rather than trusting whatever the
+        // receivedWeatherCards notification (fired a full PlantingPhase
+        // round earlier, by WeatherPhaseGrow) already applied. See
+        // https://trello.com/c/61uLM9hR.
+        if (args && args.weatherHand !== undefined) {
+            this.game.gamedatas.weatherHand = args.weatherHand;
+        }
         this.onPlayerActivationChange(args, isCurrentPlayerActive);
     }
 
     onPlayerActivationChange(args, isCurrentPlayerActive) {
         this.bga.statusBar.removeActionButtons();
-        
+
         if (!isCurrentPlayerActive) {
             this.bga.statusBar.setTitle(_('Waiting for other players to choose a Weather card...'));
             return;

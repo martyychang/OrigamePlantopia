@@ -581,6 +581,34 @@ onEnteringState(args, isCurrentPlayerActive) {
 
 This doesn't replace the notification-driven incremental updates (`notif_playerPlayedBonus`, `notif_weatherCleared`, etc.) — those still matter for keeping the UI live and responsive *while a state is already showing*. It adds a synchronous, race-free resync at the one moment (state entry) where staleness is actually visible and otherwise unrecoverable without a reload. **Any `MULTIPLE_ACTIVE_PLAYER` state whose UI depends on a `gamedatas` slice populated by a notification from an earlier state is a candidate for this same treatment** — not just player-substate columns.
 
+**Audit sweep (2026-07-12), all four interactive `MULTIPLE_ACTIVE_PLAYER` client states checked:**
+
+| State | Data its UI needs at entry | Verdict |
+| --- | --- | --- |
+| `WeatherPhaseBonus` | `weatherPublicBonus` (public) | **Fixed** — the reported bug (https://trello.com/c/61uLM9hR) |
+| `WeatherPhaseChoose` | `weatherHand` (private) | **Fixed proactively** — same shape, notification fired a full `PlantingPhase` round earlier |
+| `PlantingPhase` | `hand` (private) | **Fixed proactively** — narrowest window of the three (`PlantingPhaseUpkeep` is the *immediately* preceding state, no interactive state in between), fixed anyway for consistency |
+| `SetupDecisions` | `mulligan_choice`, `claimedCharacters`/`availableCharacters` | **Not vulnerable, left as-is** — this state runs exactly once per game (not once per round), so there is no "previous round's notification still in flight" scenario for it to race against; the data it reads is set synchronously during game setup, in the same request that produces the very first `gamedatas` payload |
+
+**Private data (`hand`, `weatherHand`) needs BGA's `_private` mechanism, not a top-level `getArgs()` key** — returning it directly would broadcast every player's hand to every other player. Keyed by the requesting player's id, with `_merge_private => true` flattening it into the client's `args` (so `args.hand`, not `args._private.hand` — same flat shape as the public-data case):
+
+```php
+public function getArgs(): array
+{
+    $playerId = (int)$this->game->getCurrentPlayerId();
+    return [
+        '_private' => [
+            $playerId => [
+                'hand' => $this->game->plantCards->getCardsInLocation('hand', $playerId),
+            ],
+        ],
+        '_merge_private' => true,
+    ];
+}
+```
+
+> **This was the first use of `_private`/`_merge_private` in this codebase.** `tests/php/PrivateHandGetArgsTest.php` verifies this game's own PHP correctly scopes each player's data to their own id (using two different `$game->currentPlayerId` values and asserting neither player's slice leaks the other's card ids anywhere in the returned structure, including a raw `json_encode` substring check) — but that can only catch a mistake in *this* code, not confirm BGA's real wire delivery matches the documented `_private`/`_merge_private` behavior. **Smoke-test hand privacy on an actual BGA Studio table** (two-player table, confirm each player only ever sees their own hand reflected in `args`) before fully trusting this in production.
+
 ---
 
 ## MULTIPLE_ACTIVE_PLAYER Deactivation Gotchas

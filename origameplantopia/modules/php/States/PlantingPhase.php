@@ -34,8 +34,34 @@ class PlantingPhase extends GameState
             // meaningless status number.
             $statuses[$pId] = PlantingPlayerSubstate::from((int)$this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $pId"))->value;
         }
+
+        // Fresh, authoritative "your hand" — read synchronously as part of
+        // entering this exact state, same "sync via getArgs() on state
+        // entry, don't rely on notification timing" pattern used for
+        // WeatherPhaseBonus/WeatherPhaseChoose (see
+        // https://trello.com/c/61uLM9hR and "State Transitions & Frontend
+        // Synchronization" in AGENTS.md). The narrowest of the three —
+        // PlantingPhaseUpkeep (the immediately preceding state, one hop
+        // away with no interactive state in between) is the only thing
+        // that writes gamedatas.hand before this state's UI needs it — but
+        // the theoretical race is the same shape, so it gets the same
+        // treatment for consistency and defense in depth.
+        //
+        // hand is PRIVATE, so it must go through the `_private` mechanism
+        // (keyed by the requesting player's id) rather than a top-level
+        // key — returning it directly would leak every player's hand to
+        // every other player. _merge_private flattens it into the
+        // client's `args` object (args.hand) instead of
+        // args._private.hand.
+        $playerId = (int)$this->game->getCurrentPlayerId();
         return [
-            'planting_statuses' => $statuses
+            'planting_statuses' => $statuses,
+            '_private' => [
+                $playerId => [
+                    'hand' => $this->game->plantCards->getCardsInLocation('hand', $playerId),
+                ],
+            ],
+            '_merge_private' => true,
         ];
     }
 
