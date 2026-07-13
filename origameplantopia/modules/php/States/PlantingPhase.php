@@ -595,6 +595,18 @@ class PlantingPhase extends GameState
         if (isset($effectDef['gain_weather_type'])) {
             $queue[] = ['type' => 'gain_weather', 'weather_type' => $effectDef['gain_weather_type'], 'qty' => $effectDef['gain_weather_qty'] ?? 1];
         }
+        // gain_weather_types (plural) is for a card that grants several
+        // DIFFERENT specific types in one effect (e.g. Gum Tree: a Bonus
+        // Rain Card AND a Bonus Sun Card) — one queue entry per type, each
+        // auto-resolved with no player choice by the gain_weather branch
+        // of processPendingEffects() below (which only auto-resolves a
+        // SPECIFIC weather_type, never WEATHER_ANY). See
+        // https://trello.com/c/L56GTT7Q.
+        if (isset($effectDef['gain_weather_types'])) {
+            foreach ($effectDef['gain_weather_types'] as $weatherType) {
+                $queue[] = ['type' => 'gain_weather', 'weather_type' => $weatherType, 'qty' => 1];
+            }
+        }
         if (isset($effectDef['level_up'])) {
             $queue[] = ['type' => 'level_up', 'target' => $effectDef['level_up'], 'qty' => $effectDef['level_up_qty'] ?? 1, 'source_card_id' => $sourceCardId];
         }

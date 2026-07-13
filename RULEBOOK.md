@@ -155,7 +155,7 @@ There are 3 ways to embark on a visit to Plantopia by yourself\! Learn about the
 * **Dogtus:** Treat this plant as being 2 Treevolved Cacti for the purpose of end-game scoring and gain 2 Points.  
 * **Firecracker Flower:** Gain 2 Points for every different plant type. (6 types: Baby Tree, Treevolved Tree, Baby Flower, Treevolved Flower, Baby Cactus, Treevolved Cactus)  
 * **Geometree:** Immediately carry out a Planting Phase action and gain any Bonus Weather Card.  
-* **Gum Tree:** Immediately gain 2 Bonus Weather Cards.  
+* **Gum Tree:** Immediately gain a Bonus Rain Card and a Bonus Sun Card.  
 * **Impossible Tree**: Gain 2 Points for every Treevolved Cactus or Treevolved Tree at the end of the game (including itself).  
 * **Lily-of-the-Rainbow:** Gain 2 Points for every Level 3 plant at the end of the game (including itself).  
 * **Money Plant:** Gain 1 Point per 2 cards in hand at the end of the game (including all Weather Cards).  

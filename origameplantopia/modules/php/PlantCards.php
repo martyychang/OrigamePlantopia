@@ -223,10 +223,26 @@ class PlantCards
                 'growth' => ['wind' => 0, 'rain' => 2, 'sun' => 0],
                 'points_per_level' => 2,
                 'flavor_text' => clienttranslate('The origin of sticky tree sap.'),
-                'card_effect' => clienttranslate('Immediately gain 2 Bonus Weather Cards.'),
+                // Per the rulebook: "Immediately gain THE 2 Bonus Weather
+                // Cards" — "the" refers to the two specific cards drawn on
+                // the Gum Tree card art itself (a Bonus Rain Card and a
+                // Bonus Sun Card), not a player's choice of any 2. Losing
+                // that "the" in transcription (both here and in the
+                // reference Google Doc) made it read as a generic
+                // "gain any 2" grant instead. See https://trello.com/c/L56GTT7Q.
+                'card_effect' => clienttranslate('Immediately gain a Bonus Rain Card and a Bonus Sun Card.'),
                 'planting_effect' => [
-                    'gain_weather_qty' => 2,
-                    'gain_weather_type' => self::WEATHER_ANY,
+                    // gain_weather_types (plural) is for a card that grants
+                    // several DIFFERENT specific types in one effect — each
+                    // becomes its own queued gain_weather entry (qty 1,
+                    // that one type), auto-resolved with no player choice,
+                    // same as any other single-type gain_weather effect
+                    // (e.g. Pepper Tree's "gain a Bonus Wind Card"). Not to
+                    // be confused with gain_weather_type (singular) +
+                    // gain_weather_qty, which is for "gain N of [a single
+                    // type / any type, player's choice]" (e.g. Geometree's
+                    // "gain any Bonus Weather Card").
+                    'gain_weather_types' => [self::WEATHER_RAIN, self::WEATHER_SUN],
                 ],
                 'bonus_scoring' => [],
             ],

@@ -8,14 +8,14 @@ declare(strict_types=1);
  * This is the "shape" half of that audit: PlantingPhase::queueEffects()
  * only recognizes a fixed set of planting_effect keys (draw_cards,
  * draft_cards+keep_cards, discard_cards, gain_weather_qty+gain_weather_type,
- * level_up+level_up_qty, level_up_family, gain_action). Any card whose
- * planting_effect uses a key outside that set would have that part of its
- * effect SILENTLY DROPPED — queueEffects only reads keys it recognizes,
- * it never errors on ones it doesn't. This exact class of bug (a
- * recognized-looking field that the engine doesn't actually wire up) is
- * what made https://trello.com/c/xGkeMcXO possible — this test generalizes
- * that check to all 33 plant cards instead of relying on someone noticing
- * one broken card in play-testing.
+ * gain_weather_types, level_up+level_up_qty, level_up_family, gain_action).
+ * Any card whose planting_effect uses a key outside that set would have
+ * that part of its effect SILENTLY DROPPED — queueEffects only reads keys
+ * it recognizes, it never errors on ones it doesn't. This exact class of
+ * bug (a recognized-looking field that the engine doesn't actually wire
+ * up) is what made https://trello.com/c/xGkeMcXO possible — this test
+ * generalizes that check to all 33 plant cards instead of relying on
+ * someone noticing one broken card in play-testing.
  *
  * Companion to BonusScoringKeysTest.php (same idea, for bonus_scoring).
  *
@@ -45,6 +45,7 @@ const RECOGNIZED_PLANTING_EFFECT_KEYS = [
     'draft_cards', 'keep_cards',
     'discard_cards',
     'gain_weather_qty', 'gain_weather_type',
+    'gain_weather_types',
     'level_up', 'level_up_qty',
     'level_up_family',
     'gain_action',
@@ -81,6 +82,28 @@ foreach ($types as $name => $info) {
             "$name: gain_weather_type is a recognized weather constant",
             in_array($effect['gain_weather_type'], RECOGNIZED_WEATHER_TYPES, true),
             'value=' . json_encode($effect['gain_weather_type'])
+        );
+    }
+
+    if (isset($effect['gain_weather_types'])) {
+        check(
+            "$name: gain_weather_types is a non-empty array",
+            is_array($effect['gain_weather_types']) && count($effect['gain_weather_types']) > 0
+        );
+        $unrecognizedTypes = array_diff($effect['gain_weather_types'], RECOGNIZED_WEATHER_TYPES);
+        check(
+            "$name: every gain_weather_types entry is a recognized weather constant",
+            empty($unrecognizedTypes),
+            'unrecognized=' . json_encode(array_values($unrecognizedTypes))
+        );
+        // Plural is specifically for SEVERAL DIFFERENT specific types in
+        // one effect (see PlantCards.php's Gum Tree comment) — WEATHER_ANY
+        // has no meaning as one of several "different specific types", and
+        // the singular gain_weather_type + gain_weather_qty pair is the
+        // right shape for "N of any/one type" instead.
+        check(
+            "$name: gain_weather_types does not include WEATHER_ANY (use singular gain_weather_type for that)",
+            !in_array(PlantCards::WEATHER_ANY, $effect['gain_weather_types'], true)
         );
     }
 
