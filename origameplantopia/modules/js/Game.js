@@ -1920,6 +1920,26 @@ export class Game {
                 // 90°-tilted tile sitting in the garden (no planter).
                 const card = this.gamedatas.plantsOnPlanters[cardId];
                 delete this.gamedatas.plantsOnPlanters[cardId];
+
+                // plantsOnPlanters entries use location_arg for "which
+                // planter this plant sits on" (resolved to an owning player
+                // via gamedatas.planters[locationArg].location_arg — see
+                // computePlayerStats' planters loop). plantsLevel3 entries
+                // use location_arg directly for "which player owns this
+                // plant" instead, matching the server's own convention
+                // (moveCard's $playerId argument in PlantingPhase.php/
+                // WeatherPhaseGrow.php) — same field name, different
+                // meaning depending on which collection it's in. Without
+                // translating it here, every "does this belong to me"
+                // check downstream (computePlayerStats,
+                // highlightGardenPlantsForCost) compared this plant's
+                // stale planter id against a player id and silently
+                // excluded it — from its own owner's player-panel counts
+                // AND from being selectable as a Treevolve sacrifice —
+                // until something forced a full server resync (reload).
+                // See https://trello.com/c/7CO2tan1.
+                card.location_arg = args.player_id;
+
                 if (!this.gamedatas.plantsLevel3) this.gamedatas.plantsLevel3 = {};
                 this.gamedatas.plantsLevel3[cardId] = card;
 
@@ -1927,6 +1947,20 @@ export class Game {
                     el.classList.remove('plantopia-plant-on-planter');
                     el.classList.add('level3-tilted', 'plantopia-card-size');
                     el.style.cssText = 'position: relative; border: 2px solid #2ecc71; border-radius: 5px; background-color: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+
+                    // Regenerate the "Level: N" badge — it was baked into
+                    // this element's innerHTML at planting time (level 0),
+                    // and the data-level attribute update above only
+                    // drives the on-planter sliding-reveal animation, not
+                    // this tilted view's own text label, which was
+                    // otherwise left frozen at "Level: 0" forever. See
+                    // https://trello.com/c/7CO2tan1.
+                    const cardInfo = this.gamedatas.plantCardTypes[card.type];
+                    if (cardInfo) {
+                        const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Level: ${level}` });
+                        el.innerHTML = body.inner;
+                    }
+
                     // Moves to the player's OWN dedicated tilted-plants row,
                     // underneath their planters row, per
                     // https://trello.com/c/gcQP1950.
