@@ -234,7 +234,12 @@ class SetupDecisions extends GameState
 
     function zombie(int $playerId) {
         $this->game->DbQuery("UPDATE player SET player_mulligan_choice = 1 WHERE player_id = $playerId");
-        // Auto-assign a random character to the zombie
+        // Zombie mode Level 0 ("The Passing Zombie" — see
+        // https://en.doc.boardgamearena.com/Zombie_Mode): assign the
+        // first available character, not an actually-random one. This
+        // used to be commented as "random" — it isn't, array_values()[0]
+        // is a deterministic pick, not a random draw. See
+        // https://trello.com/c/5yFNTibV.
         $chars = $this->game->characterCards->getCardsInLocation('garden', $playerId);
         if (count($chars) === 0) {
             $deck = $this->game->characterCards->getCardsInLocation('deck');

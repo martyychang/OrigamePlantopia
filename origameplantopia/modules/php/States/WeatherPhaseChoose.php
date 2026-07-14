@@ -110,7 +110,12 @@ class WeatherPhaseChoose extends GameState
     }
 
     function zombie(int $playerId) {
-        // Auto-choose a random weather card if zombie
+        // Zombie mode Level 0 ("The Passing Zombie" — see
+        // https://en.doc.boardgamearena.com/Zombie_Mode): choose the
+        // first available weather card, not an actually-random one. This
+        // used to be commented as "random" — it isn't, array_values()[0]
+        // is a deterministic pick, not a random draw. See
+        // https://trello.com/c/5yFNTibV.
         $cards = $this->game->weatherCards->getCardsInLocation('hand', $playerId);
         $characterCards = array_filter($cards, fn($c) => $c['type'] !== 'bonus');
         if (count($characterCards) > 0) {
