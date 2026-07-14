@@ -879,7 +879,6 @@ class WeatherPhaseBonus {
 
 export class Game {
     constructor(bga) {
-        console.log('origameplantopia constructor');
         this.bga = bga;
 
         // Declare the State classes
@@ -895,8 +894,6 @@ export class Game {
         this.weatherPhaseBonus = new WeatherPhaseBonus(this, bga);
         this.bga.states.register('WeatherPhaseBonus', this.weatherPhaseBonus);
 
-        // Uncomment the next line to show debug informations about state changes in the console. Remove before going to production!
-        // this.bga.states.logger = console.log;
     }
     
     /*
@@ -913,7 +910,6 @@ export class Game {
     */
     
     setup( gamedatas ) {
-        console.log( "Starting game setup" );
         this.gamedatas = gamedatas;
 
         // Example to add a div on the game area
@@ -1051,7 +1047,6 @@ export class Game {
         // Setup game notifications to handle (see "setupNotifications" method below)
         this.setupNotifications();
 
-        console.log( "Ending game setup" );
     }
 
     ///////////////////////////////////////////////////
@@ -1536,19 +1531,13 @@ export class Game {
     
     */
     setupNotifications() {
-        console.log( 'notifications subscriptions setup' );
-        
-        // automatically listen to the notifications, based on the `notif_xxx` function on this class. 
-        // Uncomment the logger param to see debug information in the console about notifications.
-        this.bga.notifications.setupPromiseNotifications({
-            // logger: console.log
-        });
+        // automatically listen to the notifications, based on the `notif_xxx` function on this class.
+        this.bga.notifications.setupPromiseNotifications({});
     }
     
     // TODO: from this point and below, you can write your game notifications handling methods
     
     async notif_updateScores(args) {
-        console.log("notif_updateScores", args);
         const scores = args.scores;
         const handCounts = args.handCounts;
 
@@ -1567,7 +1556,6 @@ export class Game {
     }
 
     async notif_newHand(args) {
-        console.log("notif_newHand", args);
         // The server sends the new hand when the player redraws
         this.gamedatas.hand = args.cards;
         const pId = this.bga.players.getCurrentPlayerId();
@@ -1578,7 +1566,6 @@ export class Game {
     }
 
     async notif_potatoExtraCards(args) {
-        console.log("notif_potatoExtraCards", args);
         const handCounts = args.handCounts || {};
         if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
         Object.assign(this.gamedatas.handCounts, handCounts);
@@ -1586,7 +1573,6 @@ export class Game {
     }
 
     async notif_mushroomBonusWeather(args) {
-        console.log("notif_mushroomBonusWeather", args);
         // Per https://trello.com/c/uiJWdVTg: Bonus Weather cards are
         // COUNTED (tracked in gamedatas + the player panel's Sun/Rain/Wind
         // tally) but not displayed as individual tiles in the garden.
@@ -1603,7 +1589,6 @@ export class Game {
     }
 
     async notif_playerPlayedBonus(args) {
-        console.log("notif_playerPlayedBonus", args);
 
         // Per https://trello.com/c/B5g3UmED: playing a Bonus Weather card
         // moves it out of the player's public held stash and into the

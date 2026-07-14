@@ -359,16 +359,51 @@ Use reverse-DNS-style naming: `meeple_ff0000_7`, `card_yellow_magic_2`
 ---
 
 ## Pre-Release Checklist Summary
-- [ ] Game progression returns accurate 0–100 value
-- [ ] Zombie mode works for all states
-- [ ] Meaningful statistics defined and tracked
-- [ ] Game logs explain all actions
-- [x] Tiebreaker implemented (aux score) — Trello DTEJePl6: Adult Plants × 1000 + cards-in-hand packed into `player_score_aux`
-- [ ] All UI strings marked for translation
-- [ ] All image elements have tooltips
-- [ ] Copyright headers updated
-- [ ] Build produces clean output (no console errors)
-- [ ] Works with all supported player counts
+
+Audited against the full official checklist (https://en.doc.boardgamearena.com/Pre-release_checklist) on 2026-07-13 — Trello card 01myGCNU. Grouped by the checklist's own sections; `[x]` = verified done with evidence, `[ ]` = verified NOT done, `[~]` = needs Marty/live BGA Studio access (not verifiable from a repo checkout).
+
+**License**
+- [~] BGA needs a license/alpha-approval agreement from the publisher (Origame) — administrative, not code-verifiable.
+
+**Metadata & Game Assets**
+- [x] `gameinfos.jsonc` fully populated (name, publisher, BGG IDs, player counts 2–5, tie-breaker description, etc.)
+- [x] `img/` is 2.9MB total (cap 15MB), largest file 1.2MB (cap 4MB), all 8 files referenced, pre-sprited (`plants_adult.png`, `plants_baby.png` etc. are sheets)
+- [~] Publisher icon / Game Metadata Manager images — set in the BGA Studio panel, not visible from the repo.
+
+**Server Side**
+- [ ] `getGameProgression()` (`modules/php/Game.php`) is still the unmodified boilerplate stub — hardcoded `return 0;` — and no state sets `updateGameProgression: true`, so it's never even called.
+- [x] Zombie handling — every `MULTIPLE_ACTIVE_PLAYER` state (`PlantingPhase`, `SetupDecisions`, `WeatherPhaseBonus`, `WeatherPhaseChoose`) implements `zombie(int $playerId)`; `StateType::GAME` states have no active player and don't need one. (Previously marked `[ ]` in this file — that was stale; corrected 2026-07-13.)
+- [ ] `giveExtraTime()` is never called anywhere in the codebase — not previously tracked in this checklist at all.
+- [ ] `stats.jsonc` is empty (`"table": {}`, `"player": {}`, only the commented-out boilerplate example) — no statistics defined.
+- [x] Notification messages — 236 `clienttranslate()` calls across 56 `notify->` calls; the only 2 empty-message notifies (`plantGrown`, `weatherCleared` inside batch/cleanup loops) are intentionally-silent data syncs paired with a separate summary message.
+- [x] Tiebreaker implemented (aux score) — Trello DTEJePl6: Adult Plants × 1000 + cards-in-hand packed into `player_score_aux`.
+- [x] No ad-hoc `ALTER`/`CREATE TABLE`/transaction statements outside `upgradeTableDb()` (the sanctioned migration hook).
+
+**Client Side**
+- [x] Every `performAction()` call site is bound to a real click handler (button callback or card `onclick`) — none fire from `setTimeout`/`setInterval`/automatically.
+
+**User Interface**
+- [x] All status-bar text and UI strings go through `_()`; all server-side player-facing text goes through `clienttranslate()` — no raw literals found.
+- [x] Tooltips — `addTooltipHtml()` covers character power cards and plant cards (the non-self-explanatory ones); weather cards show their name as visible text on the card face; panel icons have `title` attributes.
+- [ ] **Dark mode: untested and likely broken.** No `prefers-color-scheme`/dark handling anywhere in `origameplantopia.css`, and card rendering in `Game.js` hardcodes light pastel `background-color`s (`#ebf5fb`, `#fdf2e9`, etc.) inline — a real risk of illegible cards under BGA's dark mode, not just an unfilled checkbox.
+- [x] CSS namespacing — `plantopia-` prefix used consistently (86 of ~90 selectors).
+- [~] BGA UI Guidelines review, layout centering polish, forum design feedback — needs eyes-on visual review, not statically verifiable.
+
+**Special Testing**
+- [~] Spectator mode, in-game replay, minified JS/CSS testing, cross-browser (Chrome/Firefox min, Edge/Safari recommended), mobile rendering, realtime `giveExtraTime()` testing, waiting-screen check — all require the live BGA Studio project and manual QA; none of this is reachable from a repo checkout. (Our own headless-Chrome/PHP-harness tests are a different, complementary form of testing — they don't substitute for these.)
+
+**Cleanup**
+- [x] Removed 11 leftover `console.log` traces from `Game.js` (constructor, setup start/end, several `notif_*` args dumps) — 2026-07-13.
+- [x] No PHP debug tracing (`var_dump`/`print_r`/`error_log`) found.
+- [ ] Copyright headers in `Game.php` and `Game.js` still read the literal placeholder `© <Your name here> <Your email address here>`.
+- [x] No stray/unnecessary files in the project root.
+- [x] TypeScript/SCSS correctly isolated to `src-disabled/` (a deliberately paused build — see the repo layout section above), none loose inside `modules/`. Worth a decision before shipping either way: finish re-enabling the TS/SCSS pipeline, or delete `src-disabled/` — an unused-but-present build pipeline is its own kind of clutter.
+
+**Static Analysis**
+- [~] "Dry run build" and "Check project" are buttons in the BGA Studio control panel (`studio.boardgamearena.com`) — need Marty to run them there.
+
+**Cross-cutting**
+- [ ] "Works with all supported player counts" (2–5, per `gameinfos.jsonc`) has no dedicated test coverage — none of the existing PHP/JS tests specifically vary player count. Recommend a follow-up: extend the harness to construct a game at each of 2/3/4/5 players and verify setup completes without error, at minimum.
 
 ---
 
