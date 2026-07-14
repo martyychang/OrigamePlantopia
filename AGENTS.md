@@ -371,7 +371,7 @@ Audited against the full official checklist (https://en.doc.boardgamearena.com/P
 - [~] Publisher icon / Game Metadata Manager images — set in the BGA Studio panel, not visible from the repo.
 
 **Server Side**
-- [ ] `getGameProgression()` (`modules/php/Game.php`) is still the unmodified boilerplate stub — hardcoded `return 0;` — and no state sets `updateGameProgression: true`, so it's never even called.
+- [x] `getGameProgression()` implemented 2026-07-13 (Trello NhQj58Lk) — max Adult (Treevolved) plant count across all players, mapped 0/1/2/3/4+ → 0%/25%/50%/75%/100% (matches the 4-Adult-Plants end condition). `Game::countTreevolvedPlants()` is shared with `WeatherPhaseGrow`'s endgame check so the two can't disagree. Wired via `updateGameProgression: true` on `PlantingPhaseStart`/`WeatherPhaseStart` (once per round each).
 - [x] Zombie handling — every `MULTIPLE_ACTIVE_PLAYER` state (`PlantingPhase`, `SetupDecisions`, `WeatherPhaseBonus`, `WeatherPhaseChoose`) implements `zombie(int $playerId)`; `StateType::GAME` states have no active player and don't need one. (Previously marked `[ ]` in this file — that was stale; corrected 2026-07-13.)
 - [ ] `giveExtraTime()` is never called anywhere in the codebase — not previously tracked in this checklist at all.
 - [ ] `stats.jsonc` is empty (`"table": {}`, `"player": {}`, only the commented-out boilerplate example) — no statistics defined.
