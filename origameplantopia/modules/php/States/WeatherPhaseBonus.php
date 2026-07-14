@@ -70,6 +70,7 @@ class WeatherPhaseBonus extends GameState
         // MULTIPLE_ACTIVE_PLAYER state's own onEnteringState() races with
         // getArgs() and can transmit a stale value to clients.
         $this->game->gamestate->setAllPlayersMultiactive();
+        $this->game->giveExtraTimeToAllPlayers();
     }
 
     #[PossibleAction]

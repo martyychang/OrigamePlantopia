@@ -354,6 +354,25 @@ namespace Bga\Games\OrigamePlantopia {
         }
 
         function getCurrentPlayerId(): int { return $this->currentPlayerId; }
+
+        /** Tracks calls for test assertions — real giveExtraTime() is a no-op wrapper around BGA's own time-bank logic. */
+        public array $extraTimeGivenTo = [];
+        function giveExtraTime(int $playerId, ?int $specificTime = null): void {
+            $this->extraTimeGivenTo[] = $playerId;
+        }
+
+        /**
+         * Verbatim copy of Game::giveExtraTimeToAllPlayers(), added for
+         * https://trello.com/c/OSTxMchb. Kept here rather than requiring
+         * the real Game.php, same rationale as calculateAllScores() above
+         * — re-sync if the real method changes.
+         */
+        function giveExtraTimeToAllPlayers(): void {
+            $players = $this->loadPlayersBasicInfos();
+            foreach ($players as $playerId => $playerInfo) {
+                $this->giveExtraTime((int)$playerId);
+            }
+        }
         function getPlayerNameById(int $id): string { return $this->players[$id]['name'] ?? "P$id"; }
         function loadPlayersBasicInfos(): array {
             $out = [];

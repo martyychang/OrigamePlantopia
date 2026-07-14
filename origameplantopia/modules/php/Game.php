@@ -100,6 +100,25 @@ class Game extends \Bga\GameFramework\Table
     }
 
     /**
+     * Give every player standard extra time, per the BGA pre-release
+     * checklist: "When giving their turn to a player, you give them some
+     * extra time with giveExtraTime()". Called once per player each time
+     * a MULTIPLE_ACTIVE_PLAYER state activates everyone via
+     * setAllPlayersMultiactive() — i.e. right when their turn to act
+     * begins, same as Marty observed in a live game of Splendor (30s per
+     * activation, capped by BGA's own time-bank max — the cap and the
+     * "standard" amount both come from the table's speed profile in
+     * gameinfos.jsonc, not from our code). See https://trello.com/c/OSTxMchb.
+     */
+    public function giveExtraTimeToAllPlayers(): void
+    {
+        $players = $this->loadPlayersBasicInfos();
+        foreach ($players as $playerId => $playerInfo) {
+            $this->giveExtraTime((int)$playerId);
+        }
+    }
+
+    /**
      * Count how many Adult (Treevolved) plants a player has — on a planter
      * (still growing) or already graduated to garden_level3. This is the
      * same count WeatherPhaseGrow::onEnteringState() uses to trigger

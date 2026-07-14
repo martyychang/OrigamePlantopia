@@ -68,6 +68,7 @@ class PlantingPhase extends GameState
     public function onEnteringState(int $activePlayerId)
     {
         $this->game->gamestate->setAllPlayersMultiactive();
+        $this->game->giveExtraTimeToAllPlayers();
     }
 
     #[PossibleAction]
