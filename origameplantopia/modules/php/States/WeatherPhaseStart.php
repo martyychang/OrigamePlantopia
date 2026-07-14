@@ -16,6 +16,7 @@ class WeatherPhaseStart extends GameState
         parent::__construct($game,
             id: 40,
             type: StateType::GAME,
+            updateGameProgression: true,
         );
     }
 

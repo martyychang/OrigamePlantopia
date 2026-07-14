@@ -7,7 +7,6 @@ namespace Bga\Games\OrigamePlantopia\States;
 use Bga\GameFramework\StateType;
 use Bga\GameFramework\States\GameState;
 use Bga\Games\OrigamePlantopia\Game;
-use Bga\Games\OrigamePlantopia\PlantCards;
 
 class WeatherPhaseGrow extends GameState
 {
@@ -138,23 +137,7 @@ class WeatherPhaseGrow extends GameState
         $endgameTriggered = (int)$this->game->getGameStateValue('endgame_triggered');
         if ($endgameTriggered === 0) {
             foreach ($players as $pId => $pInfo) {
-                $plantsOnPlanters = $this->game->plantCards->getCardsInLocation('planter');
-                $plantsLevel3 = $this->game->plantCards->getCardsInLocation('garden_level3', $pId);
-                
-                $treevolvedCount = 0;
-                foreach ($plantsLevel3 as $plant) {
-                    if (PlantCards::isTreevolved($plant['type'])) {
-                        $treevolvedCount++;
-                    }
-                }
-                foreach ($plantsOnPlanters as $plant) {
-                    $planter = $this->game->planterCards->getCard((int)$plant['location_arg']);
-                    if ($planter && (int)$planter['location_arg'] === $pId) {
-                        if (PlantCards::isTreevolved($plant['type'])) {
-                            $treevolvedCount++;
-                        }
-                    }
-                }
+                $treevolvedCount = $this->game->countTreevolvedPlants((int)$pId);
 
                 if ($treevolvedCount >= 4) {
                     $this->game->setGameStateValue('endgame_triggered', 1);

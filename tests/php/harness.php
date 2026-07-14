@@ -327,6 +327,53 @@ namespace Bga\Games\OrigamePlantopia {
             return $out;
         }
 
+        /** In-memory stand-in for BGA's globals table (setGameStateInitialValue/getGameStateValue/setGameStateValue). */
+        public array $gameStateValues = [];
+        function getGameStateValue(string $name): int { return $this->gameStateValues[$name] ?? 0; }
+        function setGameStateValue(string $name, int $value): void { $this->gameStateValues[$name] = $value; }
+
+        /**
+         * Verbatim copy of Game::countTreevolvedPlants() /
+         * Game::getGameProgression(), added for
+         * https://trello.com/c/NhQj58Lk. Kept here rather than requiring
+         * the real Game.php, same rationale as calculateAllScores() above
+         * — re-sync if the real methods change.
+         */
+        function countTreevolvedPlants(int $playerId): int {
+            $count = 0;
+
+            $plantsLevel3 = $this->plantCards->getCardsInLocation('garden_level3', $playerId);
+            foreach ($plantsLevel3 as $plant) {
+                if (\Bga\Games\OrigamePlantopia\PlantCards::isTreevolved($plant['type'])) {
+                    $count++;
+                }
+            }
+
+            $plantsOnPlanters = $this->plantCards->getCardsInLocation('planter');
+            foreach ($plantsOnPlanters as $plant) {
+                $planter = $this->planterCards->getCard((int)$plant['location_arg']);
+                if ($planter && (int)$planter['location_arg'] === $playerId && \Bga\Games\OrigamePlantopia\PlantCards::isTreevolved($plant['type'])) {
+                    $count++;
+                }
+            }
+
+            return $count;
+        }
+
+        function getGameProgression() {
+            $players = $this->loadPlayersBasicInfos();
+
+            $maxTreevolved = 0;
+            foreach ($players as $playerId => $playerInfo) {
+                $count = $this->countTreevolvedPlants((int)$playerId);
+                if ($count > $maxTreevolved) {
+                    $maxTreevolved = $count;
+                }
+            }
+
+            return min(100, $maxTreevolved * 25);
+        }
+
         function DbQuery(string $sql): void {
             // Only the UPDATE patterns PlantingPhase.php actually issues.
             if (preg_match("/UPDATE player SET (.+) WHERE player_id = (\d+)/", $sql, $m)) {

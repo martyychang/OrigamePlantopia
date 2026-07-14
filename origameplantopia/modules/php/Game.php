@@ -100,19 +100,61 @@ class Game extends \Bga\GameFramework\Table
     }
 
     /**
+     * Count how many Adult (Treevolved) plants a player has — on a planter
+     * (still growing) or already graduated to garden_level3. This is the
+     * same count WeatherPhaseGrow::onEnteringState() uses to trigger
+     * endgame (any player reaching 4 ends the game after one more Weather
+     * Phase, per RULEBOOK.md), centralized here so both call sites agree.
+     */
+    public function countTreevolvedPlants(int $playerId): int
+    {
+        $count = 0;
+
+        $plantsLevel3 = $this->plantCards->getCardsInLocation('garden_level3', $playerId);
+        foreach ($plantsLevel3 as $plant) {
+            if (PlantCards::isTreevolved($plant['type'])) {
+                $count++;
+            }
+        }
+
+        $plantsOnPlanters = $this->plantCards->getCardsInLocation('planter');
+        foreach ($plantsOnPlanters as $plant) {
+            $planter = $this->planterCards->getCard((int)$plant['location_arg']);
+            if ($planter && (int)$planter['location_arg'] === $playerId && PlantCards::isTreevolved($plant['type'])) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
      * Compute and return the current game progression.
      *
      * The number returned must be an integer between 0 and 100.
      *
      * This method is called each time we are in a game state with the "updateGameProgression" property set to true.
      *
+     * Per RULEBOOK.md, the game ends once any player reaches 4 Adult
+     * (Treevolved) plants — so the max Treevolved count across all players
+     * is the natural top-level progress marker: 0/1/2/3/4+ Adult Plants
+     * maps to 0%/25%/50%/75%/100%.
+     *
      * @return int
      */
     public function getGameProgression()
     {
-        // TODO: compute and return the game progression
+        $players = $this->loadPlayersBasicInfos();
 
-        return 0;
+        $maxTreevolved = 0;
+        foreach ($players as $playerId => $playerInfo) {
+            $count = $this->countTreevolvedPlants((int)$playerId);
+            if ($count > $maxTreevolved) {
+                $maxTreevolved = $count;
+            }
+        }
+
+        return min(100, $maxTreevolved * 25);
     }
 
     /**

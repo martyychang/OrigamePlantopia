@@ -16,6 +16,7 @@ class PlantingPhaseStart extends GameState
         parent::__construct($game,
             id: 29,
             type: StateType::GAME,
+            updateGameProgression: true,
         );
     }
 
