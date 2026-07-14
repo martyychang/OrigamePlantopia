@@ -354,7 +354,10 @@ Use reverse-DNS-style naming: `meeple_ff0000_7`, `card_yellow_magic_2`
 
 ### `stats.jsonc`
 - Table-level and player-level statistics
-- Each stat has: `id`, `name`, `type` ("int" or "float")
+- Each stat has: `id`, `name`, `type` ("int", "float", or "bool"); IDs must be ≥10 and are never reused once shipped
+- Table and player stat IDs are independent namespaces (a table stat can reuse a player stat's ID)
+- Initialized via `$this->tableStats->init(...)` / `$this->playerStats->init(...)` in `setupNewGame()`, updated via `->set()`/`->inc()` during play
+- One table stat (`total_rounds`) + 10 player stats defined, tracking the player panel exactly — see `Game::updatePlayerPanelStats()`, called once per round from `WeatherPhaseGrow`
 
 ---
 
@@ -374,7 +377,7 @@ Audited against the full official checklist (https://en.doc.boardgamearena.com/P
 - [x] `getGameProgression()` implemented 2026-07-13 (Trello NhQj58Lk) — max Adult (Treevolved) plant count across all players, mapped 0/1/2/3/4+ → 0%/25%/50%/75%/100% (matches the 4-Adult-Plants end condition). `Game::countTreevolvedPlants()` is shared with `WeatherPhaseGrow`'s endgame check so the two can't disagree. Wired via `updateGameProgression: true` on `PlantingPhaseStart`/`WeatherPhaseStart` (once per round each).
 - [x] Zombie handling — every `MULTIPLE_ACTIVE_PLAYER` state (`PlantingPhase`, `SetupDecisions`, `WeatherPhaseBonus`, `WeatherPhaseChoose`) implements `zombie(int $playerId)`; `StateType::GAME` states have no active player and don't need one. (Previously marked `[ ]` in this file — that was stale; corrected 2026-07-13.)
 - [ ] `giveExtraTime()` is never called anywhere in the codebase — not previously tracked in this checklist at all.
-- [ ] `stats.jsonc` is empty (`"table": {}`, `"player": {}`, only the commented-out boilerplate example) — no statistics defined.
+- [x] `stats.jsonc` defined and tracked 2026-07-13 (Trello 7kdTOK4l) — one table stat (`total_rounds`) plus 10 player stats matching the player panel exactly (hand count, Bonus Weather held by type, garden plant counts by family/maturity). See `Game::updatePlayerPanelStats()`, refreshed once per round in `WeatherPhaseGrow`.
 - [x] Notification messages — 236 `clienttranslate()` calls across 56 `notify->` calls; the only 2 empty-message notifies (`plantGrown`, `weatherCleared` inside batch/cleanup loops) are intentionally-silent data syncs paired with a separate summary message.
 - [x] Tiebreaker implemented (aux score) — Trello DTEJePl6: Adult Plants × 1000 + cards-in-hand packed into `player_score_aux`.
 - [x] No ad-hoc `ALTER`/`CREATE TABLE`/transaction statements outside `upgradeTableDb()` (the sanctioned migration hook).
