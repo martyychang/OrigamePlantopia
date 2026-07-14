@@ -351,6 +351,10 @@ class Game extends \Bga\GameFramework\Table
     protected function setupNewGame($players, $options = [])
     {
         $this->playerEnergy->initDb(array_keys($players), initialValue: 2);
+        // Required before calculateAllScores() can use these — see
+        // https://trello.com/c/alsJctgg.
+        $this->playerScore->initDb(array_keys($players), initialValue: 0);
+        $this->playerScoreAux->initDb(array_keys($players), initialValue: 0);
 
         // Set the colors of the players with HTML color code.
         $gameinfos = $this->getGameinfos();
@@ -575,7 +579,20 @@ class Game extends \Bga\GameFramework\Table
             // can't collide.
             $scoreAux = $trvPlantsCount * 1000 + $cardsInHand;
 
-            $this->DbQuery("UPDATE player SET player_score = $score, player_score_aux = $scoreAux WHERE player_id = $playerId");
+            // Must go through the framework's playerScore/playerScoreAux
+            // PlayerCounter objects, not a raw DbQuery UPDATE — BGA's
+            // static analyzer flags direct writes to these two columns
+            // since it can't audit them the way it can the counter API.
+            // null message: suppress the counter's own built-in notif, we
+            // already send our own richer "updateScores" below (extra
+            // handCounts data the counter API has no room for). (int) cast:
+            // $score can be PHP-float-typed (floor() always returns float,
+            // even for a whole number) despite every bonus_scoring input
+            // being an integer point value — PlayerCounter::set() requires
+            // a strict int.
+            // See https://trello.com/c/alsJctgg.
+            $this->playerScore->set($playerId, (int)$score, null);
+            $this->playerScoreAux->set($playerId, (int)$scoreAux, null);
         }
         
         $this->bga->notify->all("updateScores", "", [

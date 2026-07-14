@@ -90,6 +90,29 @@ namespace Bga\GameFramework {
         }
         function get(string $name, int $player_id): int|float|bool { return $this->values[$name][$player_id] ?? 0; }
     }
+
+    /**
+     * Stand-in for BGA's PlayerCounter (used for $this->playerScore /
+     * $this->playerScoreAux — see https://trello.com/c/alsJctgg). Writes
+     * through to a column on the fake Game's own $players array so
+     * existing tests that read $game->players[$id]['player_score_aux']
+     * directly keep working unchanged.
+     */
+    class PlayerCounterStub {
+        private array $values = [];
+        function __construct(private array &$playersBackingArray, private string $dbColumn) {}
+        function initDb(array $playerIdsOrNos, int $initialValue = 0): void {
+            foreach ($playerIdsOrNos as $id) $this->values[$id] = $initialValue;
+        }
+        function get(int $playerIdOrNo): int { return $this->values[$playerIdOrNo] ?? 0; }
+        function set(int $playerIdOrNo, int $value, $message = null): int {
+            $this->values[$playerIdOrNo] = $value;
+            if (isset($this->playersBackingArray[$playerIdOrNo])) {
+                $this->playersBackingArray[$playerIdOrNo][$this->dbColumn] = $value;
+            }
+            return $value;
+        }
+    }
 }
 
 namespace Bga\GameFramework\States {
@@ -222,10 +245,14 @@ namespace Bga\Games\OrigamePlantopia {
         public $bga;
         public \Bga\GameFramework\TableStatsStub $tableStats;
         public \Bga\GameFramework\PlayerStatsStub $playerStats;
+        public \Bga\GameFramework\PlayerCounterStub $playerScore;
+        public \Bga\GameFramework\PlayerCounterStub $playerScoreAux;
 
         function __construct() {
             $this->tableStats = new \Bga\GameFramework\TableStatsStub();
             $this->playerStats = new \Bga\GameFramework\PlayerStatsStub();
+            $this->playerScore = new \Bga\GameFramework\PlayerCounterStub($this->players, 'player_score');
+            $this->playerScoreAux = new \Bga\GameFramework\PlayerCounterStub($this->players, 'player_score_aux');
             $this->plantCards = new FakeDeck(1000);
             $this->characterCards = new FakeDeck(5000);
             $this->planterCards = new FakeDeck(6000);
@@ -342,7 +369,13 @@ namespace Bga\Games\OrigamePlantopia {
                 // Game.php::calculateAllScores for the full rationale.
                 $scoreAux = $trvPlantsCount * 1000 + $cardsInHand;
 
-                $this->DbQuery("UPDATE player SET player_score = $score, player_score_aux = $scoreAux WHERE player_id = $playerId");
+                // Per https://trello.com/c/alsJctgg: goes through the
+                // playerScore/playerScoreAux PlayerCounter API, not a raw
+                // DbQuery UPDATE, matching the real Game.php. (int) cast:
+                // $score can be float-typed (floor() above), PlayerCounter
+                // requires a strict int.
+                $this->playerScore->set($playerId, (int)$score, null);
+                $this->playerScoreAux->set($playerId, (int)$scoreAux, null);
             }
 
             $this->bga->notify->all("updateScores", "", [
