@@ -292,6 +292,36 @@ from that abandoned skeleton.
    login/logout needed)
 5. Use browser dev tools to inspect elements and debug
 
+### Release Tagging
+
+Established 2026-07-14 (Trello 33qX9hAV) so BGA Studio's manual "Build a
+new release version" action (which requires a ≤250-character release
+note) has a git-native source of truth to draw from.
+
+- **Tags:** standard SemVer, `vMAJOR.MINOR.PATCH`, as annotated git tags
+  (`git tag -a v0.1.0 -m "..."`) pushed to `origin`.
+- **Started at `v0.1.0`** — the project is pre-Alpha (checklist not
+  fully done, not yet BGA-approved), and SemVer's own convention is that
+  `0.x` means "still stabilizing." `v0.1.0` = `69dad43`, the first tag,
+  covering the whole initial implementation push.
+- **Bump rules** (adapted for a solo game project, no external API):
+  PATCH = bug fixes / doc-only changes (most of what ships day to day);
+  MINOR = new features or completed pre-release-checklist items; MAJOR =
+  reserved for a genuine breaking change (rare for a game — e.g. a rules
+  reinterpretation significant enough that in-progress tables would need
+  different handling).
+- **Release notes:** commit messages in this repo are verbose
+  multi-paragraph explanations — too long to concatenate mechanically
+  into 250 characters. At tag time, list commits since the last tag
+  (`git log <last-tag>..HEAD --oneline`) and hand-write a short
+  synthesized summary of the highlights instead — draft it, then confirm
+  with Marty before tagging, since a pushed tag's message is awkward to
+  edit after the fact (would need `git tag -f` + force-push, which
+  rewrites a ref others may have already fetched).
+- **Trigger:** tag right before clicking "Build a new release version"
+  in BGA Studio, so the git tag and the BGA build map 1:1 and the tag's
+  message IS the note pasted into BGA.
+
 ### Recommended Development Order
 1. **Game info** — Fill `gameinfos.jsonc` with real data
 2. **Layout & Graphics** — Create HTML structure in `setup()`, CSS sprites, board layout
