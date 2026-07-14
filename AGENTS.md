@@ -758,6 +758,14 @@ When two different code paths both append into the same DOM container — e.g. `
 
 ---
 
+## Spectators
+
+`this.bga.players.isCurrentPlayerSpectator()` is the modern, non-deprecated way to check spectator status client-side (`this.isSpectator` still exists but is flagged `@deprecated` in `bga-framework.d.ts`). First used in this codebase for https://trello.com/c/pbg3MAI0 — hiding the "My Hand" section, since a spectator has no hand of their own and the panel used to render as a permanently-empty box.
+
+**Pattern:** guard the DOM-creating code in `setup()` with `if (!this.bga.players.isCurrentPlayerSpectator()) { ... }`, rather than creating the section and hiding it with CSS, or creating it and leaving it empty. If the corresponding render method (`renderHand()`, etc.) already has (or gets) a defensive `if (!container) return;` early-out for a missing container element, skipping creation is enough — every later `notif_*` handler that would otherwise re-populate the section becomes a safe no-op automatically, with no other code path needing to change. This is the same defensive-lookup pattern many render methods already use for other reasons (e.g. an element not yet in the DOM on first paint) — spectator-only UI can piggyback on it for free instead of needing its own dedicated spectator check at every call site.
+
+---
+
 ## UI Action State Resets
 
 When building custom UI interactions where a player builds up a selection before submitting (like selecting multiple cards), you must explicitly reset your local state variables immediately upon submission or cancellation.
