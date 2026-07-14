@@ -1,2 +1,7 @@
 # Visual Studio Code
 .vscode/
+
+# npm (origameplantopia/package.json currently has no dependencies, but
+# don't let a future `npm install` get committed by accident again — see
+# https://trello.com/c/lJ1rCd3U)
+node_modules/

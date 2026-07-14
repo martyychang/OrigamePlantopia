@@ -35,12 +35,8 @@ origameplantopia/
 │   │       ├── WeatherPhaseBonus.php       # Play Bonus Weather cards (id: 43)
 │   │       ├── WeatherPhaseGrow.php        # Apply growth from chosen + bonus weather
 │   │       └── EndScore.php                # Pre-end-game state (id: 98)
-│   ├── js/
-│   │   └── Game.js               # Client-side game logic (bundled output)
-│   └── css/                      # (empty — CSS compiled from SCSS or written directly)
-├── src-disabled/                 # TypeScript + SCSS source (disabled for now)
-│   ├── ts/
-│   └── scss/
+│   └── js/
+│       └── Game.js               # Client-side game logic (hand-written, no build step)
 ├── img/                          # Game images & sprites
 ├── misc/                         # Miscellaneous data files (≤1 MB, checked in)
 ├── gameinfos.jsonc                # Game metadata (name, players, duration, etc.)
@@ -48,11 +44,9 @@ origameplantopia/
 ├── gamepreferences.jsonc          # User preferences (colorblind, etc.)
 ├── stats.jsonc                    # Statistics definitions (table + player)
 ├── dbmodel.sql                    # Database schema
-├── origameplantopia.css           # Compiled CSS stylesheet
-├── package.json                   # npm scripts: build:ts, build:scss, watch
-├── rollup.config.mjs             # Rollup bundler config for TypeScript
-├── tsconfig.json                  # TypeScript compiler config
-├── bga-framework.d.ts            # TypeScript type definitions for BGA framework
+├── origameplantopia.css           # Hand-written CSS stylesheet
+├── package.json                   # No scripts/dependencies — kept only for `main`/metadata
+├── bga-framework.d.ts            # TypeScript type definitions for BGA framework (editor hints only, no build uses it)
 ├── _ide_helper.php               # PHP IDE helper for BGA framework
 └── LICENCE_BGA                   # BGA framework license
 ```
@@ -157,7 +151,7 @@ class MyState extends GameState {
 - For games requiring live intermediate scoring (e.g., recalculated at the end of each phase), a robust pattern is to define a dedicated `calculateAllScores()` method in `Game.php`. This method should compute scores, update `player_score` and `player_score_aux` in the DB, and fire an `updateScores` notification.
 - **Timing**: Trigger this calculation inside the `onEnteringState()` of the *subsequent* phase's start state (e.g., `WeatherPhaseStart` or `PlantingPhaseStart`) and `EndScore`. This guarantees the score perfectly reflects the state at the exact boundary of the previous phase.
 
-### Client Side (JavaScript/TypeScript)
+### Client Side (JavaScript)
 
 #### Game.js — `modules/js/Game.js`
 - `export class Game` — main game class
@@ -277,17 +271,18 @@ database.
 
 ## Development Workflow
 
-### Build Pipeline
-```bash
-# TypeScript → JS (via Rollup)
-npm run build:ts
+### No Build Step
 
-# SCSS → CSS (via Sass)
-npm run build:scss
-
-# Watch both
-npm run watch
-```
+`modules/js/Game.js` and `origameplantopia.css` are edited directly — no
+TypeScript/SCSS compilation. An early TypeScript+SCSS build (Rollup +
+Sass) existed as `src-disabled/` but was never developed beyond the
+initial project template and was deleted 2026-07-13 (Trello lJ1rCd3U) —
+its own build config had drifted to point at a `src/` path that no
+longer existed, and by then `modules/js/Game.js`/`origameplantopia.css`
+already held 2,400+ lines of the real, tested implementation. If a
+TypeScript/SCSS pipeline is wanted again in the future, it would need to
+be built to compile the ACTUAL current `modules/js/Game.js`, not resumed
+from that abandoned skeleton.
 
 ### Iteration Cycle
 1. Edit source files locally
@@ -400,7 +395,7 @@ Audited against the full official checklist (https://en.doc.boardgamearena.com/P
 - [x] No PHP debug tracing (`var_dump`/`print_r`/`error_log`) found.
 - [x] Copyright headers in `Game.php` and `Game.js` updated 2026-07-13 (Trello Pcp8zIlD) to `© Marty Chang <marty.y.chang@gmail.com>`, per Marty's confirmation.
 - [x] No stray/unnecessary files in the project root.
-- [x] TypeScript/SCSS correctly isolated to `src-disabled/` (a deliberately paused build — see the repo layout section above), none loose inside `modules/`. Worth a decision before shipping either way: finish re-enabling the TS/SCSS pipeline, or delete `src-disabled/` — an unused-but-present build pipeline is its own kind of clutter.
+- [x] `src-disabled/` (the abandoned TypeScript+SCSS build) deleted 2026-07-13 (Trello lJ1rCd3U) — it was the untouched original project template, never developed, and its own build config had drifted to reference a `src/` path that no longer existed. `rollup.config.mjs`/`tsconfig.json` and the now-dead devDependencies/build scripts in `package.json` removed with it. See "No Build Step" in the Development Workflow section above.
 
 **Static Analysis**
 - [~] "Dry run build" and "Check project" are buttons in the BGA Studio control panel (`studio.boardgamearena.com`) — need Marty to run them there.
