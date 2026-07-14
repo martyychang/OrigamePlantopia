@@ -1,28 +1,72 @@
-{    
+{
     // Statistics for the table
-    "table": {},
-    
-    // Statistics for each player
+    "table": {
+        // One round = one completed Planting Phase + one completed
+        // Weather Phase. Incremented once per round, at the end of
+        // WeatherPhaseGrow (whether the game continues or this round
+        // ends the game). Per https://trello.com/c/7kdTOK4l.
+        "total_rounds": {
+            "id": 10,
+            "name": "Total rounds",
+            "type": "int"
+        }
+    },
+
+    // Statistics for each player — matches the at-a-glance player panel
+    // (Game.js computePlayerStats()/renderPlayerPanel()) exactly: hand
+    // count, Bonus Weather cards held by type, and garden plant counts by
+    // family and maturity. Updated once per round alongside total_rounds
+    // (see Game::updatePlayerPanelStats()). Per https://trello.com/c/7kdTOK4l.
     "player": {
-      /* 
-      EXAMPLE:
-
-      "turns_number": {
-        "id": 10,
-        "name": "Number of turns",
-        "type": "int"
-      },
-      "player_teststat1": {
-        "id": 11,
-        "name": "player test stat 1",
-        "type": "int"
-      },
-      "player_teststat2": {
-        "id": 12,
-        "name": "player test stat 2",
-        "type": "float"
-      }
-      */
-
+        "hand_count": {
+            "id": 20,
+            "name": "Cards in hand",
+            "type": "int"
+        },
+        "bonus_weather_sun": {
+            "id": 21,
+            "name": "Bonus Sun cards held",
+            "type": "int"
+        },
+        "bonus_weather_rain": {
+            "id": 22,
+            "name": "Bonus Rain cards held",
+            "type": "int"
+        },
+        "bonus_weather_wind": {
+            "id": 23,
+            "name": "Bonus Wind cards held",
+            "type": "int"
+        },
+        "baby_cactus_count": {
+            "id": 24,
+            "name": "Baby Cactus in garden",
+            "type": "int"
+        },
+        "adult_cactus_count": {
+            "id": 25,
+            "name": "Adult Cactus in garden",
+            "type": "int"
+        },
+        "baby_flower_count": {
+            "id": 26,
+            "name": "Baby Flower in garden",
+            "type": "int"
+        },
+        "adult_flower_count": {
+            "id": 27,
+            "name": "Adult Flower in garden",
+            "type": "int"
+        },
+        "baby_tree_count": {
+            "id": 28,
+            "name": "Baby Tree in garden",
+            "type": "int"
+        },
+        "adult_tree_count": {
+            "id": 29,
+            "name": "Adult Tree in garden",
+            "type": "int"
+        }
     }
 }

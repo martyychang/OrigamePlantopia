@@ -129,6 +129,74 @@ class Game extends \Bga\GameFramework\Table
     }
 
     /**
+     * Recompute and persist the player statistics that mirror the at-a-
+     * glance player panel (Game.js computePlayerStats()/renderPlayerPanel()):
+     * hand count, Bonus Weather cards held by type, and garden plant
+     * counts by family and maturity. Uses each card's own plant_type
+     * directly, the same as the client's bumpPlant() — NOT the `treat_as`
+     * mapping calculateAllScores() applies for bonus-scoring purposes,
+     * which is a different (scoring) semantic, not what the panel shows.
+     *
+     * Called once per round (end of WeatherPhaseGrow, alongside the
+     * total_rounds table stat) plus once at setup — not on every
+     * individual notify, to keep this simple for the Alpha ship. See
+     * https://trello.com/c/7kdTOK4l.
+     */
+    public function updatePlayerPanelStats(): void
+    {
+        $players = $this->loadPlayersBasicInfos();
+        $handCounts = array_map('intval', $this->plantCards->countCardsByLocationArgs('hand'));
+
+        $planters = $this->planterCards->getCardsInLocation('garden');
+        $planterToPlayer = [];
+        foreach ($planters as $planter) {
+            $planterToPlayer[$planter['id']] = (int)$planter['location_arg'];
+        }
+        $plantsOnPlanters = $this->plantCards->getCardsInLocation('planter');
+        $plantsLevel3 = $this->plantCards->getCardsInLocation('garden_level3');
+
+        $bonusByPlayer = [];
+        foreach ($this->weatherCards->getCardsInLocation('weather_public_bonus') as $card) {
+            $pId = (int)$card['location_arg'];
+            $cond = (int)$card['type_arg'];
+            $bonusByPlayer[$pId][$cond] = ($bonusByPlayer[$pId][$cond] ?? 0) + 1;
+        }
+
+        foreach ($players as $playerId => $playerInfo) {
+            $playerId = (int)$playerId;
+
+            $counts = [
+                PlantCards::BABY_CACTUS => 0, PlantCards::TRV_CACTUS => 0,
+                PlantCards::BABY_FLOWER => 0, PlantCards::TRV_FLOWER => 0,
+                PlantCards::BABY_TREE => 0, PlantCards::TRV_TREE => 0,
+            ];
+            foreach ($plantsOnPlanters as $plant) {
+                if (($planterToPlayer[$plant['location_arg']] ?? null) === $playerId) {
+                    $plantType = self::$PLANT_CARD_TYPES[$plant['type']]['plant_type'];
+                    if (isset($counts[$plantType])) $counts[$plantType]++;
+                }
+            }
+            foreach ($plantsLevel3 as $plant) {
+                if ((int)$plant['location_arg'] === $playerId) {
+                    $plantType = self::$PLANT_CARD_TYPES[$plant['type']]['plant_type'];
+                    if (isset($counts[$plantType])) $counts[$plantType]++;
+                }
+            }
+
+            $this->playerStats->set('hand_count', $handCounts[$playerId] ?? 0, $playerId);
+            $this->playerStats->set('bonus_weather_sun', $bonusByPlayer[$playerId][WeatherCards::CONDITION_SUN] ?? 0, $playerId);
+            $this->playerStats->set('bonus_weather_rain', $bonusByPlayer[$playerId][WeatherCards::CONDITION_RAIN] ?? 0, $playerId);
+            $this->playerStats->set('bonus_weather_wind', $bonusByPlayer[$playerId][WeatherCards::CONDITION_WIND] ?? 0, $playerId);
+            $this->playerStats->set('baby_cactus_count', $counts[PlantCards::BABY_CACTUS], $playerId);
+            $this->playerStats->set('adult_cactus_count', $counts[PlantCards::TRV_CACTUS], $playerId);
+            $this->playerStats->set('baby_flower_count', $counts[PlantCards::BABY_FLOWER], $playerId);
+            $this->playerStats->set('adult_flower_count', $counts[PlantCards::TRV_FLOWER], $playerId);
+            $this->playerStats->set('baby_tree_count', $counts[PlantCards::BABY_TREE], $playerId);
+            $this->playerStats->set('adult_tree_count', $counts[PlantCards::TRV_TREE], $playerId);
+        }
+    }
+
+    /**
      * Compute and return the current game progression.
      *
      * The number returned must be an integer between 0 and 100.
@@ -313,7 +381,15 @@ class Game extends \Bga\GameFramework\Table
             ], 'garden', $player_id);
         }
 
-        // TODO: Init game statistics.
+        $this->tableStats->init('total_rounds', 0);
+        $this->playerStats->init([
+            'hand_count', 'bonus_weather_sun', 'bonus_weather_rain', 'bonus_weather_wind',
+            'baby_cactus_count', 'adult_cactus_count',
+            'baby_flower_count', 'adult_flower_count',
+            'baby_tree_count', 'adult_tree_count',
+        ], 0);
+        $this->updatePlayerPanelStats();
+
         // TODO: Create weather card deck once inventory is ready.
 
         // Activate first player (once setup logic is fully complete)

@@ -60,6 +60,36 @@ namespace Bga\GameFramework {
         public NotifyStub $notify;
         function __construct() { $this->notify = new NotifyStub(); }
     }
+
+    class TableStatsStub {
+        public array $values = [];
+        function init(string|array $nameOrNames, int|float|bool $value): void {
+            foreach ((array)$nameOrNames as $name) $this->values[$name] = $value;
+        }
+        function set(string $name, int|float|bool $value): void { $this->values[$name] = $value; }
+        function inc(string $name, int|float $delta): void { $this->values[$name] = ($this->values[$name] ?? 0) + $delta; }
+        function get(string $name): int|float|bool { return $this->values[$name] ?? 0; }
+    }
+
+    class PlayerStatsStub {
+        public array $values = []; // name => [playerId => value]
+        function init(string|array $nameOrNames, int|float|bool $value, bool $updateTableStat = false): void {
+            // player-scoped init happens lazily via set()/inc() in this stub — no known player list here.
+        }
+        function set(string $name, int|float|bool $value, int $player_id): void {
+            $this->values[$name][$player_id] = $value;
+        }
+        function setAll(string $name, int|float|bool $value): void {
+            foreach ($this->values[$name] ?? [] as $pId => $_) $this->values[$name][$pId] = $value;
+        }
+        function inc(string $name, int|float $delta, int $player_id, bool $updateTableStat = false): void {
+            $this->values[$name][$player_id] = ($this->values[$name][$player_id] ?? 0) + $delta;
+        }
+        function incAll(string $name, int|float $delta): void {
+            foreach ($this->values[$name] ?? [] as $pId => $_) $this->values[$name][$pId] += $delta;
+        }
+        function get(string $name, int $player_id): int|float|bool { return $this->values[$name][$player_id] ?? 0; }
+    }
 }
 
 namespace Bga\GameFramework\States {
@@ -190,8 +220,12 @@ namespace Bga\Games\OrigamePlantopia {
         public static array $CHARACTER_CARD_TYPES = [];
         public $gamestate;
         public $bga;
+        public \Bga\GameFramework\TableStatsStub $tableStats;
+        public \Bga\GameFramework\PlayerStatsStub $playerStats;
 
         function __construct() {
+            $this->tableStats = new \Bga\GameFramework\TableStatsStub();
+            $this->playerStats = new \Bga\GameFramework\PlayerStatsStub();
             $this->plantCards = new FakeDeck(1000);
             $this->characterCards = new FakeDeck(5000);
             $this->planterCards = new FakeDeck(6000);
@@ -372,6 +406,65 @@ namespace Bga\Games\OrigamePlantopia {
             }
 
             return min(100, $maxTreevolved * 25);
+        }
+
+        /**
+         * Verbatim copy of Game::updatePlayerPanelStats(), added for
+         * https://trello.com/c/7kdTOK4l. Kept here rather than requiring
+         * the real Game.php, same rationale as calculateAllScores() above
+         * — re-sync if the real method changes.
+         */
+        function updatePlayerPanelStats(): void {
+            $players = $this->loadPlayersBasicInfos();
+            $handCounts = array_map('intval', $this->plantCards->countCardsByLocationArgs('hand'));
+
+            $planters = $this->planterCards->getCardsInLocation('garden');
+            $planterToPlayer = [];
+            foreach ($planters as $planter) {
+                $planterToPlayer[$planter['id']] = (int)$planter['location_arg'];
+            }
+            $plantsOnPlanters = $this->plantCards->getCardsInLocation('planter');
+            $plantsLevel3 = $this->plantCards->getCardsInLocation('garden_level3');
+
+            $bonusByPlayer = [];
+            foreach ($this->weatherCards->getCardsInLocation('weather_public_bonus') as $card) {
+                $pId = (int)$card['location_arg'];
+                $cond = (int)$card['type_arg'];
+                $bonusByPlayer[$pId][$cond] = ($bonusByPlayer[$pId][$cond] ?? 0) + 1;
+            }
+
+            foreach ($players as $playerId => $playerInfo) {
+                $playerId = (int)$playerId;
+
+                $counts = [
+                    \Bga\Games\OrigamePlantopia\PlantCards::BABY_CACTUS => 0, \Bga\Games\OrigamePlantopia\PlantCards::TRV_CACTUS => 0,
+                    \Bga\Games\OrigamePlantopia\PlantCards::BABY_FLOWER => 0, \Bga\Games\OrigamePlantopia\PlantCards::TRV_FLOWER => 0,
+                    \Bga\Games\OrigamePlantopia\PlantCards::BABY_TREE => 0, \Bga\Games\OrigamePlantopia\PlantCards::TRV_TREE => 0,
+                ];
+                foreach ($plantsOnPlanters as $plant) {
+                    if (($planterToPlayer[$plant['location_arg']] ?? null) === $playerId) {
+                        $plantType = self::$PLANT_CARD_TYPES[$plant['type']]['plant_type'];
+                        if (isset($counts[$plantType])) $counts[$plantType]++;
+                    }
+                }
+                foreach ($plantsLevel3 as $plant) {
+                    if ((int)$plant['location_arg'] === $playerId) {
+                        $plantType = self::$PLANT_CARD_TYPES[$plant['type']]['plant_type'];
+                        if (isset($counts[$plantType])) $counts[$plantType]++;
+                    }
+                }
+
+                $this->playerStats->set('hand_count', $handCounts[$playerId] ?? 0, $playerId);
+                $this->playerStats->set('bonus_weather_sun', $bonusByPlayer[$playerId][\Bga\Games\OrigamePlantopia\WeatherCards::CONDITION_SUN] ?? 0, $playerId);
+                $this->playerStats->set('bonus_weather_rain', $bonusByPlayer[$playerId][\Bga\Games\OrigamePlantopia\WeatherCards::CONDITION_RAIN] ?? 0, $playerId);
+                $this->playerStats->set('bonus_weather_wind', $bonusByPlayer[$playerId][\Bga\Games\OrigamePlantopia\WeatherCards::CONDITION_WIND] ?? 0, $playerId);
+                $this->playerStats->set('baby_cactus_count', $counts[\Bga\Games\OrigamePlantopia\PlantCards::BABY_CACTUS], $playerId);
+                $this->playerStats->set('adult_cactus_count', $counts[\Bga\Games\OrigamePlantopia\PlantCards::TRV_CACTUS], $playerId);
+                $this->playerStats->set('baby_flower_count', $counts[\Bga\Games\OrigamePlantopia\PlantCards::BABY_FLOWER], $playerId);
+                $this->playerStats->set('adult_flower_count', $counts[\Bga\Games\OrigamePlantopia\PlantCards::TRV_FLOWER], $playerId);
+                $this->playerStats->set('baby_tree_count', $counts[\Bga\Games\OrigamePlantopia\PlantCards::BABY_TREE], $playerId);
+                $this->playerStats->set('adult_tree_count', $counts[\Bga\Games\OrigamePlantopia\PlantCards::TRV_TREE], $playerId);
+            }
         }
 
         function DbQuery(string $sql): void {

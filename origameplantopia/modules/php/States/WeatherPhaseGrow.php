@@ -150,6 +150,12 @@ class WeatherPhaseGrow extends GameState
             }
         }
 
+        // 5. Update stats — one round = one completed Planting Phase + one
+        // completed Weather Phase, which is exactly what just happened.
+        // See https://trello.com/c/7kdTOK4l.
+        $this->game->tableStats->inc('total_rounds', 1);
+        $this->game->updatePlayerPanelStats();
+
         $endgameTriggered = (int)$this->game->getGameStateValue('endgame_triggered');
         if ($endgameTriggered === 1) {
             return EndScore::class;

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/harness.php';
 require __DIR__ . '/../../origameplantopia/modules/php/PlantCards.php';
+require __DIR__ . '/../../origameplantopia/modules/php/WeatherCards.php';
 require __DIR__ . '/../../origameplantopia/modules/php/PlantingPlayerSubstate.php';
 require __DIR__ . '/../../origameplantopia/modules/php/States/WeatherPhaseGrow.php';
 
