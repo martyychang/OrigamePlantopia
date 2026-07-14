@@ -1042,13 +1042,22 @@ export class Game {
 
         // Add a dedicated hand panel for the current player, placed above the
         // player gardens so it's visible without scrolling past every player's
-        // garden first.
-        document.getElementById('player-tables').insertAdjacentHTML('beforebegin', `
-            <div id="hand_panel" style="margin-bottom: 20px; border: 2px solid #27ae60; border-radius: 8px; background: rgba(255, 255, 255, 0.9); padding: 15px;">
-                <h3 style="color: #27ae60; margin-top: 0;">My Hand</h3>
-                <div id="my-hand-container" style="display: flex; flex-wrap: wrap; gap: 15px;"></div>
-            </div>
-        `);
+        // garden first. Spectators have no hand of their own — skip the
+        // section entirely rather than showing an always-empty "My Hand"
+        // (previously showed up as an odd, permanently-empty artifact for
+        // spectators). renderHand() (called right below, and again from
+        // several notif_* handlers throughout play) already no-ops safely
+        // when #my-hand-container doesn't exist, so this has no effect on
+        // real players — only spectators ever skip creating the panel.
+        // See https://trello.com/c/pbg3MAI0.
+        if (!this.bga.players.isCurrentPlayerSpectator()) {
+            document.getElementById('player-tables').insertAdjacentHTML('beforebegin', `
+                <div id="hand_panel" style="margin-bottom: 20px; border: 2px solid #27ae60; border-radius: 8px; background: rgba(255, 255, 255, 0.9); padding: 15px;">
+                    <h3 style="color: #27ae60; margin-top: 0;">My Hand</h3>
+                    <div id="my-hand-container" style="display: flex; flex-wrap: wrap; gap: 15px;"></div>
+                </div>
+            `);
+        }
 
         // Setup the current player's hand
         this.renderHand(gamedatas.hand, gamedatas.weatherHand);
