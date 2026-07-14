@@ -949,8 +949,20 @@ export class Game {
             // flex row (Trello https://trello.com/c/gcQP1950 follow-up):
             // planters+character, then level-3 tilted plants underneath,
             // then bonus weather. See .plantopia-overflow-row in the CSS.
+            //
+            // Explicit `color: #333` alongside this section's own light
+            // background — BGA's dark mode flips the page's DEFAULT text
+            // color to something light, but doesn't touch this container's
+            // deliberately-light rgba(255,255,255,0.8) backdrop, so the
+            // heading below went white-on-near-white and unreadable in dark
+            // mode until this was added. Same fix applied to the Bonus
+            // Weather / Public Weather Cards sections below. Pair an
+            // explicit color with any explicit background, the way the
+            // draft-keep modal already does (`color: white` on its own dark
+            // rgba(0,0,0,0.8) backdrop) — never rely on the page's
+            // light/dark default. See https://trello.com/c/CUKgx2vL.
             document.getElementById('player-tables').insertAdjacentHTML('beforeend', `
-                <div id="player-table-${player.id}" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px;">
+                <div id="player-table-${player.id}" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px; color: #333;">
                     <h3>${player.name}'s Garden</h3>
                     <div id="player-garden-planters-${player.id}" class="plantopia-overflow-row" style="margin-top: 10px; min-height: 300px;"></div>
                     <div id="player-garden-tilted-${player.id}" class="plantopia-overflow-row" style="margin-top: 10px;"></div>
@@ -1006,7 +1018,7 @@ export class Game {
 
         // Add a Bonus Weather section under the player gardens
         document.getElementById('player-tables').insertAdjacentHTML('afterend', `
-            <div id="bonus-weather-section" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px;">
+            <div id="bonus-weather-section" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px; color: #333;">
                 <h3 style="margin-top: 0;">Bonus Weather</h3>
                 <div id="bonus-weather-container" style="display: flex; gap: 10px; margin-top: 10px; min-height: 150px;"></div>
             </div>
@@ -1018,7 +1030,7 @@ export class Game {
 
         // Add a Public Weather section
         document.getElementById('bonus-weather-section').insertAdjacentHTML('beforebegin', `
-            <div id="public-weather-section" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px;">
+            <div id="public-weather-section" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px; color: #333;">
                 <h3 style="margin-top: 0;">Public Weather Cards</h3>
                 <div id="weather-public-container" style="display: flex; gap: 10px; margin-top: 10px; min-height: 150px;"></div>
             </div>
