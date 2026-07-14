@@ -2,7 +2,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * OrigamePlantopia implementation : © <Your name here> <Your email address here>
+ * OrigamePlantopia implementation : © Marty Chang <marty.y.chang@gmail.com>
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.

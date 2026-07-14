@@ -398,7 +398,7 @@ Audited against the full official checklist (https://en.doc.boardgamearena.com/P
 **Cleanup**
 - [x] Removed 11 leftover `console.log` traces from `Game.js` (constructor, setup start/end, several `notif_*` args dumps) — 2026-07-13.
 - [x] No PHP debug tracing (`var_dump`/`print_r`/`error_log`) found.
-- [ ] Copyright headers in `Game.php` and `Game.js` still read the literal placeholder `© <Your name here> <Your email address here>`.
+- [x] Copyright headers in `Game.php` and `Game.js` updated 2026-07-13 (Trello Pcp8zIlD) to `© Marty Chang <marty.y.chang@gmail.com>`, per Marty's confirmation.
 - [x] No stray/unnecessary files in the project root.
 - [x] TypeScript/SCSS correctly isolated to `src-disabled/` (a deliberately paused build — see the repo layout section above), none loose inside `modules/`. Worth a decision before shipping either way: finish re-enabling the TS/SCSS pipeline, or delete `src-disabled/` — an unused-but-present build pipeline is its own kind of clutter.
 
