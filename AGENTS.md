@@ -307,9 +307,20 @@ note) has a git-native source of truth to draw from.
 - **Bump rules** (adapted for a solo game project, no external API):
   PATCH = bug fixes / doc-only changes (most of what ships day to day);
   MINOR = new features or completed pre-release-checklist items; MAJOR =
-  reserved for a genuine breaking change (rare for a game — e.g. a rules
+  either a genuine breaking change (rare for a game — e.g. a rules
   reinterpretation significant enough that in-progress tables would need
-  different handling).
+  different handling), **or** a real external status milestone — `v1.0.0`
+  (`87685d8`) marks BGA moving the project to live ALPHA status (not a
+  code-breaking change, but the moment the project stopped being
+  "pre-release" in the sense that mattered: an actual BGA admin review,
+  not just our own checklist).
+- **`v1.0.0`** — 2026-07-15, BGA Alpha status. Coincided with the
+  `origameplantopia` → `plantopia` rename (matching BGA's own backend
+  project rename) and the SVN sync issue being resolved by BGA support.
+  Also the first tag pushed as an actual GitHub Release (`gh release
+  create`), not just a bare tag — Marty asked for "a new release," so the
+  richer GitHub Release description (no 250-char limit, unlike the BGA
+  Studio release note) lives there instead of just the tag message.
 - **Release notes:** commit messages in this repo are verbose
   multi-paragraph explanations — too long to concatenate mechanically
   into 250 characters. At tag time, list commits since the last tag
