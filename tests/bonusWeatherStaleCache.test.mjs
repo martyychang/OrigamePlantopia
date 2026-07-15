@@ -43,7 +43,7 @@
  */
 import { readFileSync } from 'node:fs';
 
-const src = readFileSync(new URL('../origameplantopia/modules/js/Game.js', import.meta.url), 'utf8');
+const src = readFileSync(new URL('../plantopia/modules/js/Game.js', import.meta.url), 'utf8');
 
 function extractClass(name) {
     const startMarker = `class ${name} {`;

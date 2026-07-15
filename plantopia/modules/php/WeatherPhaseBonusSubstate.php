@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bga\Games\OrigamePlantopia;
+namespace Bga\Games\Plantopia;
 
 /**
  * Per-player substate within WeatherPhaseBonus. Each active player

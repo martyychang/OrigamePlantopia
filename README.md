@@ -6,10 +6,10 @@ This project is developed using **BGA Studio**. For more information on the deve
 
 ## Project Structure
 
-- `origameplantopia/`: The main game source code.
+- `plantopia/`: The main game source code.
   - `modules/php/`: Game logic and state machine.
   - `modules/js/`: Client-side game logic.
-  - `origameplantopia.css`: Game styles.
+  - `plantopia.css`: Game styles.
   - `dbmodel.sql`: Database schema for the game.
   - `gameinfos.jsonc`: Game configuration.
 
@@ -19,4 +19,4 @@ This project uses the BGA framework. To learn more about how to develop for Boar
 
 The game can be tested on BGA Studio at the URL below.
 
-https://studio.boardgamearena.com/gamepanel?game=origameplantopia
+https://studio.boardgamearena.com/gamepanel?game=plantopia

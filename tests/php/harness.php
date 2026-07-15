@@ -3,12 +3,12 @@ declare(strict_types=1);
 
 /**
  * Minimal BGA-framework stub so we can `require` the REAL
- * origameplantopia/modules/php/States/PlantingPhase.php (and its sibling
+ * plantopia/modules/php/States/PlantingPhase.php (and its sibling
  * PlantCards.php / CharacterCards.php / WeatherCards.php) unmodified and
  * exercise it with plain PHP — no BGA Studio runtime, no DB.
  *
  * This file defines fake classes under the exact namespaces PlantingPhase.php
- * imports (Bga\GameFramework\*, Bga\Games\OrigamePlantopia\Game). Because
+ * imports (Bga\GameFramework\*, Bga\Games\Plantopia\Game). Because
  * autoloading here is just `require`, whichever class definition loads FIRST
  * under a given fully-qualified name wins — we never load the real Game.php
  * (it depends on the actual BGA Table/DB machinery), only our FakeGame here.
@@ -124,7 +124,7 @@ namespace Bga\GameFramework\States {
     class PossibleAction {}
 }
 
-namespace Bga\Games\OrigamePlantopia {
+namespace Bga\Games\Plantopia {
 
     /**
      * In-memory stand-in for the BGA "Deck" component. Cards are rows with
@@ -229,7 +229,7 @@ namespace Bga\Games\OrigamePlantopia {
 
     /**
      * Fake Game — same namespace+class name as the real Game so
-     * `use Bga\Games\OrigamePlantopia\Game;` in PlantingPhase.php resolves
+     * `use Bga\Games\Plantopia\Game;` in PlantingPhase.php resolves
      * to THIS class. We never require the real Game.php.
      */
     class Game {
@@ -430,7 +430,7 @@ namespace Bga\Games\OrigamePlantopia {
 
             $plantsLevel3 = $this->plantCards->getCardsInLocation('garden_level3', $playerId);
             foreach ($plantsLevel3 as $plant) {
-                if (\Bga\Games\OrigamePlantopia\PlantCards::isTreevolved($plant['type'])) {
+                if (\Bga\Games\Plantopia\PlantCards::isTreevolved($plant['type'])) {
                     $count++;
                 }
             }
@@ -438,7 +438,7 @@ namespace Bga\Games\OrigamePlantopia {
             $plantsOnPlanters = $this->plantCards->getCardsInLocation('planter');
             foreach ($plantsOnPlanters as $plant) {
                 $planter = $this->planterCards->getCard((int)$plant['location_arg']);
-                if ($planter && (int)$planter['location_arg'] === $playerId && \Bga\Games\OrigamePlantopia\PlantCards::isTreevolved($plant['type'])) {
+                if ($planter && (int)$planter['location_arg'] === $playerId && \Bga\Games\Plantopia\PlantCards::isTreevolved($plant['type'])) {
                     $count++;
                 }
             }
@@ -489,9 +489,9 @@ namespace Bga\Games\OrigamePlantopia {
                 $playerId = (int)$playerId;
 
                 $counts = [
-                    \Bga\Games\OrigamePlantopia\PlantCards::BABY_CACTUS => 0, \Bga\Games\OrigamePlantopia\PlantCards::TRV_CACTUS => 0,
-                    \Bga\Games\OrigamePlantopia\PlantCards::BABY_FLOWER => 0, \Bga\Games\OrigamePlantopia\PlantCards::TRV_FLOWER => 0,
-                    \Bga\Games\OrigamePlantopia\PlantCards::BABY_TREE => 0, \Bga\Games\OrigamePlantopia\PlantCards::TRV_TREE => 0,
+                    \Bga\Games\Plantopia\PlantCards::BABY_CACTUS => 0, \Bga\Games\Plantopia\PlantCards::TRV_CACTUS => 0,
+                    \Bga\Games\Plantopia\PlantCards::BABY_FLOWER => 0, \Bga\Games\Plantopia\PlantCards::TRV_FLOWER => 0,
+                    \Bga\Games\Plantopia\PlantCards::BABY_TREE => 0, \Bga\Games\Plantopia\PlantCards::TRV_TREE => 0,
                 ];
                 foreach ($plantsOnPlanters as $plant) {
                     if (($planterToPlayer[$plant['location_arg']] ?? null) === $playerId) {
@@ -507,15 +507,15 @@ namespace Bga\Games\OrigamePlantopia {
                 }
 
                 $this->playerStats->set('hand_count', $handCounts[$playerId] ?? 0, $playerId);
-                $this->playerStats->set('bonus_weather_sun', $bonusByPlayer[$playerId][\Bga\Games\OrigamePlantopia\WeatherCards::CONDITION_SUN] ?? 0, $playerId);
-                $this->playerStats->set('bonus_weather_rain', $bonusByPlayer[$playerId][\Bga\Games\OrigamePlantopia\WeatherCards::CONDITION_RAIN] ?? 0, $playerId);
-                $this->playerStats->set('bonus_weather_wind', $bonusByPlayer[$playerId][\Bga\Games\OrigamePlantopia\WeatherCards::CONDITION_WIND] ?? 0, $playerId);
-                $this->playerStats->set('baby_cactus_count', $counts[\Bga\Games\OrigamePlantopia\PlantCards::BABY_CACTUS], $playerId);
-                $this->playerStats->set('adult_cactus_count', $counts[\Bga\Games\OrigamePlantopia\PlantCards::TRV_CACTUS], $playerId);
-                $this->playerStats->set('baby_flower_count', $counts[\Bga\Games\OrigamePlantopia\PlantCards::BABY_FLOWER], $playerId);
-                $this->playerStats->set('adult_flower_count', $counts[\Bga\Games\OrigamePlantopia\PlantCards::TRV_FLOWER], $playerId);
-                $this->playerStats->set('baby_tree_count', $counts[\Bga\Games\OrigamePlantopia\PlantCards::BABY_TREE], $playerId);
-                $this->playerStats->set('adult_tree_count', $counts[\Bga\Games\OrigamePlantopia\PlantCards::TRV_TREE], $playerId);
+                $this->playerStats->set('bonus_weather_sun', $bonusByPlayer[$playerId][\Bga\Games\Plantopia\WeatherCards::CONDITION_SUN] ?? 0, $playerId);
+                $this->playerStats->set('bonus_weather_rain', $bonusByPlayer[$playerId][\Bga\Games\Plantopia\WeatherCards::CONDITION_RAIN] ?? 0, $playerId);
+                $this->playerStats->set('bonus_weather_wind', $bonusByPlayer[$playerId][\Bga\Games\Plantopia\WeatherCards::CONDITION_WIND] ?? 0, $playerId);
+                $this->playerStats->set('baby_cactus_count', $counts[\Bga\Games\Plantopia\PlantCards::BABY_CACTUS], $playerId);
+                $this->playerStats->set('adult_cactus_count', $counts[\Bga\Games\Plantopia\PlantCards::TRV_CACTUS], $playerId);
+                $this->playerStats->set('baby_flower_count', $counts[\Bga\Games\Plantopia\PlantCards::BABY_FLOWER], $playerId);
+                $this->playerStats->set('adult_flower_count', $counts[\Bga\Games\Plantopia\PlantCards::TRV_FLOWER], $playerId);
+                $this->playerStats->set('baby_tree_count', $counts[\Bga\Games\Plantopia\PlantCards::BABY_TREE], $playerId);
+                $this->playerStats->set('adult_tree_count', $counts[\Bga\Games\Plantopia\PlantCards::TRV_TREE], $playerId);
             }
         }
 

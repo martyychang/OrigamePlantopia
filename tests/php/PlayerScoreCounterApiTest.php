@@ -22,11 +22,11 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/harness.php';
-require __DIR__ . '/../../origameplantopia/modules/php/PlantCards.php';
-require __DIR__ . '/../../origameplantopia/modules/php/PlantingPlayerSubstate.php';
+require __DIR__ . '/../../plantopia/modules/php/PlantCards.php';
+require __DIR__ . '/../../plantopia/modules/php/PlantingPlayerSubstate.php';
 
-use Bga\Games\OrigamePlantopia\Game;
-use Bga\Games\OrigamePlantopia\PlantCards;
+use Bga\Games\Plantopia\Game;
+use Bga\Games\Plantopia\PlantCards;
 use Bga\GameFramework\BgaStub;
 
 $failures = 0;
@@ -42,7 +42,7 @@ function check(string $label, bool $cond, string $detail = ''): void {
 
 // ── Static check: no raw DbQuery write to player_score/player_score_aux ──
 echo "--- source no longer writes player_score/player_score_aux via raw SQL ---\n";
-$src = file_get_contents(__DIR__ . '/../../origameplantopia/modules/php/Game.php');
+$src = file_get_contents(__DIR__ . '/../../plantopia/modules/php/Game.php');
 check(
     'no DbQuery(...) call references player_score in the same statement',
     !preg_match('/DbQuery\([^;]*player_score/s', $src),

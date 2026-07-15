@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bga\Games\OrigamePlantopia\States;
+namespace Bga\Games\Plantopia\States;
 
 use Bga\GameFramework\StateType;
-use Bga\Games\OrigamePlantopia\Game;
+use Bga\Games\Plantopia\Game;
 
 const ST_END_GAME = 99;
 

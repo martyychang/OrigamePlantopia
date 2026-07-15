@@ -16,7 +16,7 @@ import { readFileSync } from 'node:fs';
 // the production code, not a re-implementation. The two helpers we need
 // are pure-ish: they only touch `this.gamedatas`, `this.bga.players`,
 // `this.isAdult`, `this.isBabyType`. Stub each.
-const src = readFileSync(new URL('../origameplantopia/modules/js/Game.js', import.meta.url), 'utf8');
+const src = readFileSync(new URL('../plantopia/modules/js/Game.js', import.meta.url), 'utf8');
 function extractMethod(name) {
     // Match `<name>(args) {  body  }` at indentation 4, terminated by a
     // line containing only `    }`. Works because all Game methods use

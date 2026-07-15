@@ -20,13 +20,13 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/harness.php';
-require __DIR__ . '/../../origameplantopia/modules/php/PlantCards.php';
-require __DIR__ . '/../../origameplantopia/modules/php/PlantingPlayerSubstate.php';
-require __DIR__ . '/../../origameplantopia/modules/php/States/PlantingPhase.php';
+require __DIR__ . '/../../plantopia/modules/php/PlantCards.php';
+require __DIR__ . '/../../plantopia/modules/php/PlantingPlayerSubstate.php';
+require __DIR__ . '/../../plantopia/modules/php/States/PlantingPhase.php';
 
-use Bga\Games\OrigamePlantopia\Game;
-use Bga\Games\OrigamePlantopia\PlantCards;
-use Bga\Games\OrigamePlantopia\States\PlantingPhase;
+use Bga\Games\Plantopia\Game;
+use Bga\Games\Plantopia\PlantCards;
+use Bga\Games\Plantopia\States\PlantingPhase;
 use Bga\GameFramework\BgaStub;
 use Bga\GameFramework\UserException;
 

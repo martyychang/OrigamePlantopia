@@ -24,14 +24,14 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/harness.php';
-require __DIR__ . '/../../origameplantopia/modules/php/PlantCards.php';
-require __DIR__ . '/../../origameplantopia/modules/php/CharacterCards.php';
-require __DIR__ . '/../../origameplantopia/modules/php/States/SetupDecisions.php';
+require __DIR__ . '/../../plantopia/modules/php/PlantCards.php';
+require __DIR__ . '/../../plantopia/modules/php/CharacterCards.php';
+require __DIR__ . '/../../plantopia/modules/php/States/SetupDecisions.php';
 
-use Bga\Games\OrigamePlantopia\Game;
-use Bga\Games\OrigamePlantopia\PlantCards;
-use Bga\Games\OrigamePlantopia\CharacterCards;
-use Bga\Games\OrigamePlantopia\States\SetupDecisions;
+use Bga\Games\Plantopia\Game;
+use Bga\Games\Plantopia\PlantCards;
+use Bga\Games\Plantopia\CharacterCards;
+use Bga\Games\Plantopia\States\SetupDecisions;
 use Bga\GameFramework\BgaStub;
 
 $failures = 0;

@@ -9,11 +9,11 @@
 
 ## Project Layout
 
-The BGA game lives inside `origameplantopia/` and is synced to BGA Studio via
+The BGA game lives inside `plantopia/` and is synced to BGA Studio via
 SFTP. All game code changes go in that folder.
 
 ```
-origameplantopia/
+plantopia/
 ├── modules/
 │   ├── php/
 │   │   ├── Game.php                       # Main server-side game class
@@ -44,7 +44,7 @@ origameplantopia/
 ├── gamepreferences.jsonc          # User preferences (colorblind, etc.)
 ├── stats.jsonc                    # Statistics definitions (table + player)
 ├── dbmodel.sql                    # Database schema
-├── origameplantopia.css           # Hand-written CSS stylesheet
+├── plantopia.css           # Hand-written CSS stylesheet
 ├── package.json                   # No scripts/dependencies — kept only for `main`/metadata
 ├── bga-framework.d.ts            # TypeScript type definitions for BGA framework (editor hints only, no build uses it)
 ├── _ide_helper.php               # PHP IDE helper for BGA framework
@@ -85,9 +85,9 @@ patterns:
 
 ### Server Side (PHP)
 
-#### Game.php — `Bga\Games\OrigamePlantopia\Game`
+#### Game.php — `Bga\Games\Plantopia\Game`
 - Extends `\Bga\GameFramework\Table`
-- Namespace: `Bga\Games\OrigamePlantopia`
+- Namespace: `Bga\Games\Plantopia`
 - Responsibilities:
   - `__construct()`: Initialize counters, material data (`$CARD_TYPES`), notification decorators
   - `setupNewGame($players, $options)`: Create player records, init stats, init game tables, activate first player, return initial state class
@@ -101,12 +101,12 @@ Each state is a PHP class extending `Bga\GameFramework\States\GameState`:
 ```php
 <?php
 declare(strict_types=1);
-namespace Bga\Games\OrigamePlantopia\States;
+namespace Bga\Games\Plantopia\States;
 
 use Bga\GameFramework\StateType;
 use Bga\GameFramework\States\GameState;
 use Bga\GameFramework\States\PossibleAction;
-use Bga\Games\OrigamePlantopia\Game;
+use Bga\Games\Plantopia\Game;
 
 class MyState extends GameState {
     function __construct(protected Game $game) {
@@ -273,12 +273,12 @@ database.
 
 ### No Build Step
 
-`modules/js/Game.js` and `origameplantopia.css` are edited directly — no
+`modules/js/Game.js` and `plantopia.css` are edited directly — no
 TypeScript/SCSS compilation. An early TypeScript+SCSS build (Rollup +
 Sass) existed as `src-disabled/` but was never developed beyond the
 initial project template and was deleted 2026-07-13 (Trello lJ1rCd3U) —
 its own build config had drifted to point at a `src/` path that no
-longer existed, and by then `modules/js/Game.js`/`origameplantopia.css`
+longer existed, and by then `modules/js/Game.js`/`plantopia.css`
 already held 2,400+ lines of the real, tested implementation. If a
 TypeScript/SCSS pipeline is wanted again in the future, it would need to
 be built to compile the ACTUAL current `modules/js/Game.js`, not resumed
@@ -836,7 +836,7 @@ This formula is container-size-independent — the same CSS works for hand cards
 BGA Studio provides no local runtime — no DB, no CLI test harness. To verify server-side game logic without deploying and clicking through Studio, `require` the REAL, unmodified state-class file against a minimal stub of the BGA framework instead of writing a parallel re-implementation.
 
 **Pattern** (see `tests/php/harness.php` + `tests/php/CattusDraftTest.php`):
-- Define fake classes under the *exact* namespaces the state file imports (`Bga\GameFramework\*`, `Bga\Games\OrigamePlantopia\Game`) in a separate file, `require`d *before* the real state file. Because PHP class resolution here is just `require` order (no autoloader), whichever definition loads first under a given fully-qualified name wins — the harness's `FakeGame`/`FakeDeck` satisfy `use Bga\Games\OrigamePlantopia\Game;` without ever touching the real `Game.php` (which depends on the live BGA Table/DB machinery and can't run standalone).
+- Define fake classes under the *exact* namespaces the state file imports (`Bga\GameFramework\*`, `Bga\Games\Plantopia\Game`) in a separate file, `require`d *before* the real state file. Because PHP class resolution here is just `require` order (no autoloader), whichever definition loads first under a given fully-qualified name wins — the harness's `FakeGame`/`FakeDeck` satisfy `use Bga\Games\Plantopia\Game;` without ever touching the real `Game.php` (which depends on the live BGA Table/DB machinery and can't run standalone).
 - A file that declares multiple namespaces MUST use braced `namespace X { ... }` blocks for ALL of them, including top-level global code (e.g. a `clienttranslate()` stub) — PHP forbids mixing bracketed and unbracketed namespace declarations in one file.
 - Model the DB with a plain in-memory array of rows (id/type/type_arg/location/location_arg) mirroring what BGA's Deck component returns — not with the real Deck class.
 - **Fake `player_*` columns must use the REAL DB column names as array keys, not short/friendly aliases.** `DbQuery()`'s stub parses raw SQL text (`UPDATE player SET player_pending_effects = '...' WHERE player_id = 1`) and can only recover the column name that's *literally in the SQL string* — `player_pending_effects`, not `pending_effects`. If `getUniqueValueFromDb()`'s read-side stub uses a different key than the write-side parser produces, every write silently lands on a different array key than every read checks, and the state machine looks completely broken in the test even though the real code (and the real DB) would work fine. This exact mismatch cost real debugging time once — keep read/write key names in lockstep with the schema in `dbmodel.sql`.

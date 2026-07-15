@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Bga\Games\OrigamePlantopia\States;
+namespace Bga\Games\Plantopia\States;
 
 use Bga\GameFramework\StateType;
 use Bga\GameFramework\States\GameState;
 use Bga\GameFramework\States\PossibleAction;
 use Bga\GameFramework\UserException;
-use Bga\Games\OrigamePlantopia\Game;
-use Bga\Games\OrigamePlantopia\PlantCards;
-use Bga\Games\OrigamePlantopia\PlantingPlayerSubstate;
-use Bga\Games\OrigamePlantopia\WeatherCards;
+use Bga\Games\Plantopia\Game;
+use Bga\Games\Plantopia\PlantCards;
+use Bga\Games\Plantopia\PlantingPlayerSubstate;
+use Bga\Games\Plantopia\WeatherCards;
 
 class PlantingPhase extends GameState
 {

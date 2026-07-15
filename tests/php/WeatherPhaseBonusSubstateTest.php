@@ -14,17 +14,17 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/harness.php';
-require __DIR__ . '/../../origameplantopia/modules/php/WeatherPhaseBonusSubstate.php';
-require __DIR__ . '/../../origameplantopia/modules/php/States/WeatherPhaseBonus.php';
-require __DIR__ . '/../../origameplantopia/modules/php/States/WeatherPhaseReveal.php';
+require __DIR__ . '/../../plantopia/modules/php/WeatherPhaseBonusSubstate.php';
+require __DIR__ . '/../../plantopia/modules/php/States/WeatherPhaseBonus.php';
+require __DIR__ . '/../../plantopia/modules/php/States/WeatherPhaseReveal.php';
 // Note: WeatherPhaseGrow.php is intentionally NOT required — WeatherPhaseBonus
 // only references WeatherPhaseGrow::class as a ::class literal (a compile-time
 // string), which doesn't need the class to actually be loaded.
 
-use Bga\Games\OrigamePlantopia\Game;
-use Bga\Games\OrigamePlantopia\States\WeatherPhaseBonus;
-use Bga\Games\OrigamePlantopia\States\WeatherPhaseReveal;
-use Bga\Games\OrigamePlantopia\WeatherPhaseBonusSubstate;
+use Bga\Games\Plantopia\Game;
+use Bga\Games\Plantopia\States\WeatherPhaseBonus;
+use Bga\Games\Plantopia\States\WeatherPhaseReveal;
+use Bga\Games\Plantopia\WeatherPhaseBonusSubstate;
 use Bga\GameFramework\BgaStub;
 use Bga\GameFramework\UserException;
 

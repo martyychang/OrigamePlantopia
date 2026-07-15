@@ -24,16 +24,16 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/harness.php';
-require __DIR__ . '/../../origameplantopia/modules/php/PlantingPlayerSubstate.php';
-require __DIR__ . '/../../origameplantopia/modules/php/States/PlantingPhase.php';
-require __DIR__ . '/../../origameplantopia/modules/php/States/WeatherPhaseChoose.php';
+require __DIR__ . '/../../plantopia/modules/php/PlantingPlayerSubstate.php';
+require __DIR__ . '/../../plantopia/modules/php/States/PlantingPhase.php';
+require __DIR__ . '/../../plantopia/modules/php/States/WeatherPhaseChoose.php';
 // Note: WeatherPhaseReveal.php is intentionally NOT required — WeatherPhaseChoose
 // only references WeatherPhaseReveal::class as a ::class literal.
 
-use Bga\Games\OrigamePlantopia\Game;
-use Bga\Games\OrigamePlantopia\States\PlantingPhase;
-use Bga\Games\OrigamePlantopia\States\WeatherPhaseChoose;
-use Bga\Games\OrigamePlantopia\PlantingPlayerSubstate;
+use Bga\Games\Plantopia\Game;
+use Bga\Games\Plantopia\States\PlantingPhase;
+use Bga\Games\Plantopia\States\WeatherPhaseChoose;
+use Bga\Games\Plantopia\PlantingPlayerSubstate;
 use Bga\GameFramework\BgaStub;
 
 $failures = 0;

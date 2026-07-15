@@ -2,7 +2,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * OrigamePlantopia implementation : © Marty Chang <marty.y.chang@gmail.com>
+ * Plantopia implementation : © Marty Chang <marty.y.chang@gmail.com>
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -16,15 +16,15 @@
  */
 declare(strict_types=1);
 
-namespace Bga\Games\OrigamePlantopia;
+namespace Bga\Games\Plantopia;
 
-use Bga\Games\OrigamePlantopia\PlantCards;
-use Bga\Games\OrigamePlantopia\WeatherCards;
-use Bga\Games\OrigamePlantopia\CharacterCards;
-use Bga\Games\OrigamePlantopia\States\SetupDecisions;
+use Bga\Games\Plantopia\PlantCards;
+use Bga\Games\Plantopia\WeatherCards;
+use Bga\Games\Plantopia\CharacterCards;
+use Bga\Games\Plantopia\States\SetupDecisions;
 
-use Bga\Games\OrigamePlantopia\States\PlantingPhase;
-use Bga\Games\OrigamePlantopia\States\WeatherPhaseStart;
+use Bga\Games\Plantopia\States\PlantingPhase;
+use Bga\Games\Plantopia\States\WeatherPhaseStart;
 use Bga\GameFramework\Components\Counters\PlayerCounter;
 
 class Game extends \Bga\GameFramework\Table

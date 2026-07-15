@@ -25,7 +25,7 @@
 import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
 
-const src = readFileSync(new URL('../origameplantopia/modules/js/Game.js', import.meta.url), 'utf8');
+const src = readFileSync(new URL('../plantopia/modules/js/Game.js', import.meta.url), 'utf8');
 function extractMethod(name) {
     // notif_ handlers are declared `async <name>(args) {`, unlike the plain
     // `<name>(args) {` computePlayerStats uses — allow an optional `async `.

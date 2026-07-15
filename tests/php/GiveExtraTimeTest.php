@@ -24,21 +24,21 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/harness.php';
-require __DIR__ . '/../../origameplantopia/modules/php/PlantCards.php';
-require __DIR__ . '/../../origameplantopia/modules/php/WeatherCards.php';
-require __DIR__ . '/../../origameplantopia/modules/php/PlantingPlayerSubstate.php';
-require __DIR__ . '/../../origameplantopia/modules/php/WeatherPhaseBonusSubstate.php';
-require __DIR__ . '/../../origameplantopia/modules/php/States/SetupDecisions.php';
-require __DIR__ . '/../../origameplantopia/modules/php/States/PlantingPhase.php';
-require __DIR__ . '/../../origameplantopia/modules/php/States/WeatherPhaseChoose.php';
-require __DIR__ . '/../../origameplantopia/modules/php/States/WeatherPhaseBonus.php';
+require __DIR__ . '/../../plantopia/modules/php/PlantCards.php';
+require __DIR__ . '/../../plantopia/modules/php/WeatherCards.php';
+require __DIR__ . '/../../plantopia/modules/php/PlantingPlayerSubstate.php';
+require __DIR__ . '/../../plantopia/modules/php/WeatherPhaseBonusSubstate.php';
+require __DIR__ . '/../../plantopia/modules/php/States/SetupDecisions.php';
+require __DIR__ . '/../../plantopia/modules/php/States/PlantingPhase.php';
+require __DIR__ . '/../../plantopia/modules/php/States/WeatherPhaseChoose.php';
+require __DIR__ . '/../../plantopia/modules/php/States/WeatherPhaseBonus.php';
 
-use Bga\Games\OrigamePlantopia\Game;
-use Bga\Games\OrigamePlantopia\PlantCards;
-use Bga\Games\OrigamePlantopia\States\SetupDecisions;
-use Bga\Games\OrigamePlantopia\States\PlantingPhase;
-use Bga\Games\OrigamePlantopia\States\WeatherPhaseChoose;
-use Bga\Games\OrigamePlantopia\States\WeatherPhaseBonus;
+use Bga\Games\Plantopia\Game;
+use Bga\Games\Plantopia\PlantCards;
+use Bga\Games\Plantopia\States\SetupDecisions;
+use Bga\Games\Plantopia\States\PlantingPhase;
+use Bga\Games\Plantopia\States\WeatherPhaseChoose;
+use Bga\Games\Plantopia\States\WeatherPhaseBonus;
 use Bga\GameFramework\BgaStub;
 
 $failures = 0;

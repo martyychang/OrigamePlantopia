@@ -12,10 +12,10 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/harness.php';
-require __DIR__ . '/../../origameplantopia/modules/php/PlantCards.php';
+require __DIR__ . '/../../plantopia/modules/php/PlantCards.php';
 
-use Bga\Games\OrigamePlantopia\Game;
-use Bga\Games\OrigamePlantopia\PlantCards;
+use Bga\Games\Plantopia\Game;
+use Bga\Games\Plantopia\PlantCards;
 
 $failures = 0;
 function check(string $label, bool $cond, string $detail = ''): void {
