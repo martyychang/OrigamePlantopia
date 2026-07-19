@@ -164,6 +164,8 @@ check('top-right cell (Lv. 3 label) has a full border on every side — it is NO
 check('level labels have no drop shadow (removed per follow-up request)',
     getComputedStyle(document.querySelector('.plantopia-panel-level-label')).textShadow === 'none',
     getComputedStyle(document.querySelector('.plantopia-panel-level-label')).textShadow);
+check('table has 6px of top margin, separating it from the counter row above (per follow-up request)',
+    getComputedStyle(table).marginTop === '6px', getComputedStyle(table).marginTop);
 
 // A second render with an all-zero player must still produce the 5-row
 // skeleton (labels + icon row), just with every count cell blank — not an

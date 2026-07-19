@@ -359,7 +359,9 @@
    "0") — plantCountsTableHtml never emits a "0" text node at all. */
 .plantopia-panel-table {
     border-collapse: collapse;
-    margin-top: 2px;
+    /* 6px vertical gap below the hand/sun/rain/wind counter row above it,
+       per Marty's follow-up (2026-07-19). */
+    margin-top: 6px;
 }
 .plantopia-panel-table td {
     padding: 1px 6px;
