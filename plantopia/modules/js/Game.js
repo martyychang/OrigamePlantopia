@@ -1307,13 +1307,14 @@ export class Game {
     /**
      * Compact column-based plant-counts table (Trello
      * https://trello.com/c/cPxcQy2A), replacing the old text-line-per-
-     * family layout. 7 columns (level label + the 6 baby/adult × tree/
-     * flower/cactus columns above), 5 rows (Lv. 3 / Lv. 2 / Lv. 1 / Lv. 0
-     * counts, then a label-less row of family icons). Marty initially
-     * proposed 4 rows (no Lv. 0), self-corrected once he remembered plants
-     * start at level 0 when first planted (2026-07-18) — Lv. 0 counts are
-     * NOT always zero. Zero counts render as blank cells, not "0", per the
-     * card.
+     * family layout. 7 columns (the 6 baby/adult × tree/flower/cactus
+     * columns above, THEN the level label last — Marty moved the label
+     * column from left to right on 2026-07-19), 5 rows (Lv. 3 / Lv. 2 /
+     * Lv. 1 / Lv. 0 counts, then a label-less row of family icons). Marty
+     * initially proposed 4 rows (no Lv. 0), self-corrected once he
+     * remembered plants start at level 0 when first planted (2026-07-18)
+     * — Lv. 0 counts are NOT always zero. Zero counts render as blank
+     * cells, not "0", per the card.
      */
     plantCountsTableHtml(s) {
         const icon = (name) => `<span class="plantopia-panel-icon" data-icon="${name}" title="${Game.PANEL_ICON_TOOLTIPS[name] || ''}"></span>`;
@@ -1323,9 +1324,9 @@ export class Game {
                 const n = s.plants[c.family][c.maturity][level];
                 return `<td>${n > 0 ? n : ''}</td>`;
             }).join('');
-            return `<tr><td class="plantopia-panel-level-label">Lv. ${level}</td>${cells}</tr>`;
+            return `<tr>${cells}<td class="plantopia-panel-level-label">Lv. ${level}</td></tr>`;
         }).join('');
-        const iconRow = `<tr><td></td>${cols.map(c => `<td>${icon(c.icon)}</td>`).join('')}</tr>`;
+        const iconRow = `<tr>${cols.map(c => `<td>${icon(c.icon)}</td>`).join('')}<td></td></tr>`;
         return `<table class="plantopia-panel-table">${levelRows}${iconRow}</table>`;
     }
 

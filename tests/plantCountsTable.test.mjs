@@ -4,12 +4,12 @@
  *
  * The player panel used to show plant counts as three text lines (one per
  * family), each joining all 4 levels with " / " — e.g. "🌵 0/1/0/2  🌵 0/0/0/1".
- * Marty asked for a compact column-based table instead: 7 columns (level
- * label + baby/adult × tree/flower/cactus), 5 rows (Lv. 3 / Lv. 2 / Lv. 1 /
+ * Marty asked for a compact column-based table instead: 7 columns
+ * (baby/adult × tree/flower/cactus, THEN the level label last — moved
+ * there from the left on 2026-07-19), 5 rows (Lv. 3 / Lv. 2 / Lv. 1 /
  * Lv. 0 counts, then a label-less row of family icons). Marty first said 4
- * rows (no Lv. 0), then self-corrected on the card (2026-07-18) once he
- * remembered plants start at level 0 when first planted. Only vertical
- * column separators, and zero counts render as blank cells, not "0".
+ * rows (no Lv. 0), then self-corrected once he remembered plants start at
+ * level 0 when first planted. Zero counts render as blank cells, not "0".
  *
  * This drives the REAL Game.plantCountsTableHtml (plus the real
  * Game.PANEL_ICON_TOOLTIPS / Game.PLANT_COUNT_COLUMNS static data it
@@ -26,6 +26,7 @@ import path from 'node:path';
 
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
+const cssPath = new URL('../plantopia/plantopia.css', import.meta.url).pathname;
 const src = readFileSync(new URL('../plantopia/modules/js/Game.js', import.meta.url), 'utf8');
 
 function extractMethod(name) {
@@ -92,13 +93,14 @@ check('a table renders', !!table);
 const rows = table ? Array.from(table.querySelectorAll('tr')) : [];
 check('exactly 5 rows (Lv.3 / Lv.2 / Lv.1 / Lv.0 / icon row)', rows.length === 5, rows.length);
 
-const rowLabels = rows.map(r => r.children[0].textContent.trim());
-check('row labels are Lv. 3, Lv. 2, Lv. 1, Lv. 0, then blank — in that top-to-bottom order',
+// Label is now the LAST cell in each row (moved from first on 2026-07-19).
+const rowLabels = rows.map(r => r.children[r.children.length - 1].textContent.trim());
+check('row labels are Lv. 3, Lv. 2, Lv. 1, Lv. 0, then blank — in that top-to-bottom order, in the LAST column',
     JSON.stringify(rowLabels) === JSON.stringify(['Lv. 3', 'Lv. 2', 'Lv. 1', 'Lv. 0', '']), rowLabels);
 
-// Column order: baby_tree, adult_tree, baby_flower, adult_flower, baby_cactus, adult_cactus.
+// Column order: baby_tree, adult_tree, baby_flower, adult_flower, baby_cactus, adult_cactus, then the label.
 const iconRow = rows[4];
-const iconOrder = Array.from(iconRow.children).slice(1).map(td => {
+const iconOrder = Array.from(iconRow.children).slice(0, -1).map(td => {
     const iconEl = td.querySelector('.plantopia-panel-icon');
     return iconEl ? iconEl.dataset.icon : null;
 });
@@ -107,30 +109,61 @@ check('icon row columns are ordered baby_tree, adult_tree, baby_flower, adult_fl
     iconOrder);
 
 // Lv. 3 row: only Adult Cactus (column 6) shows a count (2); everything else blank.
-const lv3Cells = Array.from(rows[0].children).slice(1).map(td => td.textContent.trim());
-check('Lv. 3 row: Adult Cactus column shows 2, every other column is blank',
+const lv3Cells = Array.from(rows[0].children).slice(0, -1).map(td => td.textContent.trim());
+check('Lv. 3 row: Adult Cactus column shows 2, every other data column is blank',
     JSON.stringify(lv3Cells) === JSON.stringify(['', '', '', '', '', '2']), lv3Cells);
 
 // Lv. 2 row: only Baby Cactus (column 5) shows 1.
-const lv2Cells = Array.from(rows[1].children).slice(1).map(td => td.textContent.trim());
-check('Lv. 2 row: Baby Cactus column shows 1, every other column is blank',
+const lv2Cells = Array.from(rows[1].children).slice(0, -1).map(td => td.textContent.trim());
+check('Lv. 2 row: Baby Cactus column shows 1, every other data column is blank',
     JSON.stringify(lv2Cells) === JSON.stringify(['', '', '', '', '1', '']), lv2Cells);
 
 // Lv. 1 row: Adult Tree (column 2) shows 1, Baby Flower (column 3) shows 3.
-const lv1Cells = Array.from(rows[2].children).slice(1).map(td => td.textContent.trim());
+const lv1Cells = Array.from(rows[2].children).slice(0, -1).map(td => td.textContent.trim());
 check('Lv. 1 row: Adult Tree shows 1, Baby Flower shows 3, everything else blank',
     JSON.stringify(lv1Cells) === JSON.stringify(['', '1', '3', '', '', '']), lv1Cells);
 
 // Lv. 0 row: only Baby Tree (column 1) shows a count (4) — freshly planted.
-const lv0Cells = Array.from(rows[3].children).slice(1).map(td => td.textContent.trim());
-check('Lv. 0 row: Baby Tree column shows 4, every other column is blank',
+const lv0Cells = Array.from(rows[3].children).slice(0, -1).map(td => td.textContent.trim());
+check('Lv. 0 row: Baby Tree column shows 4, every other data column is blank',
     JSON.stringify(lv0Cells) === JSON.stringify(['4', '', '', '', '', '']), lv0Cells);
 
-// Check DATA cells only (not the first column, which legitimately says
+// Check DATA cells only (not the last column, which legitimately says
 // "Lv. 0") — no count cell should ever render a literal "0".
-const allDataCells = rows.flatMap(r => Array.from(r.children).slice(1).map(td => td.textContent.trim()));
+const allDataCells = rows.flatMap(r => Array.from(r.children).slice(0, -1).map(td => td.textContent.trim()));
 check('no literal "0" text in any count cell (zero counts are hidden, not printed)',
     !allDataCells.includes('0'), JSON.stringify(allDataCells));
+
+// ── Real border rules from the real stylesheet (loaded via <link> below),
+//    not just the HTML structure — border layout has been revised 3 times
+//    (left-open corner -> closing right edge -> full grid -> label moved
+//    to the last column, exception follows it to bottom-right), exactly
+//    the kind of detail that regresses silently without a computed-style
+//    check. ──
+const lastRow = rows[rows.length - 1]; // icon row
+const bottomRight = lastRow.children[lastRow.children.length - 1]; // blank label cell
+const bottomSecondToLast = lastRow.children[lastRow.children.length - 2]; // adult_cactus icon cell
+const topRight = rows[0].children[rows[0].children.length - 1]; // Lv. 3 label cell
+function borderStyles(el) {
+    const cs = getComputedStyle(el);
+    return { top: cs.borderTopStyle, right: cs.borderRightStyle, bottom: cs.borderBottomStyle, left: cs.borderLeftStyle };
+}
+const bottomRightBorders = borderStyles(bottomRight);
+check('bottom-right cell (blank label cell of the icon row) has no right border',
+    bottomRightBorders.right === 'none', JSON.stringify(bottomRightBorders));
+check('bottom-right cell has no bottom border',
+    bottomRightBorders.bottom === 'none', JSON.stringify(bottomRightBorders));
+check('bottom-right cell still has a top and left border (only right+bottom are excepted)',
+    bottomRightBorders.top === 'solid' && bottomRightBorders.left === 'solid', JSON.stringify(bottomRightBorders));
+check('its left neighbor (adult_cactus icon cell) keeps its own right border — the exception did not bleed sideways',
+    getComputedStyle(bottomSecondToLast).borderRightStyle === 'solid', getComputedStyle(bottomSecondToLast).borderRightStyle);
+const topRightBorders = borderStyles(topRight);
+check('top-right cell (Lv. 3 label) has a full border on every side — it is NOT the excepted cell',
+    topRightBorders.top === 'solid' && topRightBorders.right === 'solid' && topRightBorders.bottom === 'solid' && topRightBorders.left === 'solid',
+    JSON.stringify(topRightBorders));
+check('level labels have no drop shadow (removed per follow-up request)',
+    getComputedStyle(document.querySelector('.plantopia-panel-level-label')).textShadow === 'none',
+    getComputedStyle(document.querySelector('.plantopia-panel-level-label')).textShadow);
 
 // A second render with an all-zero player must still produce the 5-row
 // skeleton (labels + icon row), just with every count cell blank — not an
@@ -147,7 +180,7 @@ check('an all-zero player still renders the full 5-row skeleton',
 `;
 
 const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"></head><body>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="file://${cssPath}"></head><body>
 <div id="container"></div>
 <div id="results"></div>
 <script>${script}</script>
