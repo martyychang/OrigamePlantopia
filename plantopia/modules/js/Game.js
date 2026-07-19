@@ -1308,15 +1308,17 @@ export class Game {
      * Compact column-based plant-counts table (Trello
      * https://trello.com/c/cPxcQy2A), replacing the old text-line-per-
      * family layout. 7 columns (level label + the 6 baby/adult × tree/
-     * flower/cactus columns above), 4 rows (Lv. 3 / Lv. 2 / Lv. 1 counts,
-     * then a label-less row of family icons). Marty explicitly confirmed
-     * (2026-07-18) no "Lv. 0" row — Level 0 counts are moot for this
-     * table. Zero counts render as blank cells, not "0", per the card.
+     * flower/cactus columns above), 5 rows (Lv. 3 / Lv. 2 / Lv. 1 / Lv. 0
+     * counts, then a label-less row of family icons). Marty initially
+     * proposed 4 rows (no Lv. 0), self-corrected once he remembered plants
+     * start at level 0 when first planted (2026-07-18) — Lv. 0 counts are
+     * NOT always zero. Zero counts render as blank cells, not "0", per the
+     * card.
      */
     plantCountsTableHtml(s) {
         const icon = (name) => `<span class="plantopia-panel-icon" data-icon="${name}" title="${Game.PANEL_ICON_TOOLTIPS[name] || ''}"></span>`;
         const cols = Game.PLANT_COUNT_COLUMNS;
-        const levelRows = [3, 2, 1].map(level => {
+        const levelRows = [3, 2, 1, 0].map(level => {
             const cells = cols.map(c => {
                 const n = s.plants[c.family][c.maturity][level];
                 return `<td>${n > 0 ? n : ''}</td>`;

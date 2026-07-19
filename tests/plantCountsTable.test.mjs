@@ -5,9 +5,10 @@
  * The player panel used to show plant counts as three text lines (one per
  * family), each joining all 4 levels with " / " — e.g. "🌵 0/1/0/2  🌵 0/0/0/1".
  * Marty asked for a compact column-based table instead: 7 columns (level
- * label + baby/adult × tree/flower/cactus), 4 rows (Lv. 3 / Lv. 2 / Lv. 1
- * counts, then a label-less row of family icons) — confirmed on the card
- * (2026-07-18) that there's deliberately no "Lv. 0" row, only vertical
+ * label + baby/adult × tree/flower/cactus), 5 rows (Lv. 3 / Lv. 2 / Lv. 1 /
+ * Lv. 0 counts, then a label-less row of family icons). Marty first said 4
+ * rows (no Lv. 0), then self-corrected on the card (2026-07-18) once he
+ * remembered plants start at level 0 when first planted. Only vertical
  * column separators, and zero counts render as blank cells, not "0".
  *
  * This drives the REAL Game.plantCountsTableHtml (plus the real
@@ -74,14 +75,13 @@ const Game = {
 
 const plantCountsTableHtml = new Function('s', ${JSON.stringify(plantCountsTableHtmlBody)});
 
-// Baby Cactus lv2=1, Adult Cactus lv3=2, Baby Flower lv1=3, Adult Tree lv1=1.
-// Everything else zero — including ALL of level 0, which must never show a
-// row at all.
+// Baby Cactus lv2=1, Adult Cactus lv3=2, Baby Flower lv1=3, Adult Tree lv1=1,
+// Baby Tree lv0=4 (freshly planted, not yet grown). Everything else zero.
 const s = {
     plants: {
         cactus: { baby: [0, 0, 1, 0], adult: [0, 0, 0, 2] },
         flower: { baby: [0, 3, 0, 0], adult: [0, 0, 0, 0] },
-        tree:   { baby: [0, 0, 0, 0], adult: [0, 1, 0, 0] },
+        tree:   { baby: [4, 0, 0, 0], adult: [0, 1, 0, 0] },
     },
 };
 
@@ -90,14 +90,14 @@ const table = document.querySelector('.plantopia-panel-table');
 check('a table renders', !!table);
 
 const rows = table ? Array.from(table.querySelectorAll('tr')) : [];
-check('exactly 4 rows (Lv.3 / Lv.2 / Lv.1 / icon row) — no Lv. 0 row', rows.length === 4, rows.length);
+check('exactly 5 rows (Lv.3 / Lv.2 / Lv.1 / Lv.0 / icon row)', rows.length === 5, rows.length);
 
 const rowLabels = rows.map(r => r.children[0].textContent.trim());
-check('row labels are Lv. 3, Lv. 2, Lv. 1, then blank — in that top-to-bottom order',
-    JSON.stringify(rowLabels) === JSON.stringify(['Lv. 3', 'Lv. 2', 'Lv. 1', '']), rowLabels);
+check('row labels are Lv. 3, Lv. 2, Lv. 1, Lv. 0, then blank — in that top-to-bottom order',
+    JSON.stringify(rowLabels) === JSON.stringify(['Lv. 3', 'Lv. 2', 'Lv. 1', 'Lv. 0', '']), rowLabels);
 
 // Column order: baby_tree, adult_tree, baby_flower, adult_flower, baby_cactus, adult_cactus.
-const iconRow = rows[3];
+const iconRow = rows[4];
 const iconOrder = Array.from(iconRow.children).slice(1).map(td => {
     const iconEl = td.querySelector('.plantopia-panel-icon');
     return iconEl ? iconEl.dataset.icon : null;
@@ -121,10 +121,18 @@ const lv1Cells = Array.from(rows[2].children).slice(1).map(td => td.textContent.
 check('Lv. 1 row: Adult Tree shows 1, Baby Flower shows 3, everything else blank',
     JSON.stringify(lv1Cells) === JSON.stringify(['', '1', '3', '', '', '']), lv1Cells);
 
-check('no literal "0" text anywhere in the table (zero counts are hidden, not printed)',
-    !table.textContent.includes('0'), table.textContent);
+// Lv. 0 row: only Baby Tree (column 1) shows a count (4) — freshly planted.
+const lv0Cells = Array.from(rows[3].children).slice(1).map(td => td.textContent.trim());
+check('Lv. 0 row: Baby Tree column shows 4, every other column is blank',
+    JSON.stringify(lv0Cells) === JSON.stringify(['4', '', '', '', '', '']), lv0Cells);
 
-// A second render with an all-zero player must still produce the 4-row
+// Check DATA cells only (not the first column, which legitimately says
+// "Lv. 0") — no count cell should ever render a literal "0".
+const allDataCells = rows.flatMap(r => Array.from(r.children).slice(1).map(td => td.textContent.trim()));
+check('no literal "0" text in any count cell (zero counts are hidden, not printed)',
+    !allDataCells.includes('0'), JSON.stringify(allDataCells));
+
+// A second render with an all-zero player must still produce the 5-row
 // skeleton (labels + icon row), just with every count cell blank — not an
 // empty/collapsed table.
 const zeroStats = { plants: {
@@ -134,8 +142,8 @@ const zeroStats = { plants: {
 } };
 document.getElementById('container').innerHTML = plantCountsTableHtml(zeroStats);
 const zeroRows = document.querySelectorAll('.plantopia-panel-table tr');
-check('an all-zero player still renders the full 4-row skeleton',
-    zeroRows.length === 4, zeroRows.length);
+check('an all-zero player still renders the full 5-row skeleton',
+    zeroRows.length === 5, zeroRows.length);
 `;
 
 const html = `<!DOCTYPE html>
