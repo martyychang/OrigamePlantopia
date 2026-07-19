@@ -340,13 +340,15 @@
 /* Compact plant-counts table (Trello https://trello.com/c/cPxcQy2A),
    replacing the old "icon count / count / count / count" text lines.
    Column-based: 7 columns (level label + baby/adult × tree/flower/cactus),
-   4 rows (Lv. 3 / Lv. 2 / Lv. 1 counts, then a label-less row of family
-   icons). Only VERTICAL separators between columns — border-left on every
-   cell but the first — no horizontal row lines anywhere, per the card.
-   The border uses a neutral mid-gray (not black) so it stays visible
-   against both BGA's light and dark mode page backgrounds without needing
-   a dark-mode-specific override (see point 5 in AGENTS.md's "CSS Sprites
-   & Inline-Style Gotchas"). Zero counts are hidden by the JS (empty cell,
+   5 rows (Lv. 3 / Lv. 2 / Lv. 1 / Lv. 0 counts, then a label-less row of
+   family icons). Only VERTICAL separators between columns — border-left on
+   every cell but the first, PLUS a closing border-right on the last
+   column (Adult Cacti) so the rightmost edge gets a separator too, per
+   Marty's follow-up — no horizontal row lines anywhere, per the card. The
+   border uses a neutral mid-gray (not black) so it stays visible against
+   both BGA's light and dark mode page backgrounds without needing a
+   dark-mode-specific override (see point 5 in AGENTS.md's "CSS Sprites &
+   Inline-Style Gotchas"). Zero counts are hidden by the JS (empty cell,
    not "0") — plantCountsTableHtml never emits a "0" text node at all. */
 .plantopia-panel-table {
     border-collapse: collapse;
@@ -362,6 +364,9 @@
     border-left: none;
     text-align: left;
     padding-left: 0;
+}
+.plantopia-panel-table td:last-child {
+    border-right: 1px solid rgba(128, 128, 128, 0.5);
 }
 /* Drop shadow on the "Lv. N" labels so they pop, per the card. */
 .plantopia-panel-level-label {
