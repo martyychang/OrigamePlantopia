@@ -507,10 +507,14 @@ class PlantingPhase {
             });
             this.addSkipEffectButton();
         } else if (effect.type === 'level_up_family') {
+            // Modeled after WeatherPhaseChoose's Sun/Rain/Wind buttons (Trello
+            // https://trello.com/c/XZgYk9h9) — every button blue with an
+            // emoji, instead of a different color per family (which read as
+            // confusing rather than informative; see the card's screenshot).
             this.bga.statusBar.setTitle(_('Choose a plant family to grow'));
-            this.bga.statusBar.addActionButton(_('Tree'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'tree' }), { color: 'green' });
-            this.bga.statusBar.addActionButton(_('Flower'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'flower' }), { color: 'red' });
-            this.bga.statusBar.addActionButton(_('Cactus'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'cactus' }), { color: 'blue' });
+            this.bga.statusBar.addActionButton(_('🌲 Tree'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'tree' }), { color: 'blue' });
+            this.bga.statusBar.addActionButton(_('🌹 Flower'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'flower' }), { color: 'blue' });
+            this.bga.statusBar.addActionButton(_('🌵 Cactus'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'cactus' }), { color: 'blue' });
             this.addSkipEffectButton();
         } else if (effect.type === 'level_up_matching_adult') {
             // Tomato character ability — grow a matching-family Adult Plant in
