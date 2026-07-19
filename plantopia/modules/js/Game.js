@@ -1278,16 +1278,54 @@ export class Game {
     /** Text shown on hover for each player-panel icon (Trello https://trello.com/c/3jIZmRy9). */
     static PANEL_ICON_TOOLTIPS = {
         hand: 'Cards in hand',
-        baby_cactus: 'Baby Cactus in garden, by level (0 / 1 / 2 / 3)',
-        adult_cactus: 'Adult Cactus in garden, by level (0 / 1 / 2 / 3)',
-        baby_flower: 'Baby Flower in garden, by level (0 / 1 / 2 / 3)',
-        adult_flower: 'Adult Flower in garden, by level (0 / 1 / 2 / 3)',
-        baby_tree: 'Baby Tree in garden, by level (0 / 1 / 2 / 3)',
-        adult_tree: 'Adult Tree in garden, by level (0 / 1 / 2 / 3)',
+        baby_cactus: 'Baby Cactus in garden, by level',
+        adult_cactus: 'Adult Cactus in garden, by level',
+        baby_flower: 'Baby Flower in garden, by level',
+        adult_flower: 'Adult Flower in garden, by level',
+        baby_tree: 'Baby Tree in garden, by level',
+        adult_tree: 'Adult Tree in garden, by level',
         sun: 'Bonus Sun Weather cards held',
         rain: 'Bonus Rain Weather cards held',
         wind: 'Bonus Wind Weather cards held',
     };
+
+    /**
+     * Column order for the compact plant-counts table (Trello
+     * https://trello.com/c/cPxcQy2A): baby/adult pairs for tree, flower,
+     * then cactus, each keyed to its per-level count array from
+     * computePlayerStats (index = level 0-3) and its player-panel icon.
+     */
+    static PLANT_COUNT_COLUMNS = [
+        { icon: 'baby_tree', family: 'tree', maturity: 'baby' },
+        { icon: 'adult_tree', family: 'tree', maturity: 'adult' },
+        { icon: 'baby_flower', family: 'flower', maturity: 'baby' },
+        { icon: 'adult_flower', family: 'flower', maturity: 'adult' },
+        { icon: 'baby_cactus', family: 'cactus', maturity: 'baby' },
+        { icon: 'adult_cactus', family: 'cactus', maturity: 'adult' },
+    ];
+
+    /**
+     * Compact column-based plant-counts table (Trello
+     * https://trello.com/c/cPxcQy2A), replacing the old text-line-per-
+     * family layout. 7 columns (level label + the 6 baby/adult × tree/
+     * flower/cactus columns above), 4 rows (Lv. 3 / Lv. 2 / Lv. 1 counts,
+     * then a label-less row of family icons). Marty explicitly confirmed
+     * (2026-07-18) no "Lv. 0" row — Level 0 counts are moot for this
+     * table. Zero counts render as blank cells, not "0", per the card.
+     */
+    plantCountsTableHtml(s) {
+        const icon = (name) => `<span class="plantopia-panel-icon" data-icon="${name}" title="${Game.PANEL_ICON_TOOLTIPS[name] || ''}"></span>`;
+        const cols = Game.PLANT_COUNT_COLUMNS;
+        const levelRows = [3, 2, 1].map(level => {
+            const cells = cols.map(c => {
+                const n = s.plants[c.family][c.maturity][level];
+                return `<td>${n > 0 ? n : ''}</td>`;
+            }).join('');
+            return `<tr><td class="plantopia-panel-level-label">Lv. ${level}</td>${cells}</tr>`;
+        }).join('');
+        const iconRow = `<tr><td></td>${cols.map(c => `<td>${icon(c.icon)}</td>`).join('')}</tr>`;
+        return `<table class="plantopia-panel-table">${levelRows}${iconRow}</table>`;
+    }
 
     /** Render or refresh the at-a-glance stats panel for one player. */
     renderPlayerPanel(playerId) {
@@ -1299,11 +1337,9 @@ export class Game {
         // colon, no label text. Native `title` attribute gives each icon a
         // simple hover tooltip explaining what it means.
         const icon = (name) => `<span class="plantopia-panel-icon" data-icon="${name}" title="${Game.PANEL_ICON_TOOLTIPS[name] || ''}"></span>`;
-        const line = (name, arr) => `${icon(name)} ${arr.join(' / ')}`;
-        // Baby/Adult of the same family share a line, and the bonus weather
-        // counters sit alongside the hand count — both per Marty's Trello
-        // feedback (https://trello.com/c/3jIZmRy9). "&nbsp;&nbsp;&nbsp;&nbsp;"
-        // is just breathing room between the two counters on a shared line.
+        // Bonus weather counters sit alongside the hand count, per Marty's
+        // Trello feedback (https://trello.com/c/3jIZmRy9).
+        // "&nbsp;&nbsp;&nbsp;&nbsp;" is just breathing room between them.
         const gap = '&nbsp;&nbsp;&nbsp;&nbsp;';
 
         // Claimed character icon (Trello https://trello.com/c/Zn3wKWxj) —
@@ -1320,9 +1356,7 @@ export class Game {
 
         el.innerHTML = `
             <div>${characterIconHtml}${icon('hand')} ${s.handCount}${gap}${icon('sun')} ${s.bonusWeather.sun}${gap}${icon('rain')} ${s.bonusWeather.rain}${gap}${icon('wind')} ${s.bonusWeather.wind}</div>
-            <div>${line('baby_cactus', s.plants.cactus.baby)}${gap}${line('adult_cactus', s.plants.cactus.adult)}</div>
-            <div>${line('baby_flower', s.plants.flower.baby)}${gap}${line('adult_flower', s.plants.flower.adult)}</div>
-            <div>${line('baby_tree', s.plants.tree.baby)}${gap}${line('adult_tree', s.plants.tree.adult)}</div>
+            ${this.plantCountsTableHtml(s)}
         `;
 
         // Hovering the icon shows the full-size card, via the same tooltip
