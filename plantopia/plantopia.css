@@ -341,15 +341,19 @@
    replacing the old "icon count / count / count / count" text lines.
    Column-based: 7 columns (level label + baby/adult × tree/flower/cactus),
    5 rows (Lv. 3 / Lv. 2 / Lv. 1 / Lv. 0 counts, then a label-less row of
-   family icons). Only VERTICAL separators between columns — border-left on
-   every cell but the first, PLUS a closing border-right on the last
-   column (Adult Cacti) so the rightmost edge gets a separator too, per
-   Marty's follow-up — no horizontal row lines anywhere, per the card. The
-   border uses a neutral mid-gray (not black) so it stays visible against
-   both BGA's light and dark mode page backgrounds without needing a
-   dark-mode-specific override (see point 5 in AGENTS.md's "CSS Sprites &
-   Inline-Style Gotchas"). Zero counts are hidden by the JS (empty cell,
-   not "0") — plantCountsTableHtml never emits a "0" text node at all. */
+   family icons). Per Marty's follow-up (2026-07-18): every cell gets a
+   full border (border-collapse merges shared edges into one grid line),
+   with exactly two exceptions on the bottom-left cell (last row, first
+   column — the icon row's blank label cell): no left border and no
+   bottom border. Both exceptions land on pure table-boundary edges (that
+   cell has no neighbor further left or below), so removing them there
+   doesn't fight any adjacent cell's border under collapse — it just
+   leaves that one corner visually "open". The border uses a neutral
+   mid-gray (not black) so it stays visible against both BGA's light and
+   dark mode page backgrounds without a dark-mode-specific override (see
+   point 5 in AGENTS.md's "CSS Sprites & Inline-Style Gotchas"). Zero
+   counts are hidden by the JS (empty cell, not "0") —
+   plantCountsTableHtml never emits a "0" text node at all. */
 .plantopia-panel-table {
     border-collapse: collapse;
     margin-top: 2px;
@@ -357,20 +361,18 @@
 .plantopia-panel-table td {
     padding: 1px 6px;
     text-align: center;
-    border-left: 1px solid rgba(128, 128, 128, 0.5);
+    border: 1px solid rgba(128, 128, 128, 0.5);
     font-size: 0.9em;
 }
 .plantopia-panel-table td:first-child {
-    border-left: none;
     text-align: left;
     padding-left: 0;
 }
-.plantopia-panel-table td:last-child {
-    border-right: 1px solid rgba(128, 128, 128, 0.5);
+.plantopia-panel-table tr:last-child td:first-child {
+    border-left: none;
+    border-bottom: none;
 }
-/* Drop shadow on the "Lv. N" labels so they pop, per the card. */
 .plantopia-panel-level-label {
     font-weight: bold;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
