@@ -53,24 +53,38 @@ class SetupDecisions {
                 el.onclick = () => this.onClaimCharacter(el.dataset.id);
             });
 
-            // Highlight the player's own claimed character in their garden to return it
-            const myGarden = document.getElementById(`player-garden-planters-${this.bga.players.getCurrentPlayerId()}`);
-            if (myGarden) {
-                myGarden.querySelectorAll('.character-card').forEach(el => {
-                    el.classList.add('bga-cards_selectable-card');
-                    el.style.cursor = 'pointer';
-                    el.style.boxShadow = '0 0 10px #e74c3c';
-                    el.onclick = () => this.onReturnCharacter(el.dataset.id);
-                });
+            // Highlight the player's own claimed character icon (player
+            // panel, see renderPlayerPanel) to return it. Used to target
+            // the full card in the garden row before it moved to a small
+            // panel icon — see https://trello.com/c/Zn3wKWxj.
+            const myIcon = document.getElementById(`character-icon-${this.bga.players.getCurrentPlayerId()}`);
+            if (myIcon) {
+                myIcon.classList.add('bga-cards_selectable-card');
+                myIcon.style.cursor = 'pointer';
+                myIcon.style.boxShadow = '0 0 10px #e74c3c';
+                myIcon.onclick = () => this.onReturnCharacter(myIcon.dataset.id);
             }
         }
     }
 
     onLeavingState(args, isCurrentPlayerActive) {
-        // Clean up click handlers
+        // Clean up click handlers on the selection panel's full cards. That
+        // panel (#characters-panel) gets hidden entirely right below, so
+        // resetting cursor to 'default' is harmless — the elements go
+        // invisible anyway.
         document.querySelectorAll('.character-card').forEach(el => {
             el.classList.remove('bga-cards_selectable-card');
             el.style.cursor = 'default';
+            el.style.boxShadow = 'none';
+            el.onclick = null;
+        });
+        // Same cleanup for the player panel's small return-icon (Trello
+        // https://trello.com/c/Zn3wKWxj) — EXCEPT the icon stays visible
+        // for the rest of the game, so its cursor reverts to 'help' (its
+        // normal hover-for-tooltip cue) rather than 'default'.
+        document.querySelectorAll('.plantopia-character-icon').forEach(el => {
+            el.classList.remove('bga-cards_selectable-card');
+            el.style.cursor = 'help';
             el.style.boxShadow = 'none';
             el.onclick = null;
         });
@@ -974,21 +988,12 @@ export class Game {
             const planters = Object.values(gamedatas.planters || {}).filter(c => c.location_arg == player.id);
             this.renderPlanters(planters, `player-garden-planters-${player.id}`);
 
-            // Render claimed characters for this player AFTER planters, so
-            // they consistently land to the right. Both renderCharacters and
-            // notif_characterClaimed insert via append (insertAdjacentHTML
-            // 'beforeend' / appendChild) into this same shared row, so
-            // whichever runs second determines left/right placement. A page
-            // load/reload used to render characters first (left of planters)
-            // while claiming live during play appended after (right of
-            // planters) — inconsistent depending on when the client last
-            // rendered. See https://trello.com/c/nBsWlxlT.
-            const claimed = Object.values(gamedatas.claimedCharacters || {}).filter(c => c.location_arg == player.id);
-            this.renderCharacters(claimed, `player-garden-planters-${player.id}`);
+            // A claimed character no longer renders as a full card here in
+            // the garden row — it's now a small icon in the player panel
+            // (see renderPlayerPanel) per https://trello.com/c/Zn3wKWxj.
 
             // Render this player's Bonus Weather cards played so far THIS
-            // round, AFTER the character card so they land even further
-            // right. See https://trello.com/c/rvSEQag1.
+            // round, AFTER the planters. See https://trello.com/c/rvSEQag1.
             const playedBonus = Object.values(gamedatas.weatherPlayedBonus || {}).filter(c => c.location_arg == player.id);
             this.renderPlayedBonusWeather(playedBonus, `player-garden-planters-${player.id}`);
 
@@ -1134,11 +1139,11 @@ export class Game {
 
     /**
      * A player's PLAYED (not held) Bonus Weather cards for the current
-     * round, shown to the right of their character card in the same
-     * planters+character row (character cards already render last/
-     * rightmost in that row — see https://trello.com/c/nBsWlxlT — so
-     * appending here lands played bonus weather even further right).
-     * Idempotent: skips any card id that already has a rendered element,
+     * round, shown to the right of their planters in the same garden row
+     * (claimed characters no longer render into this row at all — they're
+     * a small icon in the player panel instead, see
+     * https://trello.com/c/Zn3wKWxj — so this now lands right after the
+     * planters). Idempotent: skips any card id that already has a rendered element,
      * so it's safe to call both optimistically (the instant a player
      * chooses to play a card) and again when the server confirms via
      * notif_playerPlayedBonus — see applyBonusWeatherPlayed. Cleared by
@@ -1296,12 +1301,32 @@ export class Game {
         // feedback (https://trello.com/c/3jIZmRy9). "&nbsp;&nbsp;&nbsp;&nbsp;"
         // is just breathing room between the two counters on a shared line.
         const gap = '&nbsp;&nbsp;&nbsp;&nbsp;';
+
+        // Claimed character icon (Trello https://trello.com/c/Zn3wKWxj) —
+        // small icon to the left of the hand count, in place of the
+        // full-size card that used to sit in the garden row. Computed fresh
+        // from gamedatas.claimedCharacters every render (same "resync from
+        // data, not DOM" approach as the rest of this panel), so it stays
+        // correct across notif_characterClaimed/Returned and page reloads
+        // alike. '' before a character is claimed (early SetupDecisions).
+        const claimed = Object.values(this.gamedatas.claimedCharacters || {}).find(c => c.location_arg == playerId);
+        const characterIconHtml = claimed
+            ? `<span id="character-icon-${playerId}" class="plantopia-character-icon" data-character-type="${claimed.type}" data-id="${claimed.id}"></span> `
+            : '';
+
         el.innerHTML = `
-            <div>${icon('hand')} ${s.handCount}${gap}${icon('sun')} ${s.bonusWeather.sun}${gap}${icon('rain')} ${s.bonusWeather.rain}${gap}${icon('wind')} ${s.bonusWeather.wind}</div>
+            <div>${characterIconHtml}${icon('hand')} ${s.handCount}${gap}${icon('sun')} ${s.bonusWeather.sun}${gap}${icon('rain')} ${s.bonusWeather.rain}${gap}${icon('wind')} ${s.bonusWeather.wind}</div>
             <div>${line('baby_cactus', s.plants.cactus.baby)}${gap}${line('adult_cactus', s.plants.cactus.adult)}</div>
             <div>${line('baby_flower', s.plants.flower.baby)}${gap}${line('adult_flower', s.plants.flower.adult)}</div>
             <div>${line('baby_tree', s.plants.tree.baby)}${gap}${line('adult_tree', s.plants.tree.adult)}</div>
         `;
+
+        // Hovering the icon shows the full-size card, via the same tooltip
+        // helper used for the (still full-size) selection panel.
+        if (claimed) {
+            const cardInfo = this.gamedatas.characterCardTypes[claimed.type] || { name: claimed.type, ability: '' };
+            this.addCharacterTooltip(`character-icon-${playerId}`, cardInfo);
+        }
     }
 
     /** Refresh every player's stats panel. Cheap — runs after any state-changing notif. */
@@ -1627,35 +1652,42 @@ export class Game {
         }
     }
 
+    /**
+     * A claimed character no longer moves a DOM node between containers —
+     * it's now a small icon computed fresh from gamedatas inside
+     * renderPlayerPanel (see https://trello.com/c/Zn3wKWxj). So claiming
+     * just updates gamedatas (available -> claimed) and re-renders the two
+     * places that read it: the selection panel (card disappears from the
+     * pool) and the claiming player's panel (icon appears).
+     */
     async notif_characterClaimed(args) {
-        const cardId = args.card.id;
-        const cardEl = document.getElementById(`character_${cardId}`);
-        if (cardEl) {
-            const garden = document.getElementById(`player-garden-planters-${args.player_id}`);
-            if (garden) {
-                garden.appendChild(cardEl);
-                
-                // Re-evaluate current state handlers (adds clickable return if it's ours)
-                if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions') {
-                    this.setupDecisions.onEnteringState(null, this.bga.players.getCurrentPlayerId() === args.player_id);
-                }
-            }
+        const card = args.card;
+        if (this.gamedatas.availableCharacters) delete this.gamedatas.availableCharacters[card.id];
+        if (!this.gamedatas.claimedCharacters) this.gamedatas.claimedCharacters = {};
+        this.gamedatas.claimedCharacters[card.id] = card;
+
+        this.renderCharacters(Object.values(this.gamedatas.availableCharacters || {}), 'available-characters-container');
+        this.renderPlayerPanel(args.player_id);
+
+        // Re-evaluate current state handlers (adds clickable return if it's ours)
+        if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions') {
+            this.setupDecisions.onEnteringState(null, this.bga.players.getCurrentPlayerId() === args.player_id);
         }
     }
 
+    /** Mirror of notif_characterClaimed — moves the card back the other way. */
     async notif_characterReturned(args) {
-        const cardId = args.card.id;
-        const cardEl = document.getElementById(`character_${cardId}`);
-        if (cardEl) {
-            const container = document.getElementById('available-characters-container');
-            if (container) {
-                container.appendChild(cardEl);
+        const card = args.card;
+        if (this.gamedatas.claimedCharacters) delete this.gamedatas.claimedCharacters[card.id];
+        if (!this.gamedatas.availableCharacters) this.gamedatas.availableCharacters = {};
+        this.gamedatas.availableCharacters[card.id] = card;
 
-                // Re-evaluate current state handlers (adds clickable claim)
-                if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions') {
-                    this.setupDecisions.onEnteringState(null, true);
-                }
-            }
+        this.renderCharacters(Object.values(this.gamedatas.availableCharacters), 'available-characters-container');
+        this.renderPlayerPanel(args.player_id);
+
+        // Re-evaluate current state handlers (adds clickable claim)
+        if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions') {
+            this.setupDecisions.onEnteringState(null, true);
         }
     }
 

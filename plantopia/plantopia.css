@@ -1,7 +1,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * Plantopia implementation : © <Your name here> <Your email address here>
+ * Plantopia implementation : © Marty Chang <marty.y.chang@gmail.com>
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -196,6 +196,32 @@
 .plantopia-character-power-card[data-character-type="mushroom"] { background-position: 50%  0%; }
 .plantopia-character-power-card[data-character-type="potato"]   { background-position: 75%  0%; }
 .plantopia-character-power-card[data-character-type="tomato"]   { background-position: 100% 0%; }
+
+/* Character icon for the player panel (Trello https://trello.com/c/Zn3wKWxj).
+   A claimed character used to render as a full-size card taking up a slot
+   in the garden row; now it's a small icon in the player panel instead
+   (Splendor-style), to the left of the hand count, saving real estate.
+   Reuses the SAME character_powers.png sprite as
+   .plantopia-character-power-card — background-size percentages are
+   relative to the element's OWN box, so a smaller container just shows a
+   proportionally shrunk version of the same card art, no new image asset
+   needed. Hovering shows the full-size card via addCharacterTooltip. */
+.plantopia-character-icon {
+    display: inline-block;
+    width: 24px;
+    height: 36px;
+    vertical-align: middle;
+    cursor: help;
+    border-radius: 3px;
+    background-image: url('img/character_powers.png');
+    background-size: 500% 100%;
+    background-repeat: no-repeat;
+}
+.plantopia-character-icon[data-character-type="banana"]   { background-position: 0%   0%; }
+.plantopia-character-icon[data-character-type="carrot"]   { background-position: 25%  0%; }
+.plantopia-character-icon[data-character-type="mushroom"] { background-position: 50%  0%; }
+.plantopia-character-icon[data-character-type="potato"]   { background-position: 75%  0%; }
+.plantopia-character-icon[data-character-type="tomato"]   { background-position: 100% 0%; }
 
 /* Character WEATHER card art. 5 cols (banana/carrot/mushroom/potato/tomato)
    × 3 rows (sun/rain/wind). card.type holds the character name and
