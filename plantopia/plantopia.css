@@ -289,8 +289,10 @@
      level 2 → bottom @ planter-y=74  → slot-y=194 → top = 194-180 = 14px
    All three are comfortably ≥ 0 (well within the slot, never clipped).
    Level 3 never reaches this rule — plants graduate off the planter
-   entirely at max level (tilted 90° in the garden tray) per the
-   existing level3-tilted handling in notif_plantGrown. */
+   entirely at max level and are removed from the DOM by
+   notif_plantGrown, not re-rendered anywhere in the garden (Trello
+   https://trello.com/c/xYfPLZuI — surfaced via a player-panel tooltip
+   instead, see level3CardsByColumn in Game.js). */
 .plantopia-plant-on-planter {
     position: absolute;
     left: 50%;

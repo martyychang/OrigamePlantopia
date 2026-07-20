@@ -57,6 +57,7 @@ function extractStaticField(name) {
 }
 
 const plantCountsTableHtmlBody = extractMethod('plantCountsTableHtml');
+const level3CellIdBody = extractMethod('level3CellId');
 const panelIconTooltips = extractStaticField('PANEL_ICON_TOOLTIPS');
 const plantCountColumns = extractStaticField('PLANT_COUNT_COLUMNS');
 
@@ -74,7 +75,13 @@ const Game = {
     PLANT_COUNT_COLUMNS: ${plantCountColumns},
 };
 
-const plantCountsTableHtml = new Function('s', ${JSON.stringify(plantCountsTableHtmlBody)});
+// plantCountsTableHtml calls this.level3CellId(...) on its own Lv. 3 row
+// (Trello https://trello.com/c/xYfPLZuI) — bind both the real method
+// together on a shared object so 'this' resolves.
+const game = {};
+game.level3CellId = new Function('playerId', 'columnIcon', ${JSON.stringify(level3CellIdBody)});
+game.plantCountsTableHtml = new Function('s', 'playerId', ${JSON.stringify(plantCountsTableHtmlBody)}).bind(game);
+const plantCountsTableHtml = (s, playerId) => game.plantCountsTableHtml(s, playerId);
 
 // Baby Cactus lv2=1, Adult Cactus lv3=2, Baby Flower lv1=3, Adult Tree lv1=1,
 // Baby Tree lv0=4 (freshly planted, not yet grown). Everything else zero.
@@ -86,7 +93,7 @@ const s = {
     },
 };
 
-document.getElementById('container').innerHTML = plantCountsTableHtml(s);
+document.getElementById('container').innerHTML = plantCountsTableHtml(s, 7);
 const table = document.querySelector('.plantopia-panel-table');
 check('a table renders', !!table);
 
@@ -112,6 +119,21 @@ check('icon row columns are ordered baby_tree, adult_tree, baby_flower, adult_fl
 const lv3Cells = Array.from(rows[0].children).slice(0, -1).map(td => td.textContent.trim());
 check('Lv. 3 row: Adult Cactus column shows 2, every other data column is blank',
     JSON.stringify(lv3Cells) === JSON.stringify(['', '', '', '', '', '2']), lv3Cells);
+
+// Lv. 3 cells carry a deterministic id (Trello https://trello.com/c/xYfPLZuI)
+// so renderPlayerPanel can wire a hover tooltip onto each one — Level 3
+// plants no longer render in the garden, so this is the only way to see
+// which cards make up the count. No other row gets ids (those plants are
+// still visible on planters).
+const lv3Ids = Array.from(rows[0].children).slice(0, -1).map(td => td.id);
+check('every Lv. 3 data cell has the expected deterministic id',
+    JSON.stringify(lv3Ids) === JSON.stringify([
+        'lv3-cell-7-baby_tree', 'lv3-cell-7-adult_tree', 'lv3-cell-7-baby_flower',
+        'lv3-cell-7-adult_flower', 'lv3-cell-7-baby_cactus', 'lv3-cell-7-adult_cactus',
+    ]), lv3Ids);
+const otherRowIds = rows.slice(1).flatMap(r => Array.from(r.children).map(td => td.id)).filter(Boolean);
+check('no other row has any cell ids (only Lv. 3 needs a tooltip target)',
+    otherRowIds.length === 0, otherRowIds);
 
 // Lv. 2 row: only Baby Cactus (column 5) shows 1.
 const lv2Cells = Array.from(rows[1].children).slice(0, -1).map(td => td.textContent.trim());
@@ -175,7 +197,7 @@ const zeroStats = { plants: {
     flower: { baby: [0,0,0,0], adult: [0,0,0,0] },
     tree:   { baby: [0,0,0,0], adult: [0,0,0,0] },
 } };
-document.getElementById('container').innerHTML = plantCountsTableHtml(zeroStats);
+document.getElementById('container').innerHTML = plantCountsTableHtml(zeroStats, 7);
 const zeroRows = document.querySelectorAll('.plantopia-panel-table tr');
 check('an all-zero player still renders the full 5-row skeleton',
     zeroRows.length === 5, zeroRows.length);

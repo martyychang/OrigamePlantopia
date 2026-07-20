@@ -44,6 +44,25 @@ function extractMethod(name) {
     return m[1];
 }
 
+// Static class fields (e.g. `static NAME = {...};`) aren't methods, so
+// extractMethod's regex doesn't fit — brace/bracket-match from the `=`
+// instead, same technique used in tests/plantCountsTable.test.mjs.
+function extractStaticField(name) {
+    const marker = `static ${name} = `;
+    const startIdx = src.indexOf(marker);
+    if (startIdx === -1) throw new Error(`extractStaticField failed for ${name}`);
+    const valueStart = startIdx + marker.length;
+    let depth = 0;
+    let started = false;
+    let i = valueStart;
+    for (; i < src.length; i++) {
+        const ch = src[i];
+        if (ch === '{' || ch === '[') { depth++; started = true; }
+        else if (ch === '}' || ch === ']') { depth--; if (started && depth === 0) { i++; break; } }
+    }
+    return src.slice(valueStart, i);
+}
+
 const computePlayerStatsBody = extractMethod('computePlayerStats');
 const isAdultBody = extractMethod('isAdult');
 const isBabyTypeBody = extractMethod('isBabyType');
@@ -52,6 +71,15 @@ const addCharacterTooltipBody = extractMethod('addCharacterTooltip');
 const renderCharactersBody = extractMethod('renderCharacters');
 const notifCharacterClaimedBody = extractMethod('notif_characterClaimed');
 const notifCharacterReturnedBody = extractMethod('notif_characterReturned');
+// renderPlayerPanel now also wires Lv. 3 tooltips (Trello
+// https://trello.com/c/xYfPLZuI) via these three — stub them for real so
+// renderPlayerPanel doesn't throw on a missing method.
+const plantCountsTableHtmlBody = extractMethod('plantCountsTableHtml');
+const level3CellIdBody = extractMethod('level3CellId');
+const level3CardsByColumnBody = extractMethod('level3CardsByColumn');
+const addLevel3TooltipBody = extractMethod('addLevel3Tooltip');
+const getFamilyBody = extractMethod('getFamily');
+const plantCountColumns = extractStaticField('PLANT_COUNT_COLUMNS');
 
 const script = `
 function log(line) { document.getElementById('results').innerHTML += line + '<br>'; }
@@ -60,8 +88,10 @@ function check(label, cond, detail) {
 }
 
 // renderPlayerPanel references the static Game.PANEL_ICON_TOOLTIPS map —
-// empty is fine here, we're not asserting plant-stat tooltip text.
-const Game = { PANEL_ICON_TOOLTIPS: {} };
+// empty is fine here, we're not asserting plant-stat tooltip text. It
+// also now reads Game.PLANT_COUNT_COLUMNS for the Lv. 3 tooltip wiring
+// (Trello https://trello.com/c/xYfPLZuI) — that one needs the real data.
+const Game = { PANEL_ICON_TOOLTIPS: {}, PLANT_COUNT_COLUMNS: ${plantCountColumns} };
 
 const tooltipCalls = [];
 const game = {
@@ -80,9 +110,14 @@ const game = {
 };
 game.isAdult = new Function('plantType', ${JSON.stringify(isAdultBody)});
 game.isBabyType = new Function('plantType', ${JSON.stringify(isBabyTypeBody)});
+game.getFamily = new Function('plantType', ${JSON.stringify(getFamilyBody)});
 game.computePlayerStats = new Function('playerId', ${JSON.stringify(computePlayerStatsBody)}).bind(game);
 game.addCharacterTooltip = new Function('nodeId', 'cardInfo', ${JSON.stringify(addCharacterTooltipBody)}).bind(game);
 game.renderCharacters = new Function('cards', 'containerId', ${JSON.stringify(renderCharactersBody)}).bind(game);
+game.level3CellId = new Function('playerId', 'columnIcon', ${JSON.stringify(level3CellIdBody)}).bind(game);
+game.level3CardsByColumn = new Function('playerId', ${JSON.stringify(level3CardsByColumnBody)}).bind(game);
+game.addLevel3Tooltip = new Function('nodeId', 'cards', ${JSON.stringify(addLevel3TooltipBody)}).bind(game);
+game.plantCountsTableHtml = new Function('s', 'playerId', ${JSON.stringify(plantCountsTableHtmlBody)}).bind(game);
 game.renderPlayerPanel = new Function('playerId', ${JSON.stringify(renderPlayerPanelBody)}).bind(game);
 game.notif_characterClaimed = new Function('args', ${JSON.stringify(notifCharacterClaimedBody)}).bind(game);
 game.notif_characterReturned = new Function('args', ${JSON.stringify(notifCharacterReturnedBody)}).bind(game);

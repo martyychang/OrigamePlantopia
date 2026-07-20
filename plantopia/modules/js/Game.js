@@ -222,6 +222,8 @@ class PlantingPhase {
         });
         const draftContainer = document.getElementById('draft-container');
         if (draftContainer) draftContainer.remove();
+        const sacrificeContainer = document.getElementById('sacrifice-container');
+        if (sacrificeContainer) sacrificeContainer.remove();
     }
 
     updateStatusBar() {
@@ -271,11 +273,11 @@ class PlantingPhase {
                 } else {
                     // Treevolved plant - need to select a plant to sacrifice
                     if (this.selectedPaymentCards.length < 1) {
-                        this.bga.statusBar.setTitle(_('Select a plant in your garden to treevolve (sacrifice)'));
-                        this.highlightGardenPlantsForCost(id => {
+                        this.bga.statusBar.setTitle(_('Select a plant to treevolve (sacrifice)'));
+                        this.renderSacrificeModal(cardInfo, id => {
                             this.selectedPaymentCards = [id];
                             this.updateStatusBar();
-                        }, cardInfo);
+                        });
                     } else {
                         // Auto-pick the planter for the new Treevolved plant.
                         // Prefer the planter being vacated by the sacrifice
@@ -382,27 +384,96 @@ class PlantingPhase {
         });
     }
 
-    highlightGardenPlantsForCost(callback, trvCardInfo) {
+    /**
+     * Sacrifice-picker modal for planting a Treevolved (adult) plant
+     * (Trello https://trello.com/c/xYfPLZuI). Modeled on renderDraftModal's
+     * "Draw X Keep Y" pattern (same modal shell, same select-then-Confirm
+     * status-bar flow), replacing the old highlightGardenPlantsForCost,
+     * which highlighted and clicked candidate cards directly in the
+     * garden. That approach broke for Level 3 candidates once Level 3
+     * plants stopped rendering in the garden at all (see the same card) —
+     * and mixing "click in the garden" for planter-level candidates with
+     * "click in a modal" for Level 3 ones would have been an inconsistent
+     * experience anyway, so EVERY sacrifice candidate (still on a planter
+     * or already Level 3) now goes through this one modal.
+     *
+     * Single-select, unlike renderDraftModal's multi-select: clicking a
+     * candidate toggles it (gold highlight); clicking a different one
+     * moves the highlight. Confirm only appears once something is
+     * selected, and calls onSelect(cardId) — matching the "add the button
+     * only when ready" pattern used everywhere else in this file.
+     *
+     * The status bar's "Cancel" button (added by the caller in
+     * updateStatusBar's 'plant' branch) must stay available throughout —
+     * unlike renderDraftModal's caller, which doesn't offer a Cancel at
+     * that point — so updateConfirmButton re-adds it every time it clears
+     * the status bar, rather than only adding Confirm.
+     */
+    renderSacrificeModal(trvCardInfo, onSelect) {
         this.cleanupUI();
         const pId = this.bga.players.getCurrentPlayerId();
-        const allPlants = [
+        const candidates = [
             ...Object.values(this.game.gamedatas.plantsOnPlanters || {}).filter(pl => {
                 const planter = this.game.gamedatas.planters[pl.location_arg];
                 return planter && planter.location_arg == pId;
             }),
-            ...Object.values(this.game.gamedatas.plantsLevel3 || {}).filter(pl => pl.location_arg == pId)
-        ];
-
-        allPlants.forEach(pl => {
+            ...Object.values(this.game.gamedatas.plantsLevel3 || {}).filter(pl => pl.location_arg == pId),
+        ].filter(pl => {
             const typeInfo = this.game.gamedatas.plantCardTypes[pl.type];
-            if (pl.type_arg >= trvCardInfo.cost && this.game.getFamily(typeInfo.plant_type) === this.game.getFamily(trvCardInfo.cost_unit)) {
-                const el = document.getElementById(`garden_plant_${pl.id}`);
-                if (el) {
-                    el.classList.add('bga-cards_selectable-card');
-                    el.style.boxShadow = '0 0 10px #e74c3c';
-                    el.onclick = () => callback(pl.id);
-                }
+            return typeInfo && pl.type_arg >= trvCardInfo.cost
+                && this.game.getFamily(typeInfo.plant_type) === this.game.getFamily(trvCardInfo.cost_unit);
+        });
+
+        let selectedId = null;
+
+        this.bga.gameArea.getElement().insertAdjacentHTML('afterbegin', `
+            <div id="sacrifice-container" style="padding: 20px; background: rgba(0,0,0,0.8); border-radius: 10px; margin-bottom: 20px; text-align: center; color: white;">
+                <h2>Choose a Plant to Sacrifice</h2>
+                <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-top: 15px;" id="sacrifice-cards-list"></div>
+            </div>
+        `);
+
+        const list = document.getElementById('sacrifice-cards-list');
+
+        const updateConfirmButton = () => {
+            this.bga.statusBar.removeActionButtons();
+            this.bga.statusBar.addActionButton(_('Cancel'), () => { this.resetSelection(); this.updateStatusBar(); }, { color: 'gray' });
+            if (selectedId != null) {
+                this.bga.statusBar.addActionButton(_('Confirm'), () => {
+                    document.getElementById('sacrifice-container').remove();
+                    onSelect(selectedId);
+                }, { color: 'blue' });
             }
+        };
+
+        candidates.forEach(pl => {
+            const typeInfo = this.game.gamedatas.plantCardTypes[pl.type];
+            const body = this.game.plantCardBody(pl.type, typeInfo, { levelLabel: `Level: ${pl.type_arg}` });
+            list.insertAdjacentHTML('beforeend', `
+                <div id="sacrifice_${pl.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer; box-shadow: 0 0 10px #27ae60;">
+                    ${body.inner}
+                </div>
+            `);
+
+            this.game.addPlantTooltip(`sacrifice_${pl.id}`, typeInfo);
+
+            const el = document.getElementById(`sacrifice_${pl.id}`);
+            el.onclick = () => {
+                if (selectedId === pl.id) {
+                    selectedId = null;
+                    el.style.boxShadow = '0 0 10px #27ae60';
+                    el.style.border = '2px solid #2ecc71';
+                } else {
+                    if (selectedId != null) {
+                        const prevEl = document.getElementById(`sacrifice_${selectedId}`);
+                        if (prevEl) { prevEl.style.boxShadow = '0 0 10px #27ae60'; prevEl.style.border = '2px solid #2ecc71'; }
+                    }
+                    selectedId = pl.id;
+                    el.style.boxShadow = '0 0 15px #f1c40f';
+                    el.style.border = '4px solid #f1c40f';
+                }
+                updateConfirmButton();
+            };
         });
     }
 
@@ -963,10 +1034,14 @@ export class Game {
             `);
             this.renderPlayerPanel(player.id);
 
-            // Three dedicated, always-overflowing rows instead of one shared
+            // Two dedicated, always-overflowing rows instead of one shared
             // flex row (Trello https://trello.com/c/gcQP1950 follow-up):
-            // planters+character, then level-3 tilted plants underneath,
-            // then bonus weather. See .plantopia-overflow-row in the CSS.
+            // planters+character, then bonus weather. See
+            // .plantopia-overflow-row in the CSS. Level 3 (Treevolved)
+            // plants no longer get a row here at all — they're hidden from
+            // the garden entirely and surfaced via a tooltip on the player
+            // panel's Lv. 3 counters instead (Trello
+            // https://trello.com/c/xYfPLZuI), to conserve vertical space.
             //
             // Explicit `color: #333` alongside this section's own light
             // background — BGA's dark mode flips the page's DEFAULT text
@@ -983,7 +1058,6 @@ export class Game {
                 <div id="player-table-${player.id}" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px; color: #333;">
                     <h3>${player.name}'s Garden</h3>
                     <div id="player-garden-planters-${player.id}" class="plantopia-overflow-row" style="margin-top: 10px; min-height: 300px;"></div>
-                    <div id="player-garden-tilted-${player.id}" class="plantopia-overflow-row" style="margin-top: 10px;"></div>
                     <div id="player-garden-bonus-${player.id}" class="plantopia-overflow-row" style="margin-top: 10px;"></div>
                 </div>
             `);
@@ -1001,18 +1075,10 @@ export class Game {
             const playedBonus = Object.values(gamedatas.weatherPlayedBonus || {}).filter(c => c.location_arg == player.id);
             this.renderPlayedBonusWeather(playedBonus, `player-garden-planters-${player.id}`);
 
-            // Render Level 3 plants for this player on their OWN row.
-            const level3Plants = Object.values(gamedatas.plantsLevel3 || {}).filter(c => c.location_arg == player.id);
-            level3Plants.forEach(card => {
-                const cardInfo = this.gamedatas.plantCardTypes[card.type];
-                const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Level: ${card.type_arg}` });
-                document.getElementById(`player-garden-tilted-${player.id}`).insertAdjacentHTML('beforeend', `
-                    <div id="garden_plant_${card.id}" class="level3-tilted plantopia-card-size ${body.extraClass}" ${body.dataAttr} data-id="${card.id}" style="position: relative; border: 2px solid #2ecc71; border-radius: 5px; background-color: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                        ${body.inner}
-                    </div>
-                `);
-                this.addPlantTooltip(`garden_plant_${card.id}`, cardInfo);
-            });
+            // Level 3 (Treevolved) plants are NOT rendered into the garden
+            // at all — see the comment above the player-table template.
+            // gamedatas.plantsLevel3 is still tracked and drives the player
+            // panel's Lv. 3 counts + hover tooltips (renderPlayerPanel).
         });
 
         // Render plants on planters (done after all planters are created)
@@ -1315,19 +1381,73 @@ export class Game {
      * remembered plants start at level 0 when first planted (2026-07-18)
      * — Lv. 0 counts are NOT always zero. Zero counts render as blank
      * cells, not "0", per the card.
+     *
+     * The Lv. 3 row's cells get a deterministic id (see level3CellId)
+     * regardless of count — Level 3 plants no longer render in the garden
+     * at all (Trello https://trello.com/c/xYfPLZuI), so this row is the
+     * only place a hover tooltip can show which actual cards make up
+     * each count. renderPlayerPanel wires the tooltips AFTER this HTML is
+     * inserted into the DOM (a tooltip needs its target node to already
+     * exist), via level3CardsByColumn.
      */
-    plantCountsTableHtml(s) {
+    plantCountsTableHtml(s, playerId) {
         const icon = (name) => `<span class="plantopia-panel-icon" data-icon="${name}" title="${Game.PANEL_ICON_TOOLTIPS[name] || ''}"></span>`;
         const cols = Game.PLANT_COUNT_COLUMNS;
         const levelRows = [3, 2, 1, 0].map(level => {
             const cells = cols.map(c => {
                 const n = s.plants[c.family][c.maturity][level];
-                return `<td>${n > 0 ? n : ''}</td>`;
+                const idAttr = level === 3 ? ` id="${this.level3CellId(playerId, c.icon)}"` : '';
+                return `<td${idAttr}>${n > 0 ? n : ''}</td>`;
             }).join('');
             return `<tr>${cells}<td class="plantopia-panel-level-label">Lv. ${level}</td></tr>`;
         }).join('');
         const iconRow = `<tr>${cols.map(c => `<td>${icon(c.icon)}</td>`).join('')}<td></td></tr>`;
         return `<table class="plantopia-panel-table">${levelRows}${iconRow}</table>`;
+    }
+
+    /** Deterministic DOM id for one Lv. 3 cell, shared between
+     * plantCountsTableHtml (which embeds it) and the tooltip-wiring pass
+     * in renderPlayerPanel (which looks it up) — see
+     * https://trello.com/c/xYfPLZuI. */
+    level3CellId(playerId, columnIcon) {
+        return `lv3-cell-${playerId}-${columnIcon}`;
+    }
+
+    /**
+     * This player's Level 3 (Treevolved) plants, grouped by the same 6
+     * columns as PLANT_COUNT_COLUMNS — the actual cards behind each Lv. 3
+     * count, for the player panel's hover tooltips (Trello
+     * https://trello.com/c/xYfPLZuI), since those plants no longer render
+     * anywhere in the garden.
+     */
+    level3CardsByColumn(playerId) {
+        const byColumn = {};
+        Game.PLANT_COUNT_COLUMNS.forEach(c => { byColumn[c.icon] = []; });
+        Object.values(this.gamedatas.plantsLevel3 || {}).forEach(card => {
+            if (card.location_arg != playerId) return;
+            const info = (this.gamedatas.plantCardTypes || {})[card.type];
+            if (!info) return;
+            const family = this.getFamily(info.plant_type);
+            const maturity = this.isAdult(info.plant_type) ? 'adult' : (this.isBabyType(info.plant_type) ? 'baby' : null);
+            if (!family || !maturity) return;
+            const col = Game.PLANT_COUNT_COLUMNS.find(c => c.family === family && c.maturity === maturity);
+            if (col) byColumn[col.icon].push(card);
+        });
+        return byColumn;
+    }
+
+    /** Tooltip listing the actual card name(s) behind a Lv. 3 cell's
+     * count. Same addTooltipHtml primitive as addPlantTooltip/
+     * addCharacterTooltip, just with a card LIST instead of a single card
+     * — see https://trello.com/c/xYfPLZuI. */
+    addLevel3Tooltip(nodeId, cards) {
+        if (!cards || !cards.length) return;
+        const items = cards.map(card => {
+            const info = (this.gamedatas.plantCardTypes || {})[card.type] || { name: card.type };
+            return `<li>${info.name}</li>`;
+        }).join('');
+        const html = `<div class="cardtooltip"><ul style="margin: 0; padding-left: 18px;">${items}</ul></div>`;
+        this.bga.gameui.addTooltipHtml(nodeId, html);
     }
 
     /** Render or refresh the at-a-glance stats panel for one player. */
@@ -1359,7 +1479,7 @@ export class Game {
 
         el.innerHTML = `
             <div>${characterIconHtml}${icon('hand')} ${s.handCount}${gap}${icon('sun')} ${s.bonusWeather.sun}${gap}${icon('rain')} ${s.bonusWeather.rain}${gap}${icon('wind')} ${s.bonusWeather.wind}</div>
-            ${this.plantCountsTableHtml(s)}
+            ${this.plantCountsTableHtml(s, playerId)}
         `;
 
         // Hovering the icon shows the full-size card, via the same tooltip
@@ -1368,6 +1488,16 @@ export class Game {
             const cardInfo = this.gamedatas.characterCardTypes[claimed.type] || { name: claimed.type, ability: '' };
             this.addCharacterTooltip(`character-icon-${playerId}`, cardInfo);
         }
+
+        // Hovering a Lv. 3 cell shows the actual card(s) behind that count
+        // — Level 3 plants aren't rendered in the garden anymore (Trello
+        // https://trello.com/c/xYfPLZuI), so this is the only place to see
+        // them. Wired AFTER innerHTML is set, same as the character icon
+        // tooltip above — addTooltipHtml needs its target node in the DOM.
+        const level3ByColumn = this.level3CardsByColumn(playerId);
+        Game.PLANT_COUNT_COLUMNS.forEach(c => {
+            this.addLevel3Tooltip(this.level3CellId(playerId, c.icon), level3ByColumn[c.icon]);
+        });
     }
 
     /** Refresh every player's stats panel. Cheap — runs after any state-changing notif. */
@@ -2013,9 +2143,13 @@ export class Game {
             }
 
             if (args.max_level) {
-                // Move off planter to the level-3 tilted area. The plant card
-                // graduates from the sliding planter overlay to a full-size,
-                // 90°-tilted tile sitting in the garden (no planter).
+                // Graduate off the planter to Level 3 (Treevolved). Unlike
+                // before https://trello.com/c/xYfPLZuI, this no longer
+                // re-parents the card into a visible garden row — Level 3
+                // plants aren't rendered in the garden at all now, only
+                // surfaced via a tooltip on the player panel's Lv. 3
+                // counters (see renderPlayerPanel / level3CardsByColumn) —
+                // so the DOM element is simply removed.
                 const card = this.gamedatas.plantsOnPlanters[cardId];
                 delete this.gamedatas.plantsOnPlanters[cardId];
 
@@ -2029,34 +2163,18 @@ export class Game {
                 // WeatherPhaseGrow.php) — same field name, different
                 // meaning depending on which collection it's in. Without
                 // translating it here, every "does this belong to me"
-                // check downstream (computePlayerStats,
-                // highlightGardenPlantsForCost) compared this plant's
-                // stale planter id against a player id and silently
-                // excluded it — from its own owner's player-panel counts
-                // AND from being selectable as a Treevolve sacrifice —
-                // until something forced a full server resync (reload).
-                // See https://trello.com/c/7CO2tan1.
+                // check downstream (computePlayerStats, renderSacrificeModal)
+                // compared this plant's stale planter id against a player id
+                // and silently excluded it — from its own owner's
+                // player-panel counts AND from being selectable as a
+                // Treevolve sacrifice — until something forced a full
+                // server resync (reload). See https://trello.com/c/7CO2tan1.
                 card.location_arg = args.player_id;
 
                 if (!this.gamedatas.plantsLevel3) this.gamedatas.plantsLevel3 = {};
                 this.gamedatas.plantsLevel3[cardId] = card;
 
-                if (el) {
-                    el.classList.remove('plantopia-plant-on-planter');
-                    el.classList.add('level3-tilted', 'plantopia-card-size');
-                    el.style.cssText = 'position: relative; border: 2px solid #2ecc71; border-radius: 5px; background-color: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
-                    // The "Level: N" badge was already regenerated above
-                    // (now unconditional, not just for this max_level
-                    // branch — see https://trello.com/c/UlEhJIr5) — the
-                    // classList/cssText changes here don't touch innerHTML,
-                    // so it's still correct.
-
-                    // Moves to the player's OWN dedicated tilted-plants row,
-                    // underneath their planters row, per
-                    // https://trello.com/c/gcQP1950.
-                    const tiltedRow = document.getElementById(`player-garden-tilted-${args.player_id}`);
-                    if (tiltedRow) tiltedRow.appendChild(el);
-                }
+                if (el) el.remove();
             }
         }
         this.refreshAllPlayerPanels();

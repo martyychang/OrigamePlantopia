@@ -1,9 +1,11 @@
 /**
- * Regression test for https://trello.com/c/7CO2tan1
- * "Level 3 Cattus cannot be sacrificed to plant Bufftus"
+ * Regression test for https://trello.com/c/7CO2tan1 ("Level 3 Cattus
+ * cannot be sacrificed to plant Bufftus") and its follow-up
+ * https://trello.com/c/xYfPLZuI ("Hide level 3 cards in the garden and
+ * display as tooltip on Level 3 counter instead").
  *
- * Three symptoms, one root cause. When a plant reaches level 3,
- * notif_plantGrown moves it client-side from gamedatas.plantsOnPlanters to
+ * 7CO2tan1's root cause: when a plant reaches level 3, notif_plantGrown
+ * moves it client-side from gamedatas.plantsOnPlanters to
  * gamedatas.plantsLevel3 by re-keying the SAME object — but never
  * translated its `location_arg` field, which means something different in
  * each collection:
@@ -12,26 +14,30 @@
  *   - plantsLevel3: location_arg = the PLAYER's id directly, matching the
  *     server's own convention (moveCard($cardId, 'garden_level3',
  *     $playerId) in PlantingPhase.php/WeatherPhaseGrow.php)
- * Left untranslated, the plant's location_arg stayed at the stale planter
- * id after graduating — so every "does this belong to me" check
- * downstream compared a planter id against a player id and silently
- * excluded it:
- *   1. computePlayerStats' level-3 count for that family/maturity stayed
- *      at 0 (the player panel showed the plant as never having existed).
- *   2. highlightGardenPlantsForCost (PlantingPhase's Treevolve-sacrifice
- *      selection) never highlighted it as selectable.
- * Separately, the "Level: N" text badge baked into the card's DOM element
- * at PLANTING time (level 0) was never regenerated when the card
- * graduated — only the data-level attribute (which drives the on-planter
- * sliding-reveal animation, irrelevant once off the planter) was updated —
- * so the tilted card visually showed "Level: 0" forever.
- *   3. The in-card annotation showed "Level: 0" instead of "Level: 3".
+ * Left untranslated, every "does this belong to me" check downstream
+ * compared a planter id against a player id and silently excluded it. That
+ * translation (`card.location_arg = args.player_id;`) is still exactly
+ * where this test exercises it — only the DOWNSTREAM consumers changed
+ * with xYfPLZuI:
+ *   1. Level 3 plants no longer render as a visible tile in the garden at
+ *      all (used to move into a "tilted" row) — notif_plantGrown just
+ *      removes the DOM element. Their card data instead surfaces via
+ *      level3CardsByColumn, which feeds the player panel's Lv. 3 hover
+ *      tooltips — this ALSO depends on the same location_arg translation,
+ *      so a broken translation would silently empty out the tooltip too.
+ *   2. computePlayerStats' level-3 count for that family/maturity (used
+ *      to stay at 0 — the player panel showed the plant as never having
+ *      existed).
+ *   3. The old highlightGardenPlantsForCost (Treevolve-sacrifice
+ *      selection, click directly in the garden) is gone — replaced by
+ *      renderSacrificeModal (Draw-X-Keep-Y-style modal), which draws its
+ *      candidate list from the SAME translated plantsLevel3 data.
  *
- * This drives the REAL notif_plantGrown, computePlayerStats, and
- * PlantingPhase.highlightGardenPlantsForCost methods (not
+ * This drives the REAL notif_plantGrown, computePlayerStats,
+ * level3CardsByColumn, and PlantingPhase.renderSacrificeModal methods (not
  * re-implementations) through headless Chrome, simulating a Baby Cactus
  * (Cattus) growing from level 2 to level 3 on a planter, then confirms all
- * three symptoms are fixed.
+ * three consumers see it correctly.
  *
  * Run: node tests/level3PlantGrowth.test.mjs
  * Requires: Google Chrome at the path below (macOS default location).
@@ -68,8 +74,29 @@ function extractClass(name) {
     return src.slice(startIdx, i);
 }
 
+// Static class fields (e.g. `static NAME = [...];`) aren't methods, so
+// extractMethod's regex doesn't fit — brace/bracket-match from the `=`
+// instead, same technique used in tests/plantCountsTable.test.mjs.
+function extractStaticField(name) {
+    const marker = `static ${name} = `;
+    const startIdx = src.indexOf(marker);
+    if (startIdx === -1) throw new Error(`extractStaticField failed for ${name}`);
+    const valueStart = startIdx + marker.length;
+    let depth = 0;
+    let started = false;
+    let i = valueStart;
+    for (; i < src.length; i++) {
+        const ch = src[i];
+        if (ch === '{' || ch === '[') { depth++; started = true; }
+        else if (ch === '}' || ch === ']') { depth--; if (started && depth === 0) { i++; break; } }
+    }
+    return src.slice(valueStart, i);
+}
+
+const plantCountColumns = extractStaticField('PLANT_COUNT_COLUMNS');
 const notifPlantGrownBody = extractMethod('notif_plantGrown');
 const computePlayerStatsBody = extractMethod('computePlayerStats');
+const level3CardsByColumnBody = extractMethod('level3CardsByColumn');
 const plantCardBodyBody = extractMethod('plantCardBody');
 const isAdultBody = extractMethod('isAdult');
 const isBabyTypeBody = extractMethod('isBabyType');
@@ -82,10 +109,14 @@ window.onerror = (msg, src, line, col, err) => {
     document.getElementById('results').innerHTML += 'FAIL — uncaught error: ' + msg + ' (line ' + line + ':' + col + ')' + (err && err.stack ? '<br>' + String(err.stack).replace(/\\n/g, ' | ') : '') + '<br>';
 };
 
+// level3CardsByColumn references the static Game.PLANT_COUNT_COLUMNS field.
+const Game = { PLANT_COUNT_COLUMNS: ${plantCountColumns} };
+
 // A single game object plays the role of "this" inside both the Game-class
-// notif_plantGrown/computePlayerStats methods AND (via .game) what
-// PlantingPhase reads. Matches how these are really wired: Game owns
-// gamedatas, PlantingPhase holds a reference to the Game instance.
+// notif_plantGrown/computePlayerStats/level3CardsByColumn methods AND (via
+// .game) what PlantingPhase reads. Matches how these are really wired:
+// Game owns gamedatas, PlantingPhase holds a reference to the Game
+// instance.
 const game = {
     gamedatas: {
         // A Baby Cactus (Cattus) on planter 5001, already at level 2,
@@ -110,6 +141,7 @@ const game = {
     bga: { players: { getCurrentPlayerId: () => 7 }, states: { getCurrentMainStateName: () => 'WeatherPhaseBonus' } },
     plantingPhase: {},
     refreshAllPlayerPanels: () => {},
+    addPlantTooltip: () => {},
     isAdult: new Function('plantType', ${JSON.stringify(isAdultBody)}),
     isBabyType: new Function('plantType', ${JSON.stringify(isBabyTypeBody)}),
     getFamily: new Function('plantType', ${JSON.stringify(getFamilyBody)}),
@@ -117,6 +149,7 @@ const game = {
 };
 game.notif_plantGrown = new Function('args', ${JSON.stringify(notifPlantGrownBody)}).bind(game);
 game.computePlayerStats = new Function('playerId', ${JSON.stringify(computePlayerStatsBody)}).bind(game);
+game.level3CardsByColumn = new Function('playerId', ${JSON.stringify(level3CardsByColumnBody)}).bind(game);
 
 function escapeHtml(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -142,43 +175,72 @@ document.getElementById('planter-slot_5001').insertAdjacentHTML('beforeend', \`
 
 game.notif_plantGrown({ card_id: 501, level: 3, max_level: true, player_id: 7 });
 
-// ── Symptom 1: in-card annotation ──
-const el = document.getElementById('garden_plant_501');
-check('card element moved into the tilted row', el && el.parentElement && el.parentElement.id === 'player-garden-tilted-7');
-check('in-card annotation now reads "Level: 3", not the stale "Level: 0"',
-    el && el.innerHTML.includes('Level: 3') && !el.innerHTML.includes('Level: 0'),
-    el ? el.innerHTML : null);
+// ── Level 3 plants are hidden from the garden entirely (Trello
+//    https://trello.com/c/xYfPLZuI) — the DOM element must be gone, not
+//    just re-styled/re-parented into a visible "tilted" row. ──
+check('the on-planter DOM element is removed once the plant graduates to Level 3',
+    !document.getElementById('garden_plant_501'));
 
-// ── Symptom 2: player panel counter ──
+// ── location_arg translation still correct (7CO2tan1's root-cause fix) ──
 check('gamedatas.plantsLevel3[501].location_arg is the PLAYER id (7), not the stale planter id (5001)',
     game.gamedatas.plantsLevel3[501] && game.gamedatas.plantsLevel3[501].location_arg == 7,
     game.gamedatas.plantsLevel3[501]);
+
+// ── Consumer 1: player panel counter (computePlayerStats) ──
 const stats = game.computePlayerStats(7);
 check('computePlayerStats(7) counts the level-3 Baby Cactus (index 3 = 1, not 0)',
     JSON.stringify(stats.plants.cactus.baby) === JSON.stringify([0, 0, 0, 1]),
     stats.plants.cactus.baby);
 
-// ── Symptom 3: selectable as a Treevolve sacrifice ──
+// ── Consumer 2: player panel Lv. 3 tooltip (level3CardsByColumn) — new
+//    with xYfPLZuI, and depends on the SAME location_arg translation, so
+//    a regression there would silently empty this out too. ──
+const byColumn = game.level3CardsByColumn(7);
+check('level3CardsByColumn(7) places the Level 3 Cattus under baby_cactus',
+    byColumn.baby_cactus.length === 1 && byColumn.baby_cactus[0].id === 501,
+    byColumn.baby_cactus);
+check('no OTHER column picked it up (family/maturity bucketing is exact)',
+    Object.entries(byColumn).filter(([k]) => k !== 'baby_cactus').every(([, v]) => v.length === 0),
+    byColumn);
+
+// ── Consumer 3: selectable as a Treevolve sacrifice, now via the modal
+//    (PlantingPhase.renderSacrificeModal, part of the extracted class
+//    below) instead of clicking directly in the garden. ──
 const PlantingPhase = new Function('return (' + ${JSON.stringify(plantingPhaseClassSrc)} + ');')();
-const bga = { players: { getCurrentPlayerId: () => 7 } };
+const buttonLog = [];
+const bga = {
+    players: { getCurrentPlayerId: () => 7 },
+    gameArea: { getElement: () => document.getElementById('game-area') },
+    statusBar: {
+        removeActionButtons: () => { buttonLog.length = 0; },
+        setTitle: () => {},
+        addActionButton: (label, cb) => { buttonLog.push({ label, cb }); },
+    },
+};
 const pp = new PlantingPhase(game, bga);
 pp.cleanupUI = () => {}; // touches DOM classes unrelated to this check; no-op is fine here
 
-let clickedId = null;
+let selectedId = null;
 // Bufftus (a Treevolved Cactus) costs 1 baby_cactus of level >= its own
 // cost — the level-3 Cattus (type_arg 3) qualifies.
-pp.highlightGardenPlantsForCost(id => { clickedId = id; }, game.gamedatas.plantCardTypes.Bufftus);
+pp.renderSacrificeModal(game.gamedatas.plantCardTypes.Bufftus, id => { selectedId = id; });
 
-check('the level-3 Cattus tile is marked selectable (bga-cards_selectable-card)',
-    el.classList.contains('bga-cards_selectable-card'));
-if (el.onclick) el.onclick();
-check('clicking the tile selects card 501 as the sacrifice', clickedId === 501, clickedId);
+const sacrificeCard = document.getElementById('sacrifice_501');
+check('the level-3 Cattus appears as a sacrifice candidate in the modal', !!sacrificeCard);
+
+if (sacrificeCard) sacrificeCard.onclick();
+const confirmBtn = buttonLog.find(b => b.label === 'Confirm');
+check('a Confirm button appears once the candidate is selected', !!confirmBtn, buttonLog.map(b => b.label));
+
+if (confirmBtn) confirmBtn.cb();
+check('confirming the modal selects card 501 as the sacrifice', selectedId === 501, selectedId);
+check('the modal is removed after confirming', !document.getElementById('sacrifice-container'));
 `;
 
 const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head><body>
 <div id="planter-slot_5001"></div>
-<div id="player-garden-tilted-7"></div>
+<div id="game-area"></div>
 <div id="results"></div>
 <script>${script}</script>
 </body></html>
