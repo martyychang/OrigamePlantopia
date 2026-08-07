@@ -339,12 +339,13 @@
 .plantopia-panel-icon[data-icon="rain"]         { background-position: 75%  100%; }
 .plantopia-panel-icon[data-icon="wind"]         { background-position: 100% 100%; }
 
-/* Compact plant-counts table (Trello https://trello.com/c/cPxcQy2A),
-   replacing the old "icon count / count / count / count" text lines.
-   Column-based: 7 columns (baby/adult × tree/flower/cactus, THEN the
-   level label last — Marty moved the label column from left to right on
-   2026-07-19), 5 rows (Lv. 3 / Lv. 2 / Lv. 1 / Lv. 0 counts, then a
-   label-less row of family icons). Every cell gets a full border
+/* Compact Treevolved-count table (Trello https://trello.com/c/cPxcQy2A,
+   simplified per https://trello.com/c/ozx98mdL), replacing the old "icon
+   count / count / count / count" text lines. Column-based: 4 columns
+   (tree/flower/cactus adult counts, THEN the label last — Marty moved
+   the label column from left to right on 2026-07-19), 2 rows (a single
+   Treevolved count row, then a label-less row of family icons). Every
+   cell gets a full border
    (border-collapse merges shared edges into one grid line), with exactly
    two exceptions on the bottom-RIGHT cell (last row, last column — the
    icon row's blank label cell): no right border and no bottom border.

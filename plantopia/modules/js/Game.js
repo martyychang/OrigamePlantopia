@@ -1369,53 +1369,54 @@ export class Game {
     };
 
     /**
-     * Column order for the compact plant-counts table (Trello
-     * https://trello.com/c/cPxcQy2A): baby/adult pairs for tree, flower,
-     * then cactus, each keyed to its per-level count array from
-     * computePlayerStats (index = level 0-3) and its player-panel icon.
+     * Column order for the compact plant-counts table: tree, flower,
+     * cactus — the 3 ADULT/treevolved plant types (Trello
+     * https://trello.com/c/ozx98mdL). Baby-type columns were dropped
+     * entirely, not just their non-max levels: Game.php's
+     * countTreevolvedPlants() — the actual scoring/endgame metric — only
+     * counts garden_level3 cards whose card TYPE is trv_* (PlantCards::
+     * isTreevolved()). A baby-type plant stuck at level 3 (never sacrificed
+     * to treevolve) does NOT count as Treevolved, so it has no place in a
+     * table that's meant to summarize Treevolved plants specifically.
+     * Each entry is keyed to its level-3 count from computePlayerStats and
+     * its player-panel icon.
      */
-    static PLANT_COUNT_COLUMNS = [
-        { icon: 'baby_tree', family: 'tree', maturity: 'baby' },
+    static TREEVOLVED_COLUMNS = [
         { icon: 'adult_tree', family: 'tree', maturity: 'adult' },
-        { icon: 'baby_flower', family: 'flower', maturity: 'baby' },
         { icon: 'adult_flower', family: 'flower', maturity: 'adult' },
-        { icon: 'baby_cactus', family: 'cactus', maturity: 'baby' },
         { icon: 'adult_cactus', family: 'cactus', maturity: 'adult' },
     ];
 
     /**
-     * Compact column-based plant-counts table (Trello
-     * https://trello.com/c/cPxcQy2A), replacing the old text-line-per-
-     * family layout. 7 columns (the 6 baby/adult × tree/flower/cactus
-     * columns above, THEN the level label last — Marty moved the label
-     * column from left to right on 2026-07-19), 5 rows (Lv. 3 / Lv. 2 /
-     * Lv. 1 / Lv. 0 counts, then a label-less row of family icons). Marty
-     * initially proposed 4 rows (no Lv. 0), self-corrected once he
-     * remembered plants start at level 0 when first planted (2026-07-18)
-     * — Lv. 0 counts are NOT always zero. Zero counts render as blank
-     * cells, not "0", per the card.
+     * Compact Treevolved-count table (Trello https://trello.com/c/cPxcQy2A,
+     * simplified per https://trello.com/c/ozx98mdL). Daryl found the
+     * earlier version — 6 baby/adult columns × 4 level rows (0-3) — hard
+     * to read, and asked to drop the level 0-2 tracking and show only
+     * adult/treevolved plants, since those are the only plants that
+     * score. Now 4 columns (the 3 TREEVOLVED_COLUMNS above, then the
+     * label last — matching the left-to-right label placement Marty set
+     * on 2026-07-19), 2 rows: a single count row, then a label-less row
+     * of family icons. Zero counts render as blank cells, not "0", per
+     * the original card.
      *
-     * The Lv. 3 row's cells get a deterministic id (see level3CellId)
-     * regardless of count — Level 3 plants no longer render in the garden
-     * at all (Trello https://trello.com/c/xYfPLZuI), so this row is the
-     * only place a hover tooltip can show which actual cards make up
-     * each count. renderPlayerPanel wires the tooltips AFTER this HTML is
+     * The count row's cells keep their deterministic id (see
+     * level3CellId) — Level 3 plants no longer render in the garden at
+     * all (Trello https://trello.com/c/xYfPLZuI), so this row is the only
+     * place a hover tooltip can show which actual cards make up each
+     * count. renderPlayerPanel wires the tooltips AFTER this HTML is
      * inserted into the DOM (a tooltip needs its target node to already
      * exist), via level3CardsByColumn.
      */
     plantCountsTableHtml(s, playerId) {
         const icon = (name) => `<span class="plantopia-panel-icon" data-icon="${name}" title="${Game.PANEL_ICON_TOOLTIPS[name] || ''}"></span>`;
-        const cols = Game.PLANT_COUNT_COLUMNS;
-        const levelRows = [3, 2, 1, 0].map(level => {
-            const cells = cols.map(c => {
-                const n = s.plants[c.family][c.maturity][level];
-                const idAttr = level === 3 ? ` id="${this.level3CellId(playerId, c.icon)}"` : '';
-                return `<td${idAttr}>${n > 0 ? n : ''}</td>`;
-            }).join('');
-            return `<tr>${cells}<td class="plantopia-panel-level-label">Lv. ${level}</td></tr>`;
+        const cols = Game.TREEVOLVED_COLUMNS;
+        const countCells = cols.map(c => {
+            const n = s.plants[c.family][c.maturity][3];
+            return `<td id="${this.level3CellId(playerId, c.icon)}">${n > 0 ? n : ''}</td>`;
         }).join('');
+        const countRow = `<tr>${countCells}<td class="plantopia-panel-level-label">${_('Treevolved')}</td></tr>`;
         const iconRow = `<tr>${cols.map(c => `<td>${icon(c.icon)}</td>`).join('')}<td></td></tr>`;
-        return `<table class="plantopia-panel-table">${levelRows}${iconRow}</table>`;
+        return `<table class="plantopia-panel-table">${countRow}${iconRow}</table>`;
     }
 
     /** Deterministic DOM id for one Lv. 3 cell, shared between
@@ -1427,23 +1428,23 @@ export class Game {
     }
 
     /**
-     * This player's Level 3 (Treevolved) plants, grouped by the same 6
-     * columns as PLANT_COUNT_COLUMNS — the actual cards behind each Lv. 3
-     * count, for the player panel's hover tooltips (Trello
-     * https://trello.com/c/xYfPLZuI), since those plants no longer render
-     * anywhere in the garden.
+     * This player's Treevolved plants (level 3 AND adult/trv_* type),
+     * grouped by the same columns as TREEVOLVED_COLUMNS — the actual
+     * cards behind each count, for the player panel's hover tooltips
+     * (Trello https://trello.com/c/xYfPLZuI), since those plants no
+     * longer render anywhere in the garden. Baby-type plants stuck at
+     * level 3 are deliberately excluded (see TREEVOLVED_COLUMNS) — they
+     * don't count as Treevolved and the table no longer shows them.
      */
     level3CardsByColumn(playerId) {
         const byColumn = {};
-        Game.PLANT_COUNT_COLUMNS.forEach(c => { byColumn[c.icon] = []; });
+        Game.TREEVOLVED_COLUMNS.forEach(c => { byColumn[c.icon] = []; });
         Object.values(this.gamedatas.plantsLevel3 || {}).forEach(card => {
             if (card.location_arg != playerId) return;
             const info = (this.gamedatas.plantCardTypes || {})[card.type];
-            if (!info) return;
+            if (!info || !this.isAdult(info.plant_type)) return;
             const family = this.getFamily(info.plant_type);
-            const maturity = this.isAdult(info.plant_type) ? 'adult' : (this.isBabyType(info.plant_type) ? 'baby' : null);
-            if (!family || !maturity) return;
-            const col = Game.PLANT_COUNT_COLUMNS.find(c => c.family === family && c.maturity === maturity);
+            const col = Game.TREEVOLVED_COLUMNS.find(c => c.family === family);
             if (col) byColumn[col.icon].push(card);
         });
         return byColumn;
@@ -1508,7 +1509,7 @@ export class Game {
         // them. Wired AFTER innerHTML is set, same as the character icon
         // tooltip above — addTooltipHtml needs its target node in the DOM.
         const level3ByColumn = this.level3CardsByColumn(playerId);
-        Game.PLANT_COUNT_COLUMNS.forEach(c => {
+        Game.TREEVOLVED_COLUMNS.forEach(c => {
             this.addLevel3Tooltip(this.level3CellId(playerId, c.icon), level3ByColumn[c.icon]);
         });
     }
