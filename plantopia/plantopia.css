@@ -339,48 +339,27 @@
 .plantopia-panel-icon[data-icon="rain"]         { background-position: 75%  100%; }
 .plantopia-panel-icon[data-icon="wind"]         { background-position: 100% 100%; }
 
-/* Compact Treevolved-count table (Trello https://trello.com/c/cPxcQy2A,
-   simplified per https://trello.com/c/ozx98mdL), replacing the old "icon
-   count / count / count / count" text lines. Column-based: 4 columns
-   (tree/flower/cactus adult counts, THEN the label last — Marty moved
-   the label column from left to right on 2026-07-19), 2 rows (a single
-   Treevolved count row, then a label-less row of family icons). Every
-   cell gets a full border
-   (border-collapse merges shared edges into one grid line), with exactly
-   two exceptions on the bottom-RIGHT cell (last row, last column — the
-   icon row's blank label cell): no right border and no bottom border.
-   Both exceptions land on pure table-boundary edges (that cell has no
-   neighbor further right or below), so removing them there doesn't fight
-   any adjacent cell's border under collapse — it just leaves that one
-   corner visually "open". This exception follows the BLANK cell, not a
-   fixed column index — it moved from bottom-left to bottom-right in
-   lockstep with the label column, per Marty's 2026-07-18 follow-up. The
-   border uses a neutral mid-gray (not black) so it stays visible against
-   both BGA's light and dark mode page backgrounds without a dark-mode-
-   specific override (see point 5 in AGENTS.md's "CSS Sprites & Inline-
-   Style Gotchas"). Zero counts are hidden by the JS (empty cell, not
-   "0") — plantCountsTableHtml never emits a "0" text node at all. */
-.plantopia-panel-table {
-    border-collapse: collapse;
-    /* 6px vertical gap below the hand/sun/rain/wind counter row above it,
-       per Marty's follow-up (2026-07-19). */
+/* Treevolved subpanel (Trello https://trello.com/c/aPeeyKyv) — replaces
+   the table from https://trello.com/c/cPxcQy2A / https://trello.com/c/ozx98mdL
+   entirely. Instead of counts or a level breakdown, one icon slot per
+   treevolved plant (see treevolvedPanelHtml/treevolvedCards in Game.js),
+   left-aligned in a flex row so it visually fills up left-to-right as
+   more treevolved plants are planted. Empty (zero-height content, no
+   visible gap) until the player has any treevolved plant, per Daryl's
+   "remains empty if a player has no level 3 plants" — no placeholder
+   border or background, unlike the old table which always rendered a
+   visible grid. */
+.plantopia-treevolved-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
     margin-top: 6px;
 }
-.plantopia-panel-table td {
-    padding: 1px 6px;
-    text-align: center;
-    border: 1px solid rgba(128, 128, 128, 0.5);
-    font-size: 0.9em;
-}
-.plantopia-panel-table td:last-child {
-    text-align: right;
-    padding-right: 0;
-}
-.plantopia-panel-table tr:last-child td:last-child {
-    border-right: none;
-    border-bottom: none;
-}
-.plantopia-panel-level-label {
-    font-weight: bold;
+.plantopia-treevolved-slot {
+    /* Slightly bigger than the 18px counter icons above — these represent
+       actual plants, not glanceable stats, so they read better as small
+       "achievement" tiles. */
+    width: 22px;
+    height: 22px;
 }
 

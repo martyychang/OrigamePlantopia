@@ -1296,50 +1296,17 @@ export class Game {
 
     /**
      * Recompute a player's at-a-glance stats from the current gamedatas.
-     * Returns:
-     *   {
-     *     handCount,
-     *     plants: { cactus: {baby: [n0,n1,n2,n3], adult: [...]},
-     *               flower: {...}, tree: {...} },
-     *     bonusWeather: { sun, rain, wind }
-     *   }
-     * Per https://trello.com/c/B5g3UmED.
+     * Returns: { handCount, bonusWeather: { sun, rain, wind } }. Per
+     * https://trello.com/c/B5g3UmED. (Used to also compute a per-family/
+     * per-level plant breakdown for the old table-based treevolved
+     * display — dropped along with that table, see
+     * treevolvedPanelHtml, per https://trello.com/c/aPeeyKyv.)
      */
     computePlayerStats(playerId) {
         const stats = {
             handCount: (this.gamedatas.handCounts || {})[playerId] || 0,
-            plants: {
-                cactus: { baby: [0,0,0,0], adult: [0,0,0,0] },
-                flower: { baby: [0,0,0,0], adult: [0,0,0,0] },
-                tree:   { baby: [0,0,0,0], adult: [0,0,0,0] },
-            },
             bonusWeather: { sun: 0, rain: 0, wind: 0 },
         };
-
-        const FAMILY = { baby_cactus: 'cactus', trv_cactus: 'cactus',
-                         baby_flower: 'flower', trv_flower: 'flower',
-                         baby_tree:   'tree',   trv_tree:   'tree' };
-        const bumpPlant = (card) => {
-            const info = (this.gamedatas.plantCardTypes || {})[card.type];
-            if (!info) return;
-            const family = FAMILY[info.plant_type];
-            if (!family) return;
-            const maturity = this.isAdult(info.plant_type) ? 'adult'
-                          : (this.isBabyType(info.plant_type) ? 'baby' : null);
-            if (!maturity) return;
-            const level = Math.max(0, Math.min(3, parseInt(card.type_arg, 10) || 0));
-            stats.plants[family][maturity][level]++;
-        };
-
-        // Plants on planters — owner is the planter's location_arg.
-        Object.values(this.gamedatas.plantsOnPlanters || {}).forEach(card => {
-            const planter = (this.gamedatas.planters || {})[card.location_arg];
-            if (planter && planter.location_arg == playerId) bumpPlant(card);
-        });
-        // Level-3 plants — owner is the card's own location_arg.
-        Object.values(this.gamedatas.plantsLevel3 || {}).forEach(card => {
-            if (card.location_arg == playerId) bumpPlant(card);
-        });
 
         // Bonus weather is publicly held in weather_public_bonus for every
         // player (per https://trello.com/c/B5g3UmED — held counts are
@@ -1368,100 +1335,54 @@ export class Game {
         wind: 'Bonus Wind Weather cards held',
     };
 
-    /**
-     * Column order for the compact plant-counts table: tree, flower,
-     * cactus — the 3 ADULT/treevolved plant types (Trello
-     * https://trello.com/c/ozx98mdL). Baby-type columns were dropped
-     * entirely, not just their non-max levels: Game.php's
-     * countTreevolvedPlants() — the actual scoring/endgame metric — only
-     * counts garden_level3 cards whose card TYPE is trv_* (PlantCards::
-     * isTreevolved()). A baby-type plant stuck at level 3 (never sacrificed
-     * to treevolve) does NOT count as Treevolved, so it has no place in a
-     * table that's meant to summarize Treevolved plants specifically.
-     * Each entry is keyed to its level-3 count from computePlayerStats and
-     * its player-panel icon.
-     */
-    static TREEVOLVED_COLUMNS = [
-        { icon: 'adult_tree', family: 'tree', maturity: 'adult' },
-        { icon: 'adult_flower', family: 'flower', maturity: 'adult' },
-        { icon: 'adult_cactus', family: 'cactus', maturity: 'adult' },
-    ];
-
-    /**
-     * Compact Treevolved-count table (Trello https://trello.com/c/cPxcQy2A,
-     * simplified per https://trello.com/c/ozx98mdL). Daryl found the
-     * earlier version — 6 baby/adult columns × 4 level rows (0-3) — hard
-     * to read, and asked to drop the level 0-2 tracking and show only
-     * adult/treevolved plants, since those are the only plants that
-     * score. Now 4 columns (the 3 TREEVOLVED_COLUMNS above, then the
-     * label last — matching the left-to-right label placement Marty set
-     * on 2026-07-19), 2 rows: a single count row, then a label-less row
-     * of family icons. Zero counts render as blank cells, not "0", per
-     * the original card.
-     *
-     * The count row's cells keep their deterministic id (see
-     * level3CellId) — Level 3 plants no longer render in the garden at
-     * all (Trello https://trello.com/c/xYfPLZuI), so this row is the only
-     * place a hover tooltip can show which actual cards make up each
-     * count. renderPlayerPanel wires the tooltips AFTER this HTML is
-     * inserted into the DOM (a tooltip needs its target node to already
-     * exist), via level3CardsByColumn.
-     */
-    plantCountsTableHtml(s, playerId) {
-        const icon = (name) => `<span class="plantopia-panel-icon" data-icon="${name}" title="${Game.PANEL_ICON_TOOLTIPS[name] || ''}"></span>`;
-        const cols = Game.TREEVOLVED_COLUMNS;
-        const countCells = cols.map(c => {
-            const n = s.plants[c.family][c.maturity][3];
-            return `<td id="${this.level3CellId(playerId, c.icon)}">${n > 0 ? n : ''}</td>`;
-        }).join('');
-        const countRow = `<tr>${countCells}<td class="plantopia-panel-level-label">${_('Treevolved')}</td></tr>`;
-        const iconRow = `<tr>${cols.map(c => `<td>${icon(c.icon)}</td>`).join('')}<td></td></tr>`;
-        return `<table class="plantopia-panel-table">${countRow}${iconRow}</table>`;
-    }
-
-    /** Deterministic DOM id for one Lv. 3 cell, shared between
-     * plantCountsTableHtml (which embeds it) and the tooltip-wiring pass
+    /** Deterministic DOM id for one treevolved slot, shared between
+     * treevolvedPanelHtml (which embeds it) and the tooltip-wiring pass
      * in renderPlayerPanel (which looks it up) — see
      * https://trello.com/c/xYfPLZuI. */
-    level3CellId(playerId, columnIcon) {
-        return `lv3-cell-${playerId}-${columnIcon}`;
+    treevolvedSlotId(playerId, cardId) {
+        return `treevolved-slot-${playerId}-${cardId}`;
     }
 
     /**
-     * This player's Treevolved plants (level 3 AND adult/trv_* type),
-     * grouped by the same columns as TREEVOLVED_COLUMNS — the actual
-     * cards behind each count, for the player panel's hover tooltips
-     * (Trello https://trello.com/c/xYfPLZuI), since those plants no
-     * longer render anywhere in the garden. Baby-type plants stuck at
-     * level 3 are deliberately excluded (see TREEVOLVED_COLUMNS) — they
-     * don't count as Treevolved and the table no longer shows them.
+     * This player's Treevolved plants (level 3 AND adult/trv_* type) —
+     * Game.php's countTreevolvedPlants() (the actual scoring/endgame
+     * metric) only counts garden_level3 cards whose TYPE is trv_*
+     * (PlantCards::isTreevolved()), so a baby-type plant stuck at level 3
+     * without ever being sacrificed to treevolve is excluded here too.
      */
-    level3CardsByColumn(playerId) {
-        const byColumn = {};
-        Game.TREEVOLVED_COLUMNS.forEach(c => { byColumn[c.icon] = []; });
-        Object.values(this.gamedatas.plantsLevel3 || {}).forEach(card => {
-            if (card.location_arg != playerId) return;
+    treevolvedCards(playerId) {
+        return Object.values(this.gamedatas.plantsLevel3 || {}).filter(card => {
+            if (card.location_arg != playerId) return false;
             const info = (this.gamedatas.plantCardTypes || {})[card.type];
-            if (!info || !this.isAdult(info.plant_type)) return;
-            const family = this.getFamily(info.plant_type);
-            const col = Game.TREEVOLVED_COLUMNS.find(c => c.family === family);
-            if (col) byColumn[col.icon].push(card);
+            return info && this.isAdult(info.plant_type);
         });
-        return byColumn;
     }
 
-    /** Tooltip listing the actual card name(s) behind a Lv. 3 cell's
-     * count. Same addTooltipHtml primitive as addPlantTooltip/
-     * addCharacterTooltip, just with a card LIST instead of a single card
-     * — see https://trello.com/c/xYfPLZuI. */
-    addLevel3Tooltip(nodeId, cards) {
-        if (!cards || !cards.length) return;
-        const items = cards.map(card => {
-            const info = (this.gamedatas.plantCardTypes || {})[card.type] || { name: card.type };
-            return `<li>${info.name}</li>`;
+    /**
+     * Horizontal subpanel that fills left to right as a player's
+     * treevolved plants are planted — one icon slot per plant, no counts
+     * or level breakdown (Trello https://trello.com/c/aPeeyKyv, replacing
+     * the short-lived table from https://trello.com/c/ozx98mdL). Empty
+     * (no slots) until the player has any treevolved plant, per Daryl's
+     * original "remains empty if a player has no level 3 plants"
+     * framing. Slots are in ascending card-id order — JS preserves
+     * numeric-key insertion order on Object.values, so this is a stable
+     * (if not strictly "planted-order") ordering, same approximation the
+     * old table-tooltip code relied on.
+     *
+     * Level 3 plants no longer render in the garden at all (Trello
+     * https://trello.com/c/xYfPLZuI), so hovering a slot is the only way
+     * to see which card it is — wired via addPlantTooltip in
+     * renderPlayerPanel AFTER this HTML is inserted into the DOM (a
+     * tooltip needs its target node to already exist).
+     */
+    treevolvedPanelHtml(playerId) {
+        const slots = this.treevolvedCards(playerId).map(card => {
+            const info = this.gamedatas.plantCardTypes[card.type];
+            const icon = `adult_${this.getFamily(info.plant_type)}`;
+            return `<span class="plantopia-panel-icon plantopia-treevolved-slot" data-icon="${icon}" id="${this.treevolvedSlotId(playerId, card.id)}"></span>`;
         }).join('');
-        const html = `<div class="cardtooltip"><ul style="margin: 0; padding-left: 18px;">${items}</ul></div>`;
-        this.bga.gameui.addTooltipHtml(nodeId, html);
+        return `<div class="plantopia-treevolved-panel">${slots}</div>`;
     }
 
     /** Render or refresh the at-a-glance stats panel for one player. */
@@ -1493,7 +1414,7 @@ export class Game {
 
         el.innerHTML = `
             <div>${characterIconHtml}${icon('hand')} ${s.handCount}${gap}${icon('sun')} ${s.bonusWeather.sun}${gap}${icon('rain')} ${s.bonusWeather.rain}${gap}${icon('wind')} ${s.bonusWeather.wind}</div>
-            ${this.plantCountsTableHtml(s, playerId)}
+            ${this.treevolvedPanelHtml(playerId)}
         `;
 
         // Hovering the icon shows the full-size card, via the same tooltip
@@ -1503,14 +1424,14 @@ export class Game {
             this.addCharacterTooltip(`character-icon-${playerId}`, cardInfo);
         }
 
-        // Hovering a Lv. 3 cell shows the actual card(s) behind that count
-        // — Level 3 plants aren't rendered in the garden anymore (Trello
+        // Hovering a treevolved slot shows the full plant card — Level 3
+        // plants aren't rendered in the garden anymore (Trello
         // https://trello.com/c/xYfPLZuI), so this is the only place to see
         // them. Wired AFTER innerHTML is set, same as the character icon
         // tooltip above — addTooltipHtml needs its target node in the DOM.
-        const level3ByColumn = this.level3CardsByColumn(playerId);
-        Game.TREEVOLVED_COLUMNS.forEach(c => {
-            this.addLevel3Tooltip(this.level3CellId(playerId, c.icon), level3ByColumn[c.icon]);
+        this.treevolvedCards(playerId).forEach(card => {
+            const cardInfo = this.gamedatas.plantCardTypes[card.type];
+            this.addPlantTooltip(this.treevolvedSlotId(playerId, card.id), cardInfo);
         });
     }
 
@@ -2161,8 +2082,8 @@ export class Game {
                 // before https://trello.com/c/xYfPLZuI, this no longer
                 // re-parents the card into a visible garden row — Level 3
                 // plants aren't rendered in the garden at all now, only
-                // surfaced via a tooltip on the player panel's Lv. 3
-                // counters (see renderPlayerPanel / level3CardsByColumn) —
+                // surfaced via a tooltip on the player panel's treevolved
+                // subpanel (see renderPlayerPanel / treevolvedPanelHtml) —
                 // so the DOM element is simply removed.
                 const card = this.gamedatas.plantsOnPlanters[cardId];
                 delete this.gamedatas.plantsOnPlanters[cardId];
@@ -2177,7 +2098,7 @@ export class Game {
                 // WeatherPhaseGrow.php) — same field name, different
                 // meaning depending on which collection it's in. Without
                 // translating it here, every "does this belong to me"
-                // check downstream (computePlayerStats, renderSacrificeModal)
+                // check downstream (treevolvedCards, renderSacrificeModal)
                 // compared this plant's stale planter id against a player id
                 // and silently excluded it — from its own owner's
                 // player-panel counts AND from being selectable as a
