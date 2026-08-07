@@ -321,6 +321,20 @@ note) has a git-native source of truth to draw from.
   create`), not just a bare tag — Marty asked for "a new release," so the
   richer GitHub Release description (no 250-char limit, unlike the BGA
   Studio release note) lives there instead of just the tag message.
+- **`v2.0.0`** — 2026-08-07, Public Alpha status — another real external
+  status milestone (MAJOR, not MINOR), same category as v1.0.0's bump,
+  one level up in visibility. Highlights: Characters became a
+  table-creation option (Trello W6iAfCBP) rather than a per-player
+  choice, with a follow-up fix so character-free tables still get
+  playable weather cards (Trello 95PCkqui); the player panel's
+  Treevolved-plant display was redesigned from a counts table to a
+  filling icon subpanel (Trello ozx98mdL/aPeeyKyv); and a full UI/UX
+  guidelines compliance pass ahead of going public fixed a sub-32px tap
+  target, 6 untranslated strings, silent zombie/disconnect logging,
+  WCAG contrast failures, and near-total absence of screen-reader labels
+  (Trello r7s4l3xw, with 7 follow-up judgment-call items filed
+  separately: khqCv40C, LHLyoZqG, iMW3B1yR, C6zNJIhY, YV0X1IRL, 4sCOJHqq,
+  SDXJSZWx).
 - **Release notes:** commit messages in this repo are verbose
   multi-paragraph explanations — too long to concatenate mechanically
   into 250 characters. At tag time, list commits since the last tag
