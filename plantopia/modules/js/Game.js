@@ -441,7 +441,7 @@ class PlantingPhase {
 
         this.bga.gameArea.getElement().insertAdjacentHTML('afterbegin', `
             <div id="sacrifice-container" style="padding: 20px; background: rgba(0,0,0,0.8); border-radius: 10px; margin-bottom: 20px; text-align: center; color: white;">
-                <h2>Choose a Plant to Sacrifice</h2>
+                <h2>${_('Choose a Plant to Sacrifice')}</h2>
                 <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-top: 15px;" id="sacrifice-cards-list"></div>
             </div>
         `);
@@ -463,7 +463,7 @@ class PlantingPhase {
             const typeInfo = this.game.gamedatas.plantCardTypes[pl.type];
             const body = this.game.plantCardBody(pl.type, typeInfo, { levelLabel: `Level: ${pl.type_arg}` });
             list.insertAdjacentHTML('beforeend', `
-                <div id="sacrifice_${pl.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer; box-shadow: 0 0 10px #27ae60;">
+                <div id="sacrifice_${pl.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer; box-shadow: 0 0 10px #27ae60;">
                     ${body.inner}
                 </div>
             `);
@@ -701,7 +701,7 @@ class PlantingPhase {
 
         this.bga.gameArea.getElement().insertAdjacentHTML('afterbegin', `
             <div id="draft-container" style="padding: 20px; background: rgba(0,0,0,0.8); border-radius: 10px; margin-bottom: 20px; text-align: center; color: white;">
-                <h2>Choose ${keepQty} Card(s) to Keep</h2>
+                <h2>${_('Choose ${keepQty} Card(s) to Keep').replace('${keepQty}', keepQty)}</h2>
                 <div style="display: flex; justify-content: center; gap: 15px; margin-top: 15px;" id="draft-cards-list"></div>
             </div>
         `);
@@ -731,7 +731,7 @@ class PlantingPhase {
             const cardInfo = this.game.gamedatas.plantCardTypes[c.type];
             const body = this.game.plantCardBody(c.type, cardInfo, { showCost: true });
             list.insertAdjacentHTML('beforeend', `
-                <div id="draft_${c.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer; box-shadow: 0 0 10px #27ae60;">
+                <div id="draft_${c.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer; box-shadow: 0 0 10px #27ae60;">
                     ${body.inner}
                 </div>
             `);
@@ -1017,7 +1017,7 @@ export class Game {
         // Example to add a div on the game area
         this.bga.gameArea.getElement().insertAdjacentHTML('beforeend', `
             <div id="characters-panel" style="display: none; margin-bottom: 20px; border: 2px solid #8e44ad; border-radius: 8px; background: rgba(255, 255, 255, 0.9); padding: 15px;">
-                <h3 style="color: #8e44ad; margin-top: 0;">Characters</h3>
+                <h3 style="color: #8e44ad; margin-top: 0;">${_('Characters')}</h3>
                 <div id="available-characters-container" style="display: flex; flex-wrap: wrap; gap: 15px;"></div>
             </div>
             <div id="player-tables"></div>
@@ -1069,7 +1069,7 @@ export class Game {
             // light/dark default. See https://trello.com/c/CUKgx2vL.
             document.getElementById('player-tables').insertAdjacentHTML('beforeend', `
                 <div id="player-table-${player.id}" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px; color: #333;">
-                    <h3>${player.name}'s Garden</h3>
+                    <h3>${_("${playerName}'s Garden").replace('${playerName}', player.name)}</h3>
                     <div id="player-garden-planters-${player.id}" class="plantopia-overflow-row" style="margin-top: 10px; min-height: 300px;"></div>
                     <div id="player-garden-bonus-${player.id}" class="plantopia-overflow-row" style="margin-top: 10px;"></div>
                 </div>
@@ -1107,7 +1107,7 @@ export class Game {
         // Add a Bonus Weather section under the player gardens
         document.getElementById('player-tables').insertAdjacentHTML('afterend', `
             <div id="bonus-weather-section" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px; color: #333;">
-                <h3 style="margin-top: 0;">Bonus Weather</h3>
+                <h3 style="margin-top: 0;">${_('Bonus Weather')}</h3>
                 <div id="bonus-weather-container" style="display: flex; gap: 10px; margin-top: 10px; min-height: 150px;"></div>
             </div>
         `);
@@ -1119,7 +1119,7 @@ export class Game {
         // Add a Public Weather section
         document.getElementById('bonus-weather-section').insertAdjacentHTML('beforebegin', `
             <div id="public-weather-section" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px; color: #333;">
-                <h3 style="margin-top: 0;">Public Weather Cards</h3>
+                <h3 style="margin-top: 0;">${_('Public Weather Cards')}</h3>
                 <div id="weather-public-container" style="display: flex; gap: 10px; margin-top: 10px; min-height: 150px;"></div>
             </div>
         `);
@@ -1141,7 +1141,7 @@ export class Game {
         if (!this.bga.players.isCurrentPlayerSpectator()) {
             document.getElementById('player-tables').insertAdjacentHTML('beforebegin', `
                 <div id="hand_panel" style="margin-bottom: 20px; border: 2px solid #27ae60; border-radius: 8px; background: rgba(255, 255, 255, 0.9); padding: 15px;">
-                    <h3 style="color: #27ae60; margin-top: 0;">My Hand</h3>
+                    <h3 style="color: #196f3d; margin-top: 0;">${_('My Hand')}</h3>
                     <div id="my-hand-container" style="display: flex; flex-wrap: wrap; gap: 15px;"></div>
                 </div>
             `);
@@ -1197,7 +1197,7 @@ export class Game {
             // Sprite-backed character power card. Name + ability text move into
             // a tooltip per https://trello.com/c/lfl5AO0s.
             container.insertAdjacentHTML('beforeend', `
-                <div id="character_${card.id}" class="character-card plantopia-character-power-card plantopia-card-size" data-character-type="${card.type}" data-id="${card.id}" style="position: relative; border: 2px solid #8e44ad; border-radius: 10px; background-color: #f4ecf7; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; cursor: help;"></div>
+                <div id="character_${card.id}" class="character-card plantopia-character-power-card plantopia-card-size" data-character-type="${card.type}" data-id="${card.id}" aria-label="${this.escapeAttr(cardInfo.name)}" style="position: relative; border: 2px solid #8e44ad; border-radius: 10px; background-color: #f4ecf7; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; cursor: help;"></div>
             `);
             this.addCharacterTooltip(`character_${card.id}`, cardInfo);
         });
@@ -1241,7 +1241,7 @@ export class Game {
             if (document.getElementById(`garden_weatherbonus_${card.id}`)) return;
             const body = this.weatherCardBody(card, { name: 'Bonus Weather' });
             container.insertAdjacentHTML('beforeend', `
-                <div id="garden_weatherbonus_${card.id}" class="weather-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} data-id="${card.id}" style="position: relative; border: 2px solid #3498db; border-radius: 10px; background-color: #ebf5fb; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);"></div>
+                <div id="garden_weatherbonus_${card.id}" class="weather-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" data-id="${card.id}" style="position: relative; border: 2px solid #3498db; border-radius: 10px; background-color: #ebf5fb; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);"></div>
             `);
         });
     }
@@ -1436,7 +1436,7 @@ export class Game {
         // alike. '' before a character is claimed (early SetupDecisions).
         const claimed = Object.values(this.gamedatas.claimedCharacters || {}).find(c => c.location_arg == playerId);
         const characterIconHtml = claimed
-            ? `<span id="character-icon-${playerId}" class="plantopia-character-icon" data-character-type="${claimed.type}" data-id="${claimed.id}"></span> `
+            ? `<span id="character-icon-${playerId}" class="plantopia-character-icon" data-character-type="${claimed.type}" data-id="${claimed.id}" aria-label="${this.escapeAttr((this.gamedatas.characterCardTypes[claimed.type] || { name: claimed.type }).name)}"></span> `
             : '';
 
         el.innerHTML = `
@@ -1482,25 +1482,39 @@ export class Game {
         const spriteClass = this.isAdult(cardInfo.plant_type)
             ? 'plantopia-adult-card'
             : (this.isBabyType(cardInfo.plant_type) ? 'plantopia-baby-card' : null);
+        // Screen-reader accessible name (Trello r7s4l3xw, section E.1 —
+        // "label every button, icon, and interactive element") — the
+        // sprite-rendered cards in particular have NO text at all in the
+        // DOM otherwise, so without this a screen reader has nothing to
+        // announce for the primary interactive surface of the game.
+        const ariaLabel = this.escapeAttr(cardInfo.name);
         if (spriteClass) {
             const badge = levelLabel
-                ? `<div class="plant-level-indicator" style="position: absolute; bottom: 4px; right: 4px; background: rgba(255,255,255,0.88); color: #27ae60; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">${levelLabel}</div>`
+                ? `<div class="plant-level-indicator" style="position: absolute; bottom: 4px; right: 4px; background: rgba(255,255,255,0.88); color: #196f3d; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">${levelLabel}</div>`
                 : '';
             return {
                 extraClass: spriteClass,
                 dataAttr: `data-card-type="${String(cardKey).replace(/"/g, '&quot;')}"`,
+                ariaLabel,
                 inner: badge,
             };
         }
-        const nameLine = `<strong style="color: #27ae60; font-size: 1.0em;">${cardInfo.name}</strong>`;
+        const nameLine = `<strong style="color: #196f3d; font-size: 1.0em;">${cardInfo.name}</strong>`;
         const detail = levelLabel
-            ? `<div class="plant-level-indicator" style="margin-top: 5px; font-size: 0.8em; color: #7f8c8d; font-weight: bold;">${levelLabel}</div>`
-            : (showCost ? `<div style="margin-top: 10px; font-size: 0.8em; color: #7f8c8d;">${cardInfo.cost ? 'Cost: ' + cardInfo.cost : ''}</div>` : '');
+            ? `<div class="plant-level-indicator" style="margin-top: 5px; font-size: 0.8em; color: #566573; font-weight: bold;">${levelLabel}</div>`
+            : (showCost ? `<div style="margin-top: 10px; font-size: 0.8em; color: #566573;">${cardInfo.cost ? 'Cost: ' + cardInfo.cost : ''}</div>` : '');
         return {
             extraClass: '',
             dataAttr: '',
+            ariaLabel,
             inner: `${nameLine}${detail}`,
         };
+    }
+
+    /** Escapes a string for safe interpolation into a double-quoted HTML
+     * attribute (e.g. aria-label). */
+    escapeAttr(str) {
+        return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
     }
 
     /** Game-scope mirror of PlantingPhase.isBaby — the latter lives on the
@@ -1521,10 +1535,13 @@ export class Game {
      */
     weatherCardBody(card, cardInfo) {
         const condition = { 0: 'sun', 1: 'rain', 2: 'wind' }[card.type_arg];
+        // See plantCardBody's ariaLabel comment — same rationale.
+        const ariaLabel = this.escapeAttr(cardInfo.name);
         if (card.type === 'bonus' && condition) {
             return {
                 extraClass: 'plantopia-bonus-weather-card',
                 dataAttr: `data-weather-condition="${condition}"`,
+                ariaLabel,
                 inner: '',
             };
         }
@@ -1532,13 +1549,15 @@ export class Game {
             return {
                 extraClass: 'plantopia-character-weather-card',
                 dataAttr: `data-character-type="${card.type}" data-weather-condition="${condition}"`,
+                ariaLabel,
                 inner: '',
             };
         }
         return {
             extraClass: '',
             dataAttr: '',
-            inner: `<strong style="color: #2980b9; font-size: 1.1em;">${cardInfo.name}</strong>`,
+            ariaLabel,
+            inner: `<strong style="color: #1f618d; font-size: 1.1em;">${cardInfo.name}</strong>`,
         };
     }
 
@@ -1558,7 +1577,7 @@ export class Game {
                 const cardInfo = this.gamedatas.plantCardTypes[card.type] || { name: card.type };
                 const body = this.plantCardBody(card.type, cardInfo, { showCost: true });
                 handContainer.insertAdjacentHTML('beforeend', `
-                    <div id="card_${card.id}" class="plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; text-align: center; background-color: #e8f8f5; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
+                    <div id="card_${card.id}" class="plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; text-align: center; background-color: #e8f8f5; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
                         ${body.inner}
                     </div>
                 `);
@@ -1583,7 +1602,7 @@ export class Game {
 
                 const body = this.weatherCardBody(card, cardInfo);
                 handContainer.insertAdjacentHTML('beforeend', `
-                    <div id="weather_${card.id}" class="weather-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} style="position: relative; border: 2px solid #3498db; border-radius: 10px; padding: 10px; text-align: center; background-color: #ebf5fb; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
+                    <div id="weather_${card.id}" class="weather-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border: 2px solid #3498db; border-radius: 10px; padding: 10px; text-align: center; background-color: #ebf5fb; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
                         ${body.inner}
                     </div>
                 `);
@@ -1688,7 +1707,7 @@ export class Game {
             // rather than their art. See https://trello.com/c/rwdYylsO.
             const body = this.weatherCardBody(card, cardInfo);
             container.insertAdjacentHTML('beforeend', `
-                <div id="weather_${card.id}" class="weather-card public-weather plantopia-card-size ${body.extraClass}" ${body.dataAttr} style="background-color: #fdf2e9; border: 2px solid #e67e22; border-radius: 10px; padding: 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
+                <div id="weather_${card.id}" class="weather-card public-weather plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="background-color: #fdf2e9; border: 2px solid #e67e22; border-radius: 10px; padding: 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s;">
                     ${body.inner}
                 </div>
             `);
@@ -2217,7 +2236,7 @@ export class Game {
         slotEl.insertAdjacentHTML('beforeend', `
             <div id="garden_plant_${card.id}"
                  class="plantopia-plant-on-planter plantopia-card-size ${body.extraClass}"
-                 ${body.dataAttr}
+                 ${body.dataAttr} aria-label="${body.ariaLabel}"
                  data-id="${card.id}"
                  data-level="${level}"
                  style="border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; text-align: center; background-color: #e8f8f5; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);">
@@ -2267,7 +2286,7 @@ export class Game {
         }
 
         let html = `<div class="plant-tooltip" style="padding: 5px; max-width: 250px;">`;
-        html += `<h3 style="margin: 0; color: #27ae60;">${cardInfo.name}</h3><hr style="margin: 5px 0;">`;
+        html += `<h3 style="margin: 0; color: #196f3d;">${cardInfo.name}</h3><hr style="margin: 5px 0;">`;
         html += `<div class="cardtooltip">`;
         html += `<div><strong>${_("Plant Type")}:</strong> ${this.getFormattedPlantType(cardInfo.plant_type)}</div>`;
         html += `<div><strong>${_("Growth Cost")}:</strong> ${formattedCost}</div>`;

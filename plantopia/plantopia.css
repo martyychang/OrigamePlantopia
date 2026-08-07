@@ -205,11 +205,16 @@
    .plantopia-character-power-card — background-size percentages are
    relative to the element's OWN box, so a smaller container just shows a
    proportionally shrunk version of the same card art, no new image asset
-   needed. Hovering shows the full-size card via addCharacterTooltip. */
+   needed. Hovering shows the full-size card via addCharacterTooltip.
+   32x48 — not the original 24x36 — to clear BGA's 32x32px minimum tap-
+   target size (this is a real click target: onReturnCharacter, Game.js).
+   Keeps the same 2:3 aspect ratio as the full-size card (120x180,
+   .plantopia-card-size) so the sprite crop doesn't stretch; 32px is the
+   binding floor on width, which pushes height to 48. See Trello r7s4l3xw. */
 .plantopia-character-icon {
     display: inline-block;
-    width: 24px;
-    height: 36px;
+    width: 32px;
+    height: 48px;
     vertical-align: middle;
     cursor: help;
     border-radius: 3px;

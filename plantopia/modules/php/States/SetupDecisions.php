@@ -259,6 +259,14 @@ class SetupDecisions extends GameState
                 $this->game->characterCards->moveCard($card['id'], 'garden', $playerId);
             }
         }
+        // BGA UI/UX guidelines (Trello r7s4l3xw, section D.2 "Game Logs" —
+        // "log automated/forced actions too") — this used to be silent, so
+        // other players had no way to tell a disconnected player was
+        // auto-passed versus still deciding.
+        $this->bga->notify->all("playerZombieSetup", clienttranslate('${player_name} was automatically advanced through setup (disconnected).'), [
+            "player_id" => $playerId,
+            "player_name" => $this->game->getPlayerNameById($playerId),
+        ]);
         $this->game->gamestate->setPlayerNonMultiactive($playerId, DistributeWeather::class);
     }
 }

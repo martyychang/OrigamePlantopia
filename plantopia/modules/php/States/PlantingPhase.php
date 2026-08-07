@@ -1291,6 +1291,14 @@ class PlantingPhase extends GameState
 
     function zombie(int $playerId) {
         $this->game->DbQuery("UPDATE player SET player_pending_effects = '[]' WHERE player_id = $playerId");
+        // BGA UI/UX guidelines (Trello r7s4l3xw, section D.2 "Game Logs" —
+        // "log automated/forced actions too") — this used to be silent, so
+        // other players had no way to tell a disconnected player was
+        // auto-passed versus still deciding.
+        $this->bga->notify->all("playerZombiePlanting", clienttranslate('${player_name} was automatically passed for the Planting Phase (disconnected).'), [
+            "player_id" => $playerId,
+            "player_name" => $this->game->getPlayerNameById($playerId),
+        ]);
         $this->markPlayerDone($playerId);
     }
 }

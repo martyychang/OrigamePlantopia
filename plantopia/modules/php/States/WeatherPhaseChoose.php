@@ -121,6 +121,16 @@ class WeatherPhaseChoose extends GameState
         if (count($characterCards) > 0) {
             $card = array_values($characterCards)[0];
             $this->game->weatherCards->moveCard((int)$card['id'], 'weather_chosen', $playerId);
+            // BGA UI/UX guidelines (Trello r7s4l3xw, section D.2 "Game
+            // Logs" — "log automated/forced actions too") — this used to
+            // be silent, so other players had no way to tell a
+            // disconnected player was auto-passed versus still deciding.
+            // Same message shape as actChooseWeather()'s own log (doesn't
+            // reveal WHICH card, matching that action's own convention —
+            // the choice stays secret until WeatherPhaseReveal either way).
+            $this->bga->notify->all("playerChosenWeather", clienttranslate('${player_name} has chosen a weather card.'), [
+                "player_id" => $playerId,
+            ]);
         }
         $players = $this->game->loadPlayersBasicInfos();
         $allReady = true;

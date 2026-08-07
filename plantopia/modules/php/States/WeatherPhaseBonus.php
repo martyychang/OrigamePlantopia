@@ -167,6 +167,18 @@ class WeatherPhaseBonus extends GameState
     }
 
     function zombie(int $playerId) {
+        // BGA UI/UX guidelines (Trello r7s4l3xw, section D.2 "Game Logs" —
+        // "log automated/forced actions too") — this used to be silent, so
+        // other players had no way to tell a disconnected player was
+        // auto-passed versus still deciding. Logged here, not inside
+        // markPlayerPassed(), since actPlayBonusWeather() also funnels
+        // through that shared method after already logging its own
+        // "played a bonus weather card" message — a second "passed" log
+        // right after would be redundant/confusing for that path.
+        $this->bga->notify->all("playerZombiePassedBonus", clienttranslate('${player_name} was automatically passed on Bonus Weather (disconnected).'), [
+            "player_id" => $playerId,
+            "player_name" => $this->game->getPlayerNameById($playerId),
+        ]);
         $this->markPlayerPassed($playerId);
     }
 }
