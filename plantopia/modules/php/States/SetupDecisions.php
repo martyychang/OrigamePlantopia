@@ -87,6 +87,10 @@ class SetupDecisions extends GameState
     {
         $activePlayerId = (int)$this->game->getCurrentPlayerId();
 
+        if (!$this->charactersEnabled()) {
+            throw new UserException(clienttranslate("Characters are disabled for this table."));
+        }
+
         if (!$this->hasMulliganed($activePlayerId)) {
             throw new UserException(clienttranslate("You must keep or redraw your hand first."));
         }
@@ -203,18 +207,37 @@ class SetupDecisions extends GameState
         return (int)$val > 0;
     }
 
+    /**
+     * Characters is a table-creation option (Trello W6iAfCBP), option id
+     * 100 in gameoptions.jsonc — Daryl's "mini-expansion" framing means
+     * this is a per-table choice made at setup, not a per-player in-game
+     * decision. Default (1) matches how every game has played so far;
+     * ?? 1 covers tables created before this option existed.
+     */
+    private function charactersEnabled(): bool
+    {
+        return ($this->bga->tableOptions->get(100) ?? 1) == 1;
+    }
+
+    private function hasCharacterDecision(int $playerId): bool
+    {
+        if (!$this->charactersEnabled()) {
+            return true;
+        }
+        return count($this->game->characterCards->getCardsInLocation('garden', $playerId)) > 0;
+    }
+
     private function checkIfAllPlayersReady()
     {
         $players = $this->game->loadPlayersBasicInfos();
         $allReady = true;
-        
+
         foreach ($players as $pId => $pInfo) {
             if (!$this->hasMulliganed($pId)) {
                 $allReady = false;
                 break;
             }
-            $chars = $this->game->characterCards->getCardsInLocation('garden', $pId);
-            if (count($chars) === 0) {
+            if (!$this->hasCharacterDecision($pId)) {
                 $allReady = false;
                 break;
             }
@@ -225,7 +248,7 @@ class SetupDecisions extends GameState
             $this->game->gamestate->setPlayerNonMultiactive($playerId, DistributeWeather::class);
         } else {
             // Only deactivate the current player if they have completed BOTH required actions
-            $playerReady = $this->hasMulliganed($playerId) && count($this->game->characterCards->getCardsInLocation('garden', $playerId)) > 0;
+            $playerReady = $this->hasMulliganed($playerId) && $this->hasCharacterDecision($playerId);
             if ($playerReady) {
                 $this->game->gamestate->setPlayerNonMultiactive($playerId, '');
             }

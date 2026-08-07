@@ -390,8 +390,13 @@ class Game extends \Bga\GameFramework\Table
         $this->weatherCards->createCards(WeatherCards::getBonusCards(), 'bonus_deck');
 
         // ── Create and shuffle the character card deck (5 cards) ──────
-        $this->characterCards->createCards(CharacterCards::getDeckCards(), 'deck');
-        $this->characterCards->shuffle('deck');
+        // Characters is a table-creation option (Trello W6iAfCBP, Daryl's
+        // "mini-expansion" framing) — leave the deck empty for tables that
+        // disabled it, rather than creating cards nobody can claim.
+        if (($this->bga->tableOptions->get(100) ?? 1) == 1) {
+            $this->characterCards->createCards(CharacterCards::getDeckCards(), 'deck');
+            $this->characterCards->shuffle('deck');
+        }
 
         // Deal initial hand of 6 plant cards to each player
         $playerList = $this->loadPlayersBasicInfos();

@@ -56,9 +56,27 @@ namespace Bga\GameFramework {
         }
     }
 
+    /**
+     * Stand-in for the real tableOptions service ($this->bga->tableOptions
+     * ->get(int $optionId): ?int — see
+     * https://en.doc.boardgamearena.com/Options_and_preferences:_gameoptions.json,_gamepreferences.json).
+     * Tests set $values directly; unset options return null, same as a
+     * real table created before an option existed.
+     */
+    class TableOptionsStub {
+        public array $values = []; // optionId => value
+        function get(int $optionId): ?int {
+            return $this->values[$optionId] ?? null;
+        }
+    }
+
     class BgaStub {
         public NotifyStub $notify;
-        function __construct() { $this->notify = new NotifyStub(); }
+        public TableOptionsStub $tableOptions;
+        function __construct() {
+            $this->notify = new NotifyStub();
+            $this->tableOptions = new TableOptionsStub();
+        }
     }
 
     class TableStatsStub {

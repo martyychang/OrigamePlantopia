@@ -1,23 +1,26 @@
 {
   // option ids should be between 100 and 199
   // See https://en.doc.boardgamearena.com/Options_and_preferences:_gameoptions.json,_gamepreferences.json for more details
-  /*
-  EXAMPLE:
 
-  "101": {
-    "name": "Draft variant",
+  // Trello W6iAfCBP: Daryl (the game's designer) frames characters as a
+  // "mini-expansion" — a table-creation choice, not a per-player in-game
+  // decision. Default stays "Enabled" to match how every game has played
+  // so far; "Disabled" is the accommodation for new players who'd
+  // otherwise face a steeper learning curve.
+  "100": {
+    "name": "Characters",
     "values": {
       "0": {
-        "name": "No draft"
+        "name": "Disabled",
+        "description": "Play without character cards — a simpler game, recommended for new players.",
+        "tmdisplay": "No characters"
       },
       "1": {
-        "name": "Draft",
-        "description": "Add a draft at the beginning of the game"
-        "tmdisplay": "Draft",
-        "nobeginner": true
+        "name": "Enabled",
+        "description": "Each player claims a character with a unique power (the base game).",
+        "tmdisplay": "Characters"
       }
     },
-    "default": 0
+    "default": 1
   }
-  */
 }

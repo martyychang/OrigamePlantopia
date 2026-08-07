@@ -34,12 +34,25 @@ class SetupDecisions {
             return;
         }
 
-        const isMulliganDone = this.game.gamedatas.players[this.bga.players.getCurrentPlayerId()].mulligan_choice > 0;
+        const myPlayerId = this.bga.players.getCurrentPlayerId();
+        const isMulliganDone = this.game.gamedatas.players[myPlayerId].mulligan_choice > 0;
+        // Characters is a table-creation option (Trello W6iAfCBP, option id
+        // 100 in gameoptions.jsonc), not a per-player in-game choice — a
+        // table with it disabled skips this half of the state entirely.
+        const charactersEnabled = this.bga.tableOptions.get(100) != 0;
 
         if (!isMulliganDone) {
             this.bga.statusBar.setTitle(_('${you} may keep your starting hand or redraw once'));
-            this.bga.statusBar.addActionButton(_('Keep Hand'), () => this.onKeepHand(), { color: 'blue' }); 
-            this.bga.statusBar.addActionButton(_('Redraw (Once)'), () => this.onRedrawHand(), { color: 'red' }); 
+            this.bga.statusBar.addActionButton(_('Keep Hand'), () => this.onKeepHand(), { color: 'blue' });
+            this.bga.statusBar.addActionButton(_('Redraw (Once)'), () => this.onRedrawHand(), { color: 'red' });
+            document.getElementById('characters-panel').style.display = 'none';
+        } else if (!charactersEnabled) {
+            // Server already treats this player as ready the instant they
+            // finish the mulligan (SetupDecisions::hasCharacterDecision()
+            // short-circuits to true when the option is off), so this
+            // branch is normally only visible for the brief moment before
+            // that deactivation notification lands.
+            this.bga.statusBar.setTitle(_('${you} are ready'));
             document.getElementById('characters-panel').style.display = 'none';
         } else {
             this.bga.statusBar.setTitle(_('${you} must select a character'));
@@ -57,7 +70,7 @@ class SetupDecisions {
             // panel, see renderPlayerPanel) to return it. Used to target
             // the full card in the garden row before it moved to a small
             // panel icon — see https://trello.com/c/Zn3wKWxj.
-            const myIcon = document.getElementById(`character-icon-${this.bga.players.getCurrentPlayerId()}`);
+            const myIcon = document.getElementById(`character-icon-${myPlayerId}`);
             if (myIcon) {
                 myIcon.classList.add('bga-cards_selectable-card');
                 myIcon.style.cursor = 'pointer';
