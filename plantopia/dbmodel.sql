@@ -60,6 +60,13 @@ CREATE TABLE IF NOT EXISTS `planter_card` (
 
 ALTER TABLE `player` ADD `player_mulligan_choice` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=undecided, 1=keep, 2=redraw';
 
+-- Character selection is optional (Trello W6iAfCBP, Daryl's "mini-expansion"
+-- framing): a player with no character in `garden` might just not have
+-- decided yet, or might have deliberately chosen to play without one. This
+-- column disambiguates the two — claimed status itself still lives in
+-- CharacterCards' location, not duplicated here.
+ALTER TABLE `player` ADD `player_skipped_character` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=no (undecided or claimed), 1=yes, chose to play without a character';
+
 -- See PlantingPlayerSubstate (modules/php/, not modules/php/States/ —
 -- BGA Studio's game-creation bootstrap fatals if a States/ class doesn't
 -- extend GameState) — this column is that enum's sole
