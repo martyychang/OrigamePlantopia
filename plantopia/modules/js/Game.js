@@ -34,29 +34,15 @@ class SetupDecisions {
             return;
         }
 
-        const myPlayerId = this.bga.players.getCurrentPlayerId();
-        const isMulliganDone = this.game.gamedatas.players[myPlayerId].mulligan_choice > 0;
+        const isMulliganDone = this.game.gamedatas.players[this.bga.players.getCurrentPlayerId()].mulligan_choice > 0;
 
         if (!isMulliganDone) {
             this.bga.statusBar.setTitle(_('${you} may keep your starting hand or redraw once'));
-            this.bga.statusBar.addActionButton(_('Keep Hand'), () => this.onKeepHand(), { color: 'blue' });
-            this.bga.statusBar.addActionButton(_('Redraw (Once)'), () => this.onRedrawHand(), { color: 'red' });
+            this.bga.statusBar.addActionButton(_('Keep Hand'), () => this.onKeepHand(), { color: 'blue' }); 
+            this.bga.statusBar.addActionButton(_('Redraw (Once)'), () => this.onRedrawHand(), { color: 'red' }); 
             document.getElementById('characters-panel').style.display = 'none';
         } else {
-            // Character selection is optional (Trello W6iAfCBP) — a player
-            // with no character claimed might just not have decided yet,
-            // or might have deliberately chosen to play without one.
-            const hasClaimedCharacter = Object.values(this.game.gamedatas.claimedCharacters || {}).some(c => c.location_arg == myPlayerId);
-            const hasSkippedCharacter = this.game.gamedatas.players[myPlayerId].skipped_character > 0;
-
-            if (hasSkippedCharacter) {
-                this.bga.statusBar.setTitle(_('${you} chose to play without a character'));
-            } else if (hasClaimedCharacter) {
-                this.bga.statusBar.setTitle(_('${you} must select a character'));
-            } else {
-                this.bga.statusBar.setTitle(_('${you} may select a character, or play without one'));
-                this.bga.statusBar.addActionButton(_('Skip Character'), () => this.onSkipCharacter(), { color: 'gray' });
-            }
+            this.bga.statusBar.setTitle(_('${you} must select a character'));
             document.getElementById('characters-panel').style.display = 'block';
 
             // Highlight clickable characters in the Characters panel
@@ -71,7 +57,7 @@ class SetupDecisions {
             // panel, see renderPlayerPanel) to return it. Used to target
             // the full card in the garden row before it moved to a small
             // panel icon — see https://trello.com/c/Zn3wKWxj.
-            const myIcon = document.getElementById(`character-icon-${myPlayerId}`);
+            const myIcon = document.getElementById(`character-icon-${this.bga.players.getCurrentPlayerId()}`);
             if (myIcon) {
                 myIcon.classList.add('bga-cards_selectable-card');
                 myIcon.style.cursor = 'pointer';
@@ -124,10 +110,6 @@ class SetupDecisions {
 
     onClaimCharacter(cardId) {
         this.bga.actions.performAction("actClaimCharacter", { cardId });
-    }
-
-    onSkipCharacter() {
-        this.bga.actions.performAction("actSkipCharacter");
     }
 
     onReturnCharacter(cardId) {

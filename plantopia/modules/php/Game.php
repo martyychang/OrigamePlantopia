@@ -289,7 +289,7 @@ class Game extends \Bga\GameFramework\Table
 
         // Get information about players.
         $result["players"] = $this->getCollectionFromDb(
-            "SELECT `player_id` AS `id`, `player_score` AS `score`, `player_score_aux` AS `score_aux`, `player_mulligan_choice` AS `mulligan_choice`, `player_skipped_character` AS `skipped_character`, `player_planting_status` AS `planting_status`, `player_pending_effects` AS `pending_effects` FROM `player`"
+            "SELECT `player_id` AS `id`, `player_score` AS `score`, `player_score_aux` AS `score_aux`, `player_mulligan_choice` AS `mulligan_choice`, `player_planting_status` AS `planting_status`, `player_pending_effects` AS `pending_effects` FROM `player`"
         );
         $this->playerEnergy->fillResult($result);
 

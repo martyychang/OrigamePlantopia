@@ -103,10 +103,6 @@ class SetupDecisions extends GameState
         }
 
         $this->game->characterCards->moveCard($cardId, 'garden', $activePlayerId);
-        // Reset any earlier skip decision — claiming a character after
-        // having chosen to play without one (Trello W6iAfCBP) supersedes
-        // that choice rather than leaving a stale flag behind.
-        $this->game->DbQuery("UPDATE player SET player_skipped_character = 0 WHERE player_id = $activePlayerId");
 
         $this->bga->notify->all("characterClaimed", clienttranslate('${player_name} claimed the ${character_name} character.'), [
             "player_id" => $activePlayerId,
@@ -115,37 +111,6 @@ class SetupDecisions extends GameState
         ]);
 
         $this->applyClaimAbility($activePlayerId, $card['type']);
-
-        $this->checkIfAllPlayersReady();
-    }
-
-    /**
-     * Character selection is optional (Trello W6iAfCBP): Daryl framed
-     * characters as a "mini-expansion," and requiring one raises the
-     * learning curve for new players unnecessarily. This lets a player
-     * explicitly declare they're playing without one, rather than the
-     * game silently treating "hasn't picked yet" and "picked to have
-     * none" as the same thing.
-     */
-    #[PossibleAction]
-    public function actSkipCharacter()
-    {
-        $activePlayerId = (int)$this->game->getCurrentPlayerId();
-
-        if (!$this->hasMulliganed($activePlayerId)) {
-            throw new UserException(clienttranslate("You must keep or redraw your hand first."));
-        }
-
-        $existing = $this->game->characterCards->getCardsInLocation('garden', $activePlayerId);
-        if (count($existing) > 0) {
-            throw new UserException(clienttranslate("You have already claimed a character. Return it first if you want to play without one."));
-        }
-
-        $this->game->DbQuery("UPDATE player SET player_skipped_character = 1 WHERE player_id = $activePlayerId");
-
-        $this->bga->notify->all("characterSkipped", clienttranslate('${player_name} chose to play without a character.'), [
-            "player_id" => $activePlayerId,
-        ]);
 
         $this->checkIfAllPlayersReady();
     }
@@ -224,22 +189,12 @@ class SetupDecisions extends GameState
         }
 
         $this->game->characterCards->moveCard($cardId, 'deck');
-        // Returning a character puts the player back to "undecided," not
-        // "skipped" — they may still pick a different one or explicitly
-        // skip via actSkipCharacter().
 
         $this->bga->notify->all("characterReturned", clienttranslate('${player_name} returned the ${character_name} character.'), [
             "player_id" => $activePlayerId,
             "card" => $this->game->characterCards->getCard($cardId),
             "character_name" => Game::$CHARACTER_CARD_TYPES[$card['type']]['name']
         ]);
-
-        // Re-evaluate readiness: this action is only reachable while the
-        // player is still active in this state, so it can never cause a
-        // premature transition — but every other mutating action here
-        // re-checks for consistency, and skipping it would be the odd one
-        // out.
-        $this->checkIfAllPlayersReady();
     }
 
     private function hasMulliganed(int $playerId): bool
@@ -248,34 +203,18 @@ class SetupDecisions extends GameState
         return (int)$val > 0;
     }
 
-    /**
-     * True once a player has either claimed a character or explicitly
-     * chosen to play without one (Trello W6iAfCBP). Claimed status is
-     * derived from CharacterCards' own location data, not duplicated in
-     * the skip column — the skip column only needs to capture the one
-     * fact that isn't otherwise recorded anywhere.
-     */
-    private function hasCharacterDecision(int $playerId): bool
-    {
-        $chars = $this->game->characterCards->getCardsInLocation('garden', $playerId);
-        if (count($chars) > 0) {
-            return true;
-        }
-        $skipped = $this->game->getUniqueValueFromDb("SELECT player_skipped_character FROM player WHERE player_id = $playerId");
-        return (int)$skipped > 0;
-    }
-
     private function checkIfAllPlayersReady()
     {
         $players = $this->game->loadPlayersBasicInfos();
         $allReady = true;
-
+        
         foreach ($players as $pId => $pInfo) {
             if (!$this->hasMulliganed($pId)) {
                 $allReady = false;
                 break;
             }
-            if (!$this->hasCharacterDecision($pId)) {
+            $chars = $this->game->characterCards->getCardsInLocation('garden', $pId);
+            if (count($chars) === 0) {
                 $allReady = false;
                 break;
             }
@@ -286,7 +225,7 @@ class SetupDecisions extends GameState
             $this->game->gamestate->setPlayerNonMultiactive($playerId, DistributeWeather::class);
         } else {
             // Only deactivate the current player if they have completed BOTH required actions
-            $playerReady = $this->hasMulliganed($playerId) && $this->hasCharacterDecision($playerId);
+            $playerReady = $this->hasMulliganed($playerId) && count($this->game->characterCards->getCardsInLocation('garden', $playerId)) > 0;
             if ($playerReady) {
                 $this->game->gamestate->setPlayerNonMultiactive($playerId, '');
             }
@@ -295,15 +234,19 @@ class SetupDecisions extends GameState
 
     function zombie(int $playerId) {
         $this->game->DbQuery("UPDATE player SET player_mulligan_choice = 1 WHERE player_id = $playerId");
-        // Character selection is optional (Trello W6iAfCBP) — a
-        // disconnected zombie player skips rather than being force-handed
-        // a character they never chose. This replaces the old "assign the
-        // first available character" behavior (see https://trello.com/c/5yFNTibV
-        // for why that was a deterministic pick, not a random one, back
-        // when a character was mandatory).
+        // Zombie mode Level 0 ("The Passing Zombie" — see
+        // https://en.doc.boardgamearena.com/Zombie_Mode): assign the
+        // first available character, not an actually-random one. This
+        // used to be commented as "random" — it isn't, array_values()[0]
+        // is a deterministic pick, not a random draw. See
+        // https://trello.com/c/5yFNTibV.
         $chars = $this->game->characterCards->getCardsInLocation('garden', $playerId);
         if (count($chars) === 0) {
-            $this->game->DbQuery("UPDATE player SET player_skipped_character = 1 WHERE player_id = $playerId");
+            $deck = $this->game->characterCards->getCardsInLocation('deck');
+            if (count($deck) > 0) {
+                $card = array_values($deck)[0];
+                $this->game->characterCards->moveCard($card['id'], 'garden', $playerId);
+            }
         }
         $this->game->gamestate->setPlayerNonMultiactive($playerId, DistributeWeather::class);
     }

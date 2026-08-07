@@ -586,9 +586,6 @@ namespace Bga\Games\Plantopia {
             if (preg_match('/SELECT player_mulligan_choice FROM player WHERE player_id = (\d+)/', $sql, $m)) {
                 return $this->players[(int)$m[1]]['player_mulligan_choice'] ?? 0;
             }
-            if (preg_match('/SELECT player_skipped_character FROM player WHERE player_id = (\d+)/', $sql, $m)) {
-                return $this->players[(int)$m[1]]['player_skipped_character'] ?? 0;
-            }
             if (preg_match('/SELECT card_location_arg FROM planter_card WHERE card_id = (\d+)/', $sql, $m)) {
                 return $this->planterCards->cards[(int)$m[1]]['location_arg'];
             }
