@@ -936,22 +936,30 @@ class WeatherPhaseBonus {
                     this.onPlayerActivationChange(null, false);
                 }, { color: 'red' });
             }
-        } else {
-            if (hasBonus) {
-                this.bga.statusBar.setTitle(_('${you} may play Bonus Weather cards or proceed to Grow Plants'));
-                this.bga.statusBar.addActionButton(_('Play Bonus Weather'), () => {
-                    this.selectingBonus = true;
-                    this.selectedBonusCards = [];
-                    this.onPlayerActivationChange(args, true);
-                }, { color: 'blue' });
-            } else {
-                this.bga.statusBar.setTitle(_('${you} must proceed to Grow Plants'));
-            }
+        } else if (hasBonus) {
+            this.bga.statusBar.setTitle(_('${you} may play Bonus Weather cards or proceed to Grow Plants'));
+            this.bga.statusBar.addActionButton(_('Play Bonus Weather'), () => {
+                this.selectingBonus = true;
+                this.selectedBonusCards = [];
+                this.onPlayerActivationChange(args, true);
+            }, { color: 'blue' });
             this.bga.statusBar.addActionButton(_('Proceed to Grow Plants'), () => {
                 this.justActed = true;
                 this.bga.actions.performAction("actPassBonus");
                 this.onPlayerActivationChange(null, false); // Manually trigger waiting UI immediately
             }, { color: 'green' });
+        } else {
+            // No Bonus Weather to play — "Proceed to Grow Plants" would be
+            // the player's ONLY option, so per Trello 7R6Ov64N, skip making
+            // them click a button that has no real choice behind it and
+            // auto-pass on their behalf. Same action + justActed pattern as
+            // the button's own handler above, just invoked immediately
+            // instead of waiting for a click — the recursive
+            // onPlayerActivationChange call below immediately shows the
+            // "waiting" title, same as it would right after a real click.
+            this.justActed = true;
+            this.bga.actions.performAction("actPassBonus");
+            this.onPlayerActivationChange(null, false);
         }
     }
 
