@@ -1344,37 +1344,64 @@ export class Game {
     }
 
     /**
-     * This player's Treevolved plants (level 3 AND adult/trv_* type) —
-     * Game.php's countTreevolvedPlants() (the actual scoring/endgame
-     * metric) only counts garden_level3 cards whose TYPE is trv_*
-     * (PlantCards::isTreevolved()), so a baby-type plant stuck at level 3
-     * without ever being sacrificed to treevolve is excluded here too.
+     * This player's Adult/Treevolved plants — every card whose TYPE is
+     * trv_* (isAdult), at ANY level, not just ones that have maxed out to
+     * level 3. Marty caught this distinction after planting Dogtus and
+     * seeing nothing appear (Trello aPeeyKyv comment 2026-08-06): a
+     * treevolved card starts at level 0 the moment it's planted (see the
+     * "Set level to 0" comment in PlantingPhase.php's treevolve handling)
+     * and takes several weather phases to reach level 3, but elsewhere in
+     * this codebase "Adult Plant" already means the card TYPE regardless
+     * of level — e.g. Carrot's character ability fires "when an Adult
+     * Plant is planted", not "when one reaches max level". Game.php's
+     * countTreevolvedPlants() (level 3 AND trv_* type) is a narrower,
+     * scoring/endgame-specific concept and does NOT apply here.
+     *
+     * Two sources, since a card lives in exactly one at a time (moved
+     * from plantsOnPlanters to plantsLevel3 on hitting max_level, see
+     * notif_plantGrown): plantsOnPlanters (level 0-2, owner via the
+     * planter's location_arg) and plantsLevel3 (maxed, owner via the
+     * card's own location_arg directly) — same dual-source/location_arg
+     * split the old computePlayerStats used to do before this table was
+     * replaced with the subpanel.
      */
     treevolvedCards(playerId) {
-        return Object.values(this.gamedatas.plantsLevel3 || {}).filter(card => {
-            if (card.location_arg != playerId) return false;
+        const isAdultCard = (card) => {
             const info = (this.gamedatas.plantCardTypes || {})[card.type];
             return info && this.isAdult(info.plant_type);
+        };
+        const growing = Object.values(this.gamedatas.plantsOnPlanters || {}).filter(card => {
+            if (!isAdultCard(card)) return false;
+            const planter = (this.gamedatas.planters || {})[card.location_arg];
+            return planter && planter.location_arg == playerId;
         });
+        const maxed = Object.values(this.gamedatas.plantsLevel3 || {}).filter(card => {
+            return card.location_arg == playerId && isAdultCard(card);
+        });
+        // Sort by card id across both sources (not just concat) so a
+        // slot doesn't jump position when its card matures from
+        // plantsOnPlanters into plantsLevel3 — a stable, if approximate,
+        // "planted order" (see treevolvedPanelHtml).
+        return growing.concat(maxed).sort((a, b) => Number(a.id) - Number(b.id));
     }
 
     /**
-     * Horizontal subpanel that fills left to right as a player's
-     * treevolved plants are planted — one icon slot per plant, no counts
-     * or level breakdown (Trello https://trello.com/c/aPeeyKyv, replacing
-     * the short-lived table from https://trello.com/c/ozx98mdL). Empty
-     * (no slots) until the player has any treevolved plant, per Daryl's
-     * original "remains empty if a player has no level 3 plants"
-     * framing. Slots are in ascending card-id order — JS preserves
-     * numeric-key insertion order on Object.values, so this is a stable
-     * (if not strictly "planted-order") ordering, same approximation the
-     * old table-tooltip code relied on.
+     * Horizontal subpanel that fills left to right as a player's adult/
+     * treevolved plants are planted — one icon slot per plant, appearing
+     * the moment it's planted (any level 0-3), not once it maxes out
+     * (Trello https://trello.com/c/aPeeyKyv, replacing the short-lived
+     * table from https://trello.com/c/ozx98mdL). Empty (no slots) until
+     * the player has planted any adult/treevolved card, per Daryl's
+     * original "remains empty if a player has no [adult] plants" framing.
+     * See treevolvedCards for why "level 3" was the wrong bar.
      *
-     * Level 3 plants no longer render in the garden at all (Trello
-     * https://trello.com/c/xYfPLZuI), so hovering a slot is the only way
-     * to see which card it is — wired via addPlantTooltip in
-     * renderPlayerPanel AFTER this HTML is inserted into the DOM (a
-     * tooltip needs its target node to already exist).
+     * Every slot gets a hover tooltip via addPlantTooltip in
+     * renderPlayerPanel (wired AFTER this HTML is inserted into the DOM —
+     * a tooltip needs its target node to already exist) — for a maxed
+     * (level 3) card this is the ONLY place to see it, since those no
+     * longer render in the garden at all (Trello
+     * https://trello.com/c/xYfPLZuI); for a still-growing one it's just a
+     * convenient second place, consistent with the rest of the panel.
      */
     treevolvedPanelHtml(playerId) {
         const slots = this.treevolvedCards(playerId).map(card => {
