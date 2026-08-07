@@ -87,7 +87,7 @@ class SetupDecisions extends GameState
     {
         $activePlayerId = (int)$this->game->getCurrentPlayerId();
 
-        if (!$this->charactersEnabled()) {
+        if (!$this->game->charactersEnabled()) {
             throw new UserException(clienttranslate("Characters are disabled for this table."));
         }
 
@@ -207,21 +207,9 @@ class SetupDecisions extends GameState
         return (int)$val > 0;
     }
 
-    /**
-     * Characters is a table-creation option (Trello W6iAfCBP), option id
-     * 100 in gameoptions.jsonc — Daryl's "mini-expansion" framing means
-     * this is a per-table choice made at setup, not a per-player in-game
-     * decision. Default (1) matches how every game has played so far;
-     * ?? 1 covers tables created before this option existed.
-     */
-    private function charactersEnabled(): bool
-    {
-        return ($this->bga->tableOptions->get(100) ?? 1) == 1;
-    }
-
     private function hasCharacterDecision(int $playerId): bool
     {
-        if (!$this->charactersEnabled()) {
+        if (!$this->game->charactersEnabled()) {
             return true;
         }
         return count($this->game->characterCards->getCardsInLocation('garden', $playerId)) > 0;

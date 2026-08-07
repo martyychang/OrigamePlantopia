@@ -50,6 +50,10 @@ function freshGame(array $playerIds, ?int $charactersOption): array {
     if ($charactersOption !== null) {
         $bga->tableOptions->values[100] = $charactersOption;
     }
+    // Real BGA shares one bga service instance across Game and every
+    // GameState — Game::charactersEnabled() reads $game->bga, so tests
+    // must point both at the SAME BgaStub, not two independent ones.
+    $game->bga = $bga;
     $state = new SetupDecisions($game);
     $state->bga = $bga;
     foreach ($playerIds as $pId) {

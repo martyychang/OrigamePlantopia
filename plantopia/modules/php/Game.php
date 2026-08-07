@@ -119,6 +119,21 @@ class Game extends \Bga\GameFramework\Table
     }
 
     /**
+     * Characters is a table-creation option (Trello W6iAfCBP), option id
+     * 100 in gameoptions.jsonc — Daryl's "mini-expansion" framing means
+     * this is a per-table choice made at setup, not a per-player in-game
+     * decision. Default (1) matches how every game has played so far;
+     * ?? 1 covers tables created before this option existed. Centralized
+     * here (rather than duplicated per state class) since both
+     * SetupDecisions and DistributeWeather need the same check — see
+     * https://trello.com/c/95PCkqui.
+     */
+    public function charactersEnabled(): bool
+    {
+        return ($this->bga->tableOptions->get(100) ?? 1) == 1;
+    }
+
+    /**
      * Count how many Adult (Treevolved) plants a player has — on a planter
      * (still growing) or already graduated to garden_level3. This is the
      * same count WeatherPhaseGrow::onEnteringState() uses to trigger
@@ -390,10 +405,11 @@ class Game extends \Bga\GameFramework\Table
         $this->weatherCards->createCards(WeatherCards::getBonusCards(), 'bonus_deck');
 
         // ── Create and shuffle the character card deck (5 cards) ──────
-        // Characters is a table-creation option (Trello W6iAfCBP, Daryl's
-        // "mini-expansion" framing) — leave the deck empty for tables that
-        // disabled it, rather than creating cards nobody can claim.
-        if (($this->bga->tableOptions->get(100) ?? 1) == 1) {
+        // Leave the deck empty for tables that disabled Characters, rather
+        // than creating cards nobody can claim. Weather cards still need
+        // distributing when disabled — DistributeWeather handles that
+        // without ever touching this deck, see https://trello.com/c/95PCkqui.
+        if ($this->charactersEnabled()) {
             $this->characterCards->createCards(CharacterCards::getDeckCards(), 'deck');
             $this->characterCards->shuffle('deck');
         }

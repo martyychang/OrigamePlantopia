@@ -276,6 +276,14 @@ namespace Bga\Games\Plantopia {
             $this->planterCards = new FakeDeck(6000);
             $this->weatherCards = new FakeDeck(9000);
             $this->gamestate = new \Bga\GameFramework\GamestateStub();
+            $this->bga = new \Bga\GameFramework\BgaStub();
+        }
+
+        /** Verbatim copy of Game::charactersEnabled() — see gameoptions.jsonc
+         * option 100 and https://trello.com/c/W6iAfCBP. Tests set
+         * $game->bga->tableOptions->values[100] directly. */
+        function charactersEnabled(): bool {
+            return ($this->bga->tableOptions->get(100) ?? 1) == 1;
         }
 
         /**
