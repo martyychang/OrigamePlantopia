@@ -943,24 +943,59 @@ class WeatherPhaseBonus {
                 this.selectedBonusCards = [];
                 this.onPlayerActivationChange(args, true);
             }, { color: 'blue' });
-            this.bga.statusBar.addActionButton(_('Proceed to Grow Plants'), () => {
-                this.justActed = true;
-                this.bga.actions.performAction("actPassBonus");
-                this.onPlayerActivationChange(null, false); // Manually trigger waiting UI immediately
-            }, { color: 'green' });
+            this.bga.statusBar.addActionButton(_('Proceed to Grow Plants'), () => this.proceedToGrowPlants(), { color: 'green' });
         } else {
             // No Bonus Weather to play — "Proceed to Grow Plants" would be
             // the player's ONLY option, so per Trello 7R6Ov64N, skip making
-            // them click a button that has no real choice behind it and
-            // auto-pass on their behalf. Same action + justActed pattern as
-            // the button's own handler above, just invoked immediately
-            // instead of waiting for a click — the recursive
-            // onPlayerActivationChange call below immediately shows the
-            // "waiting" title, same as it would right after a real click.
-            this.justActed = true;
-            this.bga.actions.performAction("actPassBonus");
-            this.onPlayerActivationChange(null, false);
+            // them click it themselves. Follow-up per the card's later
+            // discussion: this MUST still be a real, rendered button whose
+            // own callback fires performAction — per AGENTS.md's Pre-
+            // Release Checklist ("Every performAction() call site is bound
+            // to a real click handler... none fire from setTimeout/
+            // setInterval/automatically") and because calling
+            // performAction directly from inside onEnteringState's own
+            // synchronous call chain can race the framework's still-
+            // mid-transition interface lock — every player's Bonus Weather
+            // stash is typically empty on round 1 of any game, so BOTH
+            // players hit this branch and its now-simultaneous auto-fire
+            // at once, which is exactly the scenario that produced the
+            // "server reported an error" / permanently-stuck "waiting"
+            // report on this card. autoclick is the framework's own
+            // sanctioned mechanism for this (see bga-framework.d.ts:
+            // "if the button should be auto clicked after a small delay
+            // (for Confirmation buttons)") — it fires the SAME click
+            // handler used above, just synthetically, so there's no
+            // separate code path to keep in sync.
+            this.bga.statusBar.setTitle(_('${you} must proceed to Grow Plants'));
+            this.bga.statusBar.addActionButton(_('Proceed to Grow Plants'), () => this.proceedToGrowPlants(), { color: 'green', autoclick: true });
         }
+    }
+
+    /**
+     * Shared by both the two-choice branch's button and the no-bonus
+     * branch's auto-clicked button (see onPlayerActivationChange above) —
+     * exactly one place performAction("actPassBonus") is called from, so
+     * the failure-recovery logic below only has to exist once. performAction
+     * returns a Promise, or undefined if checkAction/checkPossibleActions
+     * prevented the call locally (e.g. the interface is still locked) — see
+     * bga-framework.d.ts. Either failure mode is treated the same way:
+     * undo the optimistic justActed and re-render with the button back on
+     * screen, instead of leaving the player stuck on "Waiting for other
+     * players..." with nothing left to click. See Trello 7R6Ov64N.
+     */
+    proceedToGrowPlants() {
+        this.justActed = true;
+        const request = this.bga.actions.performAction("actPassBonus");
+        if (!request || typeof request.catch !== 'function') {
+            this.justActed = false;
+            this.onPlayerActivationChange(null, true);
+            return;
+        }
+        request.catch(() => {
+            this.justActed = false;
+            this.onPlayerActivationChange(null, true);
+        });
+        this.onPlayerActivationChange(null, false); // Manually trigger waiting UI immediately
     }
 
     submitSelectedBonusCards() {
