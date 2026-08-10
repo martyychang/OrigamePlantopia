@@ -82,3 +82,16 @@ ALTER TABLE `player` ADD `player_pending_effects` TEXT NULL COMMENT 'JSON array 
 ALTER TABLE `player` ADD `player_bonus_weather_status` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=deciding, 1=passed';
 
 ALTER TABLE `player` ADD `player_banana_used` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Banana character ability: 0=unused this Planting Phase, 1=used. Reset at PlantingPhaseStart.';
+
+-- Durable record of a no-character table's random per-player weather
+-- type (see Game::getPlayerWeatherType() and DistributeWeather.php). NULL
+-- for character-enabled tables, where the equivalent lookup is the
+-- claimed character sitting in characterCards' 'garden' location instead
+-- — that's already a persistent, queryable record, so this column only
+-- needs to exist for the disabled case, which has no other durable place
+-- to remember "which of the 5 weather-card types this player was dealt."
+-- Without it, WeatherPhaseGrow's end-of-round "return played weather
+-- card to hand" step had no way to re-derive the player's type on every
+-- subsequent round, only the very first one distributed by
+-- DistributeWeather.php — see https://trello.com/c/Lml0M7zY.
+ALTER TABLE `player` ADD `player_random_weather_type` VARCHAR(16) NULL COMMENT 'Character-less table only: this player''s randomly assigned weather-card type (potato/mushroom/carrot/tomato/banana). NULL when Characters is enabled.';

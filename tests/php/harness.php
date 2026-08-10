@@ -176,10 +176,20 @@ namespace Bga\Games\Plantopia {
             return $out;
         }
 
-        function getCardsOfTypeInLocation(string $location, $typeArg, $fromLocation): array {
+        function getCardsOfTypeInLocation($type, $typeArg, string $location): array {
+            // Mirrors the real Deck component's signature (type, type_arg,
+            // location) — see plantopia/_ide_helper.php. Previously this
+            // stub took (location, typeArg, fromLocation) and never
+            // filtered by card `type` at all, silently returning every
+            // card in the location regardless of type. That's invisible
+            // for single-type pools, but 'weather_public' is a genuinely
+            // mixed pool (every player's played weather card lands there
+            // together), so any test exercising more than one weather type
+            // at once would have gotten a false pass.
             $out = [];
             foreach ($this->cards as $id => $c) {
-                if ($c['location'] !== $fromLocation) continue;
+                if ($c['location'] !== $location) continue;
+                if ($type !== null && (string)$c['type'] !== (string)$type) continue;
                 if ($typeArg !== null && (string)$c['type_arg'] !== (string)$typeArg) continue;
                 $out[$id] = $c;
             }
@@ -284,6 +294,20 @@ namespace Bga\Games\Plantopia {
          * $game->bga->tableOptions->values[100] directly. */
         function charactersEnabled(): bool {
             return ($this->bga->tableOptions->get(100) ?? 1) == 1;
+        }
+
+        /** Verbatim copy of Game::getPlayerWeatherType() — see
+         * https://trello.com/c/Lml0M7zY. Kept here rather than requiring
+         * the real Game.php, same rationale as calculateAllScores() above
+         * — re-sync if the real method changes. */
+        function getPlayerWeatherType(int $playerId): ?string {
+            if ($this->charactersEnabled()) {
+                $chars = $this->characterCards->getCardsInLocation('garden', $playerId);
+                if (empty($chars)) return null;
+                return array_values($chars)[0]['type'];
+            }
+            $type = $this->getUniqueValueFromDb("SELECT player_random_weather_type FROM player WHERE player_id = $playerId");
+            return $type !== null && $type !== '' ? (string)$type : null;
         }
 
         /**
@@ -611,6 +635,9 @@ namespace Bga\Games\Plantopia {
             }
             if (preg_match('/SELECT player_mulligan_choice FROM player WHERE player_id = (\d+)/', $sql, $m)) {
                 return $this->players[(int)$m[1]]['player_mulligan_choice'] ?? 0;
+            }
+            if (preg_match('/SELECT player_random_weather_type FROM player WHERE player_id = (\d+)/', $sql, $m)) {
+                return $this->players[(int)$m[1]]['player_random_weather_type'] ?? null;
             }
             if (preg_match('/SELECT card_location_arg FROM planter_card WHERE card_id = (\d+)/', $sql, $m)) {
                 return $this->planterCards->cards[(int)$m[1]]['location_arg'];

@@ -99,10 +99,14 @@ class WeatherPhaseGrow extends GameState
                 }
             }
 
-            // Return character weather cards to player's hand
-            $chars = $this->game->characterCards->getCardsInLocation('garden', $pId);
-            if (count($chars) > 0) {
-                $charType = array_values($chars)[0]['type'];
+            // Return character weather cards to player's hand. Uses
+            // getPlayerWeatherType() rather than reading characterCards
+            // directly, since that's empty by design on a no-character
+            // table (Trello Lml0M7zY) — this player's weather type still
+            // needs to resolve every round, not just the one
+            // DistributeWeather ran on.
+            $charType = $this->game->getPlayerWeatherType($pId);
+            if ($charType !== null) {
                 $publicCharCards = $this->game->weatherCards->getCardsOfTypeInLocation($charType, null, 'weather_public');
                 $returnedCards = [];
                 foreach ($publicCharCards as $c) {

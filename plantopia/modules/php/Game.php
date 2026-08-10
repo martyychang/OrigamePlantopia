@@ -134,6 +134,34 @@ class Game extends \Bga\GameFramework\Table
     }
 
     /**
+     * This player's weather-card type — the source of truth
+     * DistributeWeather and WeatherPhaseGrow both need to know which of
+     * the 5 character-named weather-card sets belongs to this player.
+     * When Characters is enabled that's just whichever character they
+     * claimed (characterCards' 'garden' location is already a durable,
+     * queryable record); when disabled there's no character to read, so
+     * DistributeWeather persists the random type it dealt them into
+     * player_random_weather_type instead — this method reads whichever
+     * one applies. Returns null if characters are enabled but this
+     * player hasn't claimed one yet (e.g. before SetupDecisions
+     * finishes). See https://trello.com/c/Lml0M7zY — the original
+     * disabled-table fix only handled the one-time initial distribution
+     * and had no durable record for later rounds to re-derive the type
+     * from, so a player's weather cards never made it back to hand after
+     * the first Weather Phase.
+     */
+    public function getPlayerWeatherType(int $playerId): ?string
+    {
+        if ($this->charactersEnabled()) {
+            $chars = $this->characterCards->getCardsInLocation('garden', $playerId);
+            if (empty($chars)) return null;
+            return array_values($chars)[0]['type'];
+        }
+        $type = $this->getUniqueValueFromDb("SELECT player_random_weather_type FROM player WHERE player_id = $playerId");
+        return $type !== null && $type !== '' ? (string)$type : null;
+    }
+
+    /**
      * Count how many Adult (Treevolved) plants a player has — on a planter
      * (still growing) or already graduated to garden_level3. This is the
      * same count WeatherPhaseGrow::onEnteringState() uses to trigger

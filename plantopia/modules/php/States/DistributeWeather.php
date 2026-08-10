@@ -61,6 +61,15 @@ class DistributeWeather extends GameState
                 // garden" invariant, so nothing here should break it.
                 $characterType = $characterTypes[$nextTypeIndex % count($characterTypes)];
                 $nextTypeIndex++;
+                // Persist the assignment (Trello Lml0M7zY) — this is the
+                // ONLY durable record of "which weather type does this
+                // player have" for a disabled-character table, since
+                // there's no character sitting in garden to re-derive it
+                // from later. Without this, WeatherPhaseGrow's end-of-
+                // round "return played card to hand" step had no way to
+                // find the player's type on any round after this one, so
+                // the cards never came back. See Game::getPlayerWeatherType().
+                $this->game->DbQuery("UPDATE player SET player_random_weather_type = '$characterType' WHERE player_id = $pId");
             }
 
             // Find the 3 weather cards for this character
