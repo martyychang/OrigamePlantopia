@@ -1398,10 +1398,15 @@ export class Game {
      * treevolved plants are planted — one icon slot per plant, appearing
      * the moment it's planted (any level 0-3), not once it maxes out
      * (Trello https://trello.com/c/aPeeyKyv, replacing the short-lived
-     * table from https://trello.com/c/ozx98mdL). Empty (no slots) until
-     * the player has planted any adult/treevolved card, per Daryl's
-     * original "remains empty if a player has no [adult] plants" framing.
-     * See treevolvedCards for why "level 3" was the wrong bar.
+     * table from https://trello.com/c/ozx98mdL). See treevolvedCards for
+     * why "level 3" was the wrong bar.
+     *
+     * Prefixed with an "Adult Plants:" label (Marty's 2026-08-10
+     * follow-up) — the empty subpanel wasn't self-explanatory on its own,
+     * players had no cue to look for icons that might appear there later.
+     * Shows "Adult Plants: none" when the player has none yet, rather
+     * than leaving the row blank — a blank row after a label reads as a
+     * rendering glitch, not "zero of these."
      *
      * Every slot gets a hover tooltip via addPlantTooltip in
      * renderPlayerPanel (wired AFTER this HTML is inserted into the DOM —
@@ -1412,12 +1417,17 @@ export class Game {
      * convenient second place, consistent with the rest of the panel.
      */
     treevolvedPanelHtml(playerId) {
-        const slots = this.treevolvedCards(playerId).map(card => {
+        const cards = this.treevolvedCards(playerId);
+        const label = `<span class="plantopia-treevolved-label">${_('Adult Plants:')}</span>`;
+        if (cards.length === 0) {
+            return `<div class="plantopia-treevolved-panel">${label} <span class="plantopia-treevolved-none">${_('none')}</span></div>`;
+        }
+        const slots = cards.map(card => {
             const info = this.gamedatas.plantCardTypes[card.type];
             const icon = `adult_${this.getFamily(info.plant_type)}`;
             return `<span class="plantopia-panel-icon plantopia-treevolved-slot" data-icon="${icon}" id="${this.treevolvedSlotId(playerId, card.id)}"></span>`;
         }).join('');
-        return `<div class="plantopia-treevolved-panel">${slots}</div>`;
+        return `<div class="plantopia-treevolved-panel">${label} ${slots}</div>`;
     }
 
     /** Render or refresh the at-a-glance stats panel for one player. */

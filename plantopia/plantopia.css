@@ -349,16 +349,27 @@
    entirely. Instead of counts or a level breakdown, one icon slot per
    treevolved plant (see treevolvedPanelHtml/treevolvedCards in Game.js),
    left-aligned in a flex row so it visually fills up left-to-right as
-   more treevolved plants are planted. Empty (zero-height content, no
-   visible gap) until the player has any treevolved plant, per Daryl's
-   "remains empty if a player has no level 3 plants" — no placeholder
-   border or background, unlike the old table which always rendered a
-   visible grid. */
+   more treevolved plants are planted. Always shows an "Adult Plants:"
+   label (Marty, 2026-08-10 — an icon row with no label wasn't
+   discoverable, players had no cue to look for icons that might appear
+   there later), with "none" text in place of the slots until the player
+   has any treevolved plant, rather than an unlabeled blank row. */
 .plantopia-treevolved-panel {
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
     gap: 3px;
     margin-top: 6px;
+}
+.plantopia-treevolved-label {
+    font-size: 0.9em;
+    color: #566573;
+    margin-right: 2px;
+}
+.plantopia-treevolved-none {
+    font-size: 0.9em;
+    color: #566573;
+    font-style: italic;
 }
 .plantopia-treevolved-slot {
     /* Slightly bigger than the 18px counter icons above — these represent
