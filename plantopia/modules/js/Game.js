@@ -1054,6 +1054,30 @@ export class Game {
         "gamedatas" argument contains all datas retrieved by your "getAllDatas" PHP method.
     */
     
+    /**
+     * Safe wrapper around the framework's disableNextMoveSound() (Trello
+     * ybWFttYO). This is purely cosmetic -- muting the default move sound
+     * for a given notification must never be allowed to break anything
+     * else. Guards against disableNextMoveSound not existing/behaving as
+     * documented at runtime: an uncaught throw here, inside an async
+     * notif_ handler, would reject that handler's promise, and per
+     * setupPromiseNotifications' own contract ("the notification will end
+     * when the promise... [is] over") an unresolved/rejected notification
+     * promise can leave the client stuck on "Updating game situation..."
+     * indefinitely -- exactly the regression reported after this method
+     * was first wired up directly. See notif_plantGrown and friends below
+     * for the call sites.
+     */
+    muteMoveSound() {
+        try {
+            if (typeof this.disableNextMoveSound === 'function') {
+                this.disableNextMoveSound();
+            }
+        } catch (e) {
+            console.warn('muteMoveSound: disableNextMoveSound failed, ignoring', e);
+        }
+    }
+
     setup( gamedatas ) {
         this.gamedatas = gamedatas;
 
@@ -1946,7 +1970,7 @@ export class Game {
         // Muted (https://trello.com/c/ybWFttYO): one of several notifications
         // that can fire multiple times per player per round, drowning out
         // the framework's default "move" sound as a meaningful turn signal.
-        this.disableNextMoveSound();
+        this.muteMoveSound();
         const card = args && args.card;
         if (card) {
             if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
@@ -2061,7 +2085,7 @@ export class Game {
 
     async notif_playerGainedAction(args) {
         // Muted (https://trello.com/c/ybWFttYO) — see notif_playerGainedWeather.
-        this.disableNextMoveSound();
+        this.muteMoveSound();
         if (args.player_id == this.bga.players.getCurrentPlayerId()) {
             // Ready=0 still matters here — it's the real, server-authoritative
             // way out of ResolvingEffects=3 (see PlantingPlayerSubstate.php).
@@ -2153,7 +2177,7 @@ export class Game {
         // (empty message text, per AGENTS.md), it just never suppressed the
         // framework's default sound before now. See notif_playerGainedWeather
         // for the rest of this pass's rationale.
-        this.disableNextMoveSound();
+        this.muteMoveSound();
         const cardId = args.card_id;
         const level = args.level;
 
@@ -2247,11 +2271,11 @@ export class Game {
      * un-throttled on every one of this game's ~50 server notifications).
      */
     async notif_message(args) {
-        this.disableNextMoveSound();
+        this.muteMoveSound();
     }
 
     async notif_playerResolvingEffects(args) {
-        this.disableNextMoveSound();
+        this.muteMoveSound();
     }
 
     async notif_draftCards(args) {
