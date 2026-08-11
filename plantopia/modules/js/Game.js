@@ -1943,6 +1943,10 @@ export class Game {
         // a plant effect. Bonus Weather is counted (weatherPublicBonus +
         // the player panel's Sun/Rain/Wind tally), not displayed as a
         // garden tile. See https://trello.com/c/uiJWdVTg.
+        // Muted (https://trello.com/c/ybWFttYO): one of several notifications
+        // that can fire multiple times per player per round, drowning out
+        // the framework's default "move" sound as a meaningful turn signal.
+        this.disableNextMoveSound();
         const card = args && args.card;
         if (card) {
             if (!this.gamedatas.weatherPublicBonus) this.gamedatas.weatherPublicBonus = {};
@@ -2056,6 +2060,8 @@ export class Game {
     }
 
     async notif_playerGainedAction(args) {
+        // Muted (https://trello.com/c/ybWFttYO) — see notif_playerGainedWeather.
+        this.disableNextMoveSound();
         if (args.player_id == this.bga.players.getCurrentPlayerId()) {
             // Ready=0 still matters here — it's the real, server-authoritative
             // way out of ResolvingEffects=3 (see PlantingPlayerSubstate.php).
@@ -2141,6 +2147,13 @@ export class Game {
     }
 
     async notif_plantGrown(args) {
+        // Muted (https://trello.com/c/ybWFttYO): fires once PER PLANT that
+        // grows, potentially several times per player in a single Weather
+        // Phase resolution — already an "intentionally-silent" data sync
+        // (empty message text, per AGENTS.md), it just never suppressed the
+        // framework's default sound before now. See notif_playerGainedWeather
+        // for the rest of this pass's rationale.
+        this.disableNextMoveSound();
         const cardId = args.card_id;
         const level = args.level;
 
@@ -2221,6 +2234,24 @@ export class Game {
                 this.plantingPhase.onPlayerActivationChange(null, true);
             }
         }
+    }
+
+    /**
+     * Muted (https://trello.com/c/ybWFttYO). "message" and
+     * "playerResolvingEffects" are both PUBLIC, log-only broadcasts —
+     * their only purpose is the translated text line the framework's own
+     * game log already renders automatically, with no client state to
+     * update, so these handlers exist purely to opt out of the framework's
+     * default "move" sound. See notif_playerGainedWeather above for the
+     * rest of this pass's rationale (the same default sound was firing
+     * un-throttled on every one of this game's ~50 server notifications).
+     */
+    async notif_message(args) {
+        this.disableNextMoveSound();
+    }
+
+    async notif_playerResolvingEffects(args) {
+        this.disableNextMoveSound();
     }
 
     async notif_draftCards(args) {
