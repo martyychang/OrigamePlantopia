@@ -1229,6 +1229,7 @@ export class Game {
     //// Utility methods
     
     async notif_playerKeptCards(args) {
+        this.muteMoveSound();
         this.gamedatas.players[args.player_id].mulligan_choice = 1;
         if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions' && args.player_id == this.bga.players.getCurrentPlayerId()) {
             this.bga.statusBar.removeActionButtons();
@@ -1237,6 +1238,7 @@ export class Game {
     }
 
     async notif_playerRedrewCards(args) {
+        this.muteMoveSound();
         this.gamedatas.players[args.player_id].mulligan_choice = 2;
         if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions' && args.player_id == this.bga.players.getCurrentPlayerId()) {
             this.bga.statusBar.removeActionButtons();
@@ -1813,6 +1815,7 @@ export class Game {
     // TODO: from this point and below, you can write your game notifications handling methods
     
     async notif_updateScores(args) {
+        this.muteMoveSound();
         const scores = args.scores;
         const handCounts = args.handCounts;
 
@@ -1831,6 +1834,7 @@ export class Game {
     }
 
     async notif_newHand(args) {
+        this.muteMoveSound();
         // The server sends the new hand when the player redraws
         this.gamedatas.hand = args.cards;
         const pId = this.bga.players.getCurrentPlayerId();
@@ -1841,6 +1845,7 @@ export class Game {
     }
 
     async notif_potatoExtraCards(args) {
+        this.muteMoveSound();
         const handCounts = args.handCounts || {};
         if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
         Object.assign(this.gamedatas.handCounts, handCounts);
@@ -1848,6 +1853,7 @@ export class Game {
     }
 
     async notif_mushroomBonusWeather(args) {
+        this.muteMoveSound();
         // Per https://trello.com/c/uiJWdVTg: Bonus Weather cards are
         // COUNTED (tracked in gamedatas + the player panel's Sun/Rain/Wind
         // tally) but not displayed as individual tiles in the garden.
@@ -1864,6 +1870,7 @@ export class Game {
     }
 
     async notif_playerPlayedBonus(args) {
+        this.muteMoveSound();
 
         // Per https://trello.com/c/B5g3UmED: playing a Bonus Weather card
         // moves it out of the player's public held stash and into the
@@ -1890,6 +1897,7 @@ export class Game {
      * pool) and the claiming player's panel (icon appears).
      */
     async notif_characterClaimed(args) {
+        this.muteMoveSound();
         const card = args.card;
         if (this.gamedatas.availableCharacters) delete this.gamedatas.availableCharacters[card.id];
         if (!this.gamedatas.claimedCharacters) this.gamedatas.claimedCharacters = {};
@@ -1906,6 +1914,7 @@ export class Game {
 
     /** Mirror of notif_characterClaimed — moves the card back the other way. */
     async notif_characterReturned(args) {
+        this.muteMoveSound();
         const card = args.card;
         if (this.gamedatas.claimedCharacters) delete this.gamedatas.claimedCharacters[card.id];
         if (!this.gamedatas.availableCharacters) this.gamedatas.availableCharacters = {};
@@ -1921,6 +1930,7 @@ export class Game {
     }
 
     async notif_playerDiscardedCards(args) {
+        this.muteMoveSound();
         if (args && args.player_id != null && args.qty != null) {
             if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
             this.gamedatas.handCounts[args.player_id] = Math.max(0,
@@ -1930,6 +1940,7 @@ export class Game {
     }
 
     async notif_playerUsedBananaAbility(args) {
+        this.muteMoveSound();
         if (args && args.handCounts) {
             if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
             Object.assign(this.gamedatas.handCounts, args.handCounts);
@@ -1938,6 +1949,7 @@ export class Game {
     }
 
     async notif_receivedWeatherCards(args) {
+        this.muteMoveSound();
         if (!this.gamedatas.weatherHand) {
             this.gamedatas.weatherHand = {};
         }
@@ -1955,6 +1967,7 @@ export class Game {
     }
 
     async notif_weatherCardsDrawn(args) {
+        this.muteMoveSound();
         // Private notif when a plant effect grants the player a Bonus
         // Weather card. The card is publicly held — the visual update is
         // handled by notif_playerGainedWeather; this handler just keeps
@@ -1967,9 +1980,15 @@ export class Game {
         // a plant effect. Bonus Weather is counted (weatherPublicBonus +
         // the player panel's Sun/Rain/Wind tally), not displayed as a
         // garden tile. See https://trello.com/c/uiJWdVTg.
-        // Muted (https://trello.com/c/ybWFttYO): one of several notifications
-        // that can fire multiple times per player per round, drowning out
-        // the framework's default "move" sound as a meaningful turn signal.
+        // Muted (https://trello.com/c/ybWFttYO). First pass only muted the
+        // highest-frequency/log-only notifications and left the sound on
+        // for ones that looked like "real" player actions (planting,
+        // weather reveal/choice, etc.) -- but Marty's follow-up made clear
+        // he wanted it gone for every notification that shows up as a move-
+        // log line, which in practice is nearly all of them (there's no
+        // notification in this game that ISN'T also a log line). So every
+        // notif_ handler now calls muteMoveSound() -- see that method's own
+        // doc comment for why the call itself is wrapped in a safe helper.
         this.muteMoveSound();
         const card = args && args.card;
         if (card) {
@@ -1984,6 +2003,7 @@ export class Game {
     }
 
     async notif_playerReceivedWeather(args) {
+        this.muteMoveSound();
         if (args.bonusMarket) {
             this.gamedatas.bonusWeatherMarket = args.bonusMarket;
             this.renderBonusWeatherMarket(this.gamedatas.bonusWeatherMarket, 'bonus-weather-container');
@@ -2002,6 +2022,7 @@ export class Game {
     }
     
     async notif_weatherDeckFlipped(args) {
+        this.muteMoveSound();
         if (!this.gamedatas.weatherPublic) this.gamedatas.weatherPublic = {};
         Object.values(args.cards).forEach(c => {
             this.gamedatas.weatherPublic[c.id] = c;
@@ -2010,6 +2031,7 @@ export class Game {
     }
 
     async notif_weatherCleared(args) {
+        this.muteMoveSound();
         this.gamedatas.weatherPublic = {};
         this.renderPublicWeather(this.gamedatas.weatherPublic);
 
@@ -2042,6 +2064,7 @@ export class Game {
     }
 
     async notif_weatherChosen(args) {
+        this.muteMoveSound();
         const cardId = args.card_id;
         if (this.gamedatas.weatherHand && this.gamedatas.weatherHand[cardId]) {
             delete this.gamedatas.weatherHand[cardId];
@@ -2053,11 +2076,13 @@ export class Game {
     }
 
     async notif_weatherRevealed(args) {
+        this.muteMoveSound();
         this.gamedatas.weatherPublic = args.cards;
         this.renderPublicWeather(this.gamedatas.weatherPublic);
     }
 
     async notif_cardsDrawn(args) {
+        this.muteMoveSound();
         if (!this.gamedatas.hand) {
             this.gamedatas.hand = {};
         }
@@ -2076,6 +2101,7 @@ export class Game {
     }
 
     async notif_playerDrewCard(args) {
+        this.muteMoveSound();
         if (args && args.player_id) {
             if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
             this.gamedatas.handCounts[args.player_id] = (this.gamedatas.handCounts[args.player_id] || 0) + (args.qty || 1);
@@ -2102,6 +2128,7 @@ export class Game {
     }
 
     async notif_plantPlanted(args) {
+        this.muteMoveSound();
         const card = args.card;
         const planterId = args.planter_id;
 
@@ -2279,14 +2306,17 @@ export class Game {
     }
 
     async notif_draftCards(args) {
+        this.muteMoveSound();
         this.gamedatas.draftCards = args.cards;
     }
 
     async notif_playerStartedDrafting(args) {
+        this.muteMoveSound();
         // Just a text log notification now
     }
 
     async notif_pendingEffects(args) {
+        this.muteMoveSound();
         if (args.effects && args.effects.length > 0) {
             const pId = this.bga.players.getCurrentPlayerId();
             if (this.gamedatas.players[pId]) {
@@ -2300,6 +2330,7 @@ export class Game {
     }
 
     async notif_keptCards(args) {
+        this.muteMoveSound();
         if (!this.gamedatas.hand) this.gamedatas.hand = {};
         (args.cards || []).forEach(card => {
             this.gamedatas.hand[card.id] = card;
@@ -2312,6 +2343,7 @@ export class Game {
     }
 
     async notif_playerKeptDraft(args) {
+        this.muteMoveSound();
         if (args && args.player_id != null && args.qty != null) {
             if (!this.gamedatas.handCounts) this.gamedatas.handCounts = {};
             this.gamedatas.handCounts[args.player_id] = (this.gamedatas.handCounts[args.player_id] || 0) + args.qty;
