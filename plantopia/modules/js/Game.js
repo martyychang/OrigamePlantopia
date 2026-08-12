@@ -1058,20 +1058,31 @@ export class Game {
      * Safe wrapper around the framework's disableNextMoveSound() (Trello
      * ybWFttYO). This is purely cosmetic -- muting the default move sound
      * for a given notification must never be allowed to break anything
-     * else. Guards against disableNextMoveSound not existing/behaving as
-     * documented at runtime: an uncaught throw here, inside an async
-     * notif_ handler, would reject that handler's promise, and per
-     * setupPromiseNotifications' own contract ("the notification will end
-     * when the promise... [is] over") an unresolved/rejected notification
-     * promise can leave the client stuck on "Updating game situation..."
-     * indefinitely -- exactly the regression reported after this method
-     * was first wired up directly. See notif_plantGrown and friends below
-     * for the call sites.
+     * else.
+     *
+     * Root cause of why this took three attempts to get right: disableNextMoveSound()
+     * is a GameGui method, and this codebase's own existing code (e.g.
+     * addTooltipHtml, same class) calls GameGui methods via
+     * this.bga.gameui.X(), never this.X() directly -- this exported Game
+     * class is NOT itself the GameGui instance, despite `this.gamedatas =
+     * gamedatas` in setup() looking superficially like it might be. Calling
+     * the bare this.disableNextMoveSound() (as the first version of this
+     * fix did, with no guard) threw a genuine TypeError -- which is what
+     * actually caused the stuck-game regression, and the sound being
+     * accidentally suppressed at the same time was just a side effect of
+     * that crash, not this method working. The typeof guard added in the
+     * hotfix correctly stopped the crash, but since the guard condition was
+     * ALSO checking the wrong object, it just silently skipped the call
+     * forever afterward -- explaining why Marty's console showed no error
+     * at all, ever, even though the sound never actually got muted. Fixed
+     * for real by calling it on the right object.
      */
     muteMoveSound() {
         try {
-            if (typeof this.disableNextMoveSound === 'function') {
-                this.disableNextMoveSound();
+            if (this.bga && this.bga.gameui && typeof this.bga.gameui.disableNextMoveSound === 'function') {
+                this.bga.gameui.disableNextMoveSound();
+            } else {
+                console.warn('muteMoveSound: this.bga.gameui.disableNextMoveSound is not available');
             }
         } catch (e) {
             console.warn('muteMoveSound: disableNextMoveSound failed, ignoring', e);
