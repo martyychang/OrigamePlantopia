@@ -1081,6 +1081,40 @@ export class Game {
     setup( gamedatas ) {
         this.gamedatas = gamedatas;
 
+        // Belt-and-suspenders on top of muteMoveSound() (Trello ybWFttYO):
+        // Marty confirmed the sound was STILL audible even for a
+        // notification whose handler calls muteMoveSound() as its first
+        // line (notif_playerKeptCards, on the very first action of the
+        // game) -- meaning disableNextMoveSound() isn't reliably
+        // preventing it, for a reason that isn't visible from static code
+        // (possibly: the sound plays immediately on notification receipt,
+        // before/independent of the handler's own async body, so calling
+        // it from inside the handler is structurally too late). Since this
+        // game has never called sounds.play() itself anywhere (confirmed
+        // by grep -- there is no custom sound asset in this repo), the
+        // ONLY thing that could still be producing sound through this
+        // exposed API surface is a framework-internal call to
+        // bga.sounds.play(). No-op it directly, as the most certain lever
+        // available short of live Studio access to confirm what actually
+        // is producing the sound. Safe: never called by this game's own
+        // code, so this can't silence anything the game intentionally
+        // wants to play.
+        try {
+            if (this.bga && this.bga.sounds && typeof this.bga.sounds.play === 'function') {
+                this.bga.sounds.play = () => {};
+            }
+            // this.sounds is a separate legacy-alias reference in the
+            // framework's own type definitions (same era as the other
+            // this.X / this.bga.X duplicate properties) -- no-op it too in
+            // case it's a distinct Sounds instance rather than the same
+            // object as this.bga.sounds.
+            if (this.sounds && typeof this.sounds.play === 'function') {
+                this.sounds.play = () => {};
+            }
+        } catch (e) {
+            console.warn('setup: could not no-op sounds.play', e);
+        }
+
         // Example to add a div on the game area
         this.bga.gameArea.getElement().insertAdjacentHTML('beforeend', `
             <div id="characters-panel" style="display: none; margin-bottom: 20px; border: 2px solid #8e44ad; border-radius: 8px; background: rgba(255, 255, 255, 0.9); padding: 15px;">
