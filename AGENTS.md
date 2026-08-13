@@ -345,6 +345,20 @@ note) has a git-native source of truth to draw from.
   (Trello r7s4l3xw, with 7 follow-up judgment-call items filed
   separately: khqCv40C, LHLyoZqG, iMW3B1yR, C6zNJIhY, YV0X1IRL, 4sCOJHqq,
   SDXJSZWx).
+- **`v2.0.1`** — 2026-08-12, PATCH (bug fixes/polish only, no new
+  features or external milestone). Highlights: fixed weather cards
+  permanently disappearing after round 1 on character-disabled tables
+  (Lml0M7zY — the original 95PCkqui fix only handled the one-time
+  initial distribution, never persisted it durably); fixed a Bonus
+  Weather auto-proceed race that could throw a server error and strand
+  both players (7R6Ov64N follow-up, fixed by switching to the
+  framework's own `autoclick` on a real button instead of firing the
+  action from a state-transition handler); fixed the default per-
+  notification "move" sound cluttering every action (ybWFttYO — took
+  several rounds to land on the real cause, `disableNextMoveSound()`
+  needing to be called via `this.bga.gameui`, not `this` — see the
+  dedicated AGENTS.md section on this); added a visible "Adult Plants:"
+  label to the treevolved subpanel (aPeeyKyv follow-up).
 - **Release notes:** commit messages in this repo are verbose
   multi-paragraph explanations — too long to concatenate mechanically
   into 250 characters. At tag time, list commits since the last tag
