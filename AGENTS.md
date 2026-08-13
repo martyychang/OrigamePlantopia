@@ -248,6 +248,16 @@ async notif_notifName(args) {
 
 ---
 
+## `GameGui` Methods Must Be Called via `this.bga.gameui.X()`, Never `this.X()`
+
+The exported `Game` class in `Game.js` is **not itself** the framework's `GameGui` instance, even though `setup(gamedatas)` does `this.gamedatas = gamedatas` — a pattern that looks like it might mean `this` aliases `GameGui` (which also has a `gamedatas` property), but doesn't. `GameGui` methods (per `bga-framework.d.ts`) must be called through `this.bga.gameui.X()`. This codebase already established the correct pattern for one such method before this bug existed: `addTooltipHtml` is called as `this.bga.gameui.addTooltipHtml(...)`, never `this.addTooltipHtml(...)`.
+
+> **This bit us for real, on `disableNextMoveSound()`, across three rounds of a Trello card (https://trello.com/c/ybWFttYO) before the actual cause was found.** The default per-notification "move" sound was cluttering the game, and `disableNextMoveSound()` (also a `GameGui` method) was the framework's documented way to opt a notification out of it. First attempt called it directly as `this.disableNextMoveSound()`, with no existence check — this threw a genuine `TypeError` inside an `async notif_*` handler (the method doesn't exist on `this`), which rejected that handler's promise and left the client stuck on "Updating game situation..." indefinitely (a notification's promise never resolving blocks `setupPromiseNotifications`'s own queue — see the Notifications section above). The crash *also* happened to suppress the sound as a side effect of breaking the pipeline before whatever downstream code plays it — easy to mistake for the fix working. A hotfix added a `typeof this.disableNextMoveSound === 'function'` guard to stop the crash — which worked, but was checking existence on the same wrong object, so the call was silently skipped forever after: no crash, no console warning, but also no actual muting, which is a much harder failure mode to diagnose than an outright error (confirmed live, with DevTools open, no error and no effect). The real fix was routing the same call through `this.bga.gameui.disableNextMoveSound()`.
+>
+> **Takeaway: before assuming `this` exposes a documented `GameGui`/`Bga` interface method directly, grep this codebase for an existing call to ANY method from that same class first** (or check the `.d.ts` for a `@deprecated use this.bga.X.Y` annotation on a sibling method) — don't infer it from an unrelated property assignment looking similar. A silently-skipped optional call (guarded, no error) is a worse bug to chase than a crash: at least a crash tells you something is wrong.
+
+---
+
 ## Database Design
 
 ### Schema (`dbmodel.sql`)
