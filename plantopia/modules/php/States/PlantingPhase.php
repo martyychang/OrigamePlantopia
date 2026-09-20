@@ -29,10 +29,14 @@ class PlantingPhase extends GameState
         $players = $this->game->loadPlayersBasicInfos();
         $statuses = [];
         foreach ($players as $pId => $pInfo) {
-            // ::from() throws if the DB ever holds a value this enum doesn't
-            // define — fail fast instead of silently sending the client a
-            // meaningless status number.
-            $statuses[$pId] = PlantingPlayerSubstate::from((int)$this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $pId"))->value;
+            // Route through substateOf() so a corrupt/legacy value degrades
+            // to Ready instead of throwing an uncaught \ValueError. The old
+            // inline ::from() "fail fast" here would take the WHOLE state's
+            // getArgs down (a blank/broken board for every player), and the
+            // same call in requireReadyForNewAction bricked planting for the
+            // affected player — the "generic server error" cluster,
+            // Trello TuFvhs3g. See substateOf() for the full write-up.
+            $statuses[$pId] = $this->substateOf((int)$pId)->value;
         }
 
         // Fresh, authoritative "your hand" — read synchronously as part of
@@ -259,7 +263,7 @@ class PlantingPhase extends GameState
     private function appendEffect(int $playerId, array $effect): void
     {
         $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
-        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        $queue = $this->decodeEffectQueue($currentJson);
         $queue[] = $effect;
         $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "' WHERE player_id = $playerId");
     }
@@ -521,7 +525,7 @@ class PlantingPhase extends GameState
         $playerId = (int)$this->game->getCurrentPlayerId();
         
         $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
-        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        $queue = $this->decodeEffectQueue($currentJson);
         if (count($queue) === 0 || $queue[0]['type'] !== 'draft_cards') {
             throw new UserException(clienttranslate("You are not currently choosing cards."));
         }
@@ -582,7 +586,7 @@ class PlantingPhase extends GameState
     private function queueEffects(int $playerId, array $effectDef, int $sourceCardId)
     {
         $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
-        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        $queue = $this->decodeEffectQueue($currentJson);
         
         if (isset($effectDef['draw_cards'])) {
             $queue[] = ['type' => 'draw_cards', 'qty' => $effectDef['draw_cards']];
@@ -624,7 +628,7 @@ class PlantingPhase extends GameState
     private function processPendingEffects(int $playerId)
     {
         $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
-        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        $queue = $this->decodeEffectQueue($currentJson);
         
         $gainedAction = false;
 
@@ -784,7 +788,7 @@ class PlantingPhase extends GameState
         $this->checkActionAllowed($playerId);
 
         $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
-        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        $queue = $this->decodeEffectQueue($currentJson);
         if (count($queue) === 0 || $queue[0]['type'] !== 'discard_cards') {
             throw new UserException(clienttranslate("You do not need to discard cards right now."));
         }
@@ -829,7 +833,7 @@ class PlantingPhase extends GameState
         $this->checkActionAllowed($playerId);
 
         $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
-        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        $queue = $this->decodeEffectQueue($currentJson);
         if (count($queue) === 0 || $queue[0]['type'] !== 'gain_weather') {
             throw new UserException(clienttranslate("You are not supposed to gain a weather card right now."));
         }
@@ -867,7 +871,7 @@ class PlantingPhase extends GameState
         $this->checkActionAllowed($playerId);
 
         $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
-        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        $queue = $this->decodeEffectQueue($currentJson);
         // Note: 'level_up_family' (Violet) is resolved by the separate
         // actResolveLevelUpFamily($family) action below, which grows every
         // matching plant rather than one $plantCardId — it must NOT be
@@ -928,7 +932,7 @@ class PlantingPhase extends GameState
         $this->checkActionAllowed($playerId);
 
         $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
-        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        $queue = $this->decodeEffectQueue($currentJson);
         if (count($queue) === 0 || $queue[0]['type'] !== 'level_up_family') {
             throw new UserException(clienttranslate("You do not have a family level up effect to resolve."));
         }
@@ -1000,7 +1004,7 @@ class PlantingPhase extends GameState
         $this->checkActionAllowed($playerId);
 
         $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
-        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        $queue = $this->decodeEffectQueue($currentJson);
         if (count($queue) === 0 || $queue[0]['type'] !== 'level_up_matching_adult') {
             throw new UserException(clienttranslate("You do not have a matching-Adult level up effect to resolve."));
         }
@@ -1085,7 +1089,36 @@ class PlantingPhase extends GameState
 
     private function substateOf(int $playerId): PlantingPlayerSubstate
     {
-        return PlantingPlayerSubstate::from((int)$this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $playerId"));
+        // tryFrom (NOT from) so a corrupt/legacy value in this per-player
+        // column degrades to Ready instead of throwing an uncaught
+        // \ValueError. from() here was the root cause of the "planting
+        // throws a generic server error" cluster (Trello TuFvhs3g / BGA
+        // #240245 #240541 #240860 #240892 #244040 #245224): this is the
+        // FIRST thing actPlant does (via requireReadyForNewAction), so one
+        // off-enum value (cases are 0/1/3 — 2 is undefined) turned every
+        // plant/grow/draw attempt into an unrecoverable server error for
+        // that one player, with no clean message — exactly #244040's
+        // "every time, only me, others fine." Ready is the safe default:
+        // it matches the DB column default (0) and un-sticks the player
+        // rather than hard-crashing; the pending-effects queue is the
+        // independent gate that still blocks acting mid-effect.
+        return PlantingPlayerSubstate::tryFrom(
+            (int)$this->game->getUniqueValueFromDb("SELECT player_planting_status FROM player WHERE player_id = $playerId")
+        ) ?? PlantingPlayerSubstate::Ready;
+    }
+
+    /**
+     * Decode a player_pending_effects JSON column into an effect queue,
+     * failing SAFE. json_decode() of a NULL / empty / malformed / non-array
+     * value returns null (or a scalar), and count()/[] on that is an
+     * uncaught \TypeError on PHP 8 — another way the planting hot path
+     * could throw a generic server error (see substateOf's note). Always
+     * hand callers a real array so their count()/array_shift()/[0] are safe.
+     */
+    private function decodeEffectQueue(?string $json): array
+    {
+        $decoded = ($json === null || $json === '') ? [] : json_decode($json, true);
+        return is_array($decoded) ? $decoded : [];
     }
 
     /**
@@ -1123,9 +1156,8 @@ class PlantingPhase extends GameState
         $this->appendEffect($playerId, ['type' => 'banana_offer']);
         $this->game->DbQuery("UPDATE player SET player_planting_status = " . PlantingPlayerSubstate::ResolvingEffects->value . " WHERE player_id = $playerId");
 
-        $queue = json_decode(
-            $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId") ?: '[]',
-            true
+        $queue = $this->decodeEffectQueue(
+            $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId")
         );
         $this->bga->notify->player($playerId, "pendingEffects", '', [
             "effects" => $queue
@@ -1180,7 +1212,7 @@ class PlantingPhase extends GameState
         $playerId = (int)$this->game->getCurrentPlayerId();
 
         $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
-        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        $queue = $this->decodeEffectQueue($currentJson);
         if (count($queue) === 0 || $queue[0]['type'] !== 'banana_offer') {
             throw new UserException(clienttranslate("There is no Banana offer to resolve."));
         }
@@ -1246,7 +1278,7 @@ class PlantingPhase extends GameState
         $playerId = (int)$this->game->getCurrentPlayerId();
 
         $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
-        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        $queue = $this->decodeEffectQueue($currentJson);
         if (count($queue) === 0 || $queue[0]['type'] !== 'banana_offer') {
             throw new UserException(clienttranslate("There is no Banana offer to resolve."));
         }
@@ -1269,7 +1301,7 @@ class PlantingPhase extends GameState
         $this->checkActionAllowed($playerId);
 
         $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
-        $queue = $currentJson ? json_decode($currentJson, true) : [];
+        $queue = $this->decodeEffectQueue($currentJson);
         if (count($queue) === 0) {
             throw new UserException(clienttranslate("There is no pending effect to skip."));
         }

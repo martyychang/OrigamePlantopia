@@ -130,7 +130,15 @@ class WeatherPhaseBonus extends GameState
 
     private function substateOf(int $playerId): WeatherPhaseBonusSubstate
     {
-        return WeatherPhaseBonusSubstate::from((int)$this->game->getUniqueValueFromDb("SELECT player_bonus_weather_status FROM player WHERE player_id = $playerId"));
+        // tryFrom (NOT from) so a corrupt/legacy value degrades to Deciding
+        // instead of throwing an uncaught \ValueError that would surface as
+        // a generic "server error" — the same persisted-enum fragility that
+        // caused the Planting Phase cluster (Trello TuFvhs3g; see
+        // PlantingPhase::substateOf). Deciding is the safe default: it
+        // matches the DB column default (0).
+        return WeatherPhaseBonusSubstate::tryFrom(
+            (int)$this->game->getUniqueValueFromDb("SELECT player_bonus_weather_status FROM player WHERE player_id = $playerId")
+        ) ?? WeatherPhaseBonusSubstate::Deciding;
     }
 
     /**
