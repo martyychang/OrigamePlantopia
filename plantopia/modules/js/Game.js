@@ -280,7 +280,12 @@ class PlantingPhase {
                     this.highlightHandCardsForCost(cost, () => this.updateStatusBar());
                     if (this.selectedPaymentCards.length === cost) {
                         this.bga.statusBar.setTitle(_('Confirm — discard ${cost} card(s) to plant').replace('${cost}', cost));
-                        this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmPlant(), { color: 'green' });
+                        // Auto-confirm after the framework's small delay, the
+                        // same as the Weather Phase "Proceed to Grow Plants"
+                        // button (Trello hsdoZGId follow-up). Deselecting a
+                        // card drops below the cost, so updateStatusBar rebuilds
+                        // without this button — cancelling the pending auto-fire.
+                        this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmPlant(), { color: 'green', autoclick: true });
                     } else {
                         this.bga.statusBar.setTitle(_('Select ${cost} more card(s) to discard as cost').replace('${cost}', cost - this.selectedPaymentCards.length));
                     }
@@ -329,7 +334,8 @@ class PlantingPhase {
                 this.highlightHandCardsForCost(cost, () => this.updateStatusBar());
                 if (this.selectedPaymentCards.length === cost) {
                     this.bga.statusBar.setTitle(_('Confirm Growth'));
-                    this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmGrow(), { color: 'green' });
+                    // Auto-confirm after a small delay, same as planting (above).
+                    this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmGrow(), { color: 'green', autoclick: true });
                 } else {
                     this.bga.statusBar.setTitle(_('Select ${cost} more card(s) to discard as fertilizer').replace('${cost}', cost - this.selectedPaymentCards.length));
                 }
