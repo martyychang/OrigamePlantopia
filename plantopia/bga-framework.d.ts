@@ -89,7 +89,7 @@ interface Gamestate {
 interface Gamedatas<P extends Player = Player> {
   gamestate: Gamestate;
   gamestates: { [gamestateId: number]: Gamestate };
-  playerorder: (string | number)[];
+  playerorder: number[];
   players: { [playerId: number]: P };
 }
 
@@ -455,6 +455,45 @@ declare class Notifications {
     }): void;
 }
 
+interface Display3DViewSettings {
+  minXAxis?: number;
+  maxXAxis?: number;
+  minZAxis?: number;
+  maxZAxis?: number;
+  minXPos?: number;
+  maxXPos?: number;
+  minYPos?: number;
+  maxYPos?: number;
+  minZoom?: number;
+  maxZoom?: number;
+  xAxis?: number;
+  zAxis?: number;
+  xPos?: number;
+  yPos?: number;
+  zoom?: number;
+}
+
+interface Display3DDraggableSettings {
+  enabled?: boolean;
+  multiplier?: number;
+  rotationMultiplier?: number;
+  slideMultiplier?: number;
+}
+
+interface Display3DZoomByWheelSettings {
+  enabled?: boolean;
+  multiplier?: number;
+  zoomMultiplier?: number;
+}
+
+interface Display3DInitSettings {
+  elements?: HTMLElement[];
+  showControls?: boolean;
+  view?: Display3DViewSettings;
+  draggable?: boolean | number | Display3DDraggableSettings;
+  zoomByWheel?: boolean | number | Display3DZoomByWheelSettings;
+}
+
 declare class Display3D {
         /**
          * Initializes the 3D display mode.
@@ -466,7 +505,7 @@ declare class Display3D {
          * @param {boolean|number|Object} [settings.draggable] Enables drag controls, optionally with multipliers.
          * @param {boolean|number|Object} [settings.zoomByWheel] Enables wheel zoom, optionally with a multiplier.
          */
-        init3d(settings = undefined): void;
+        init3d(settings?: Display3DInitSettings): void;
 
         /**
          * Replaces the elements transformed by this 3D view.
@@ -538,7 +577,7 @@ declare class Display3D {
          * @param {number} [settings.rotationMultiplier=0.1] Right-button rotation multiplier.
          * @param {number} [settings.slideMultiplier=1] Middle-button slide multiplier.
          */
-        setDraggable(enabled: boolean, settings = {}): void;
+        setDraggable(enabled?: boolean | number | Display3DDraggableSettings, settings?: number | Display3DDraggableSettings): void;
 
         /**
          * Enables or disables mouse wheel zoom.
@@ -549,77 +588,77 @@ declare class Display3D {
          * @param {number} [settings.multiplier=0.1] Wheel zoom multiplier.
          * @param {number} [settings.zoomMultiplier=0.1] Wheel zoom multiplier alias.
          */
-        setZoomByWheel(enabled: boolean, settings = {}): void;
+        setZoomByWheel(enabled?: boolean | number | Display3DZoomByWheelSettings, settings?: number | Display3DZoomByWheelSettings): void;
 
         /**
          * Sets the minimum X-axis rotation, or clears it with null.
          *
          * @param {?number} [value=null]
          */
-        setMinXAxis(value?: number): void;
+        setMinXAxis(value?: number | null): void;
 
         /**
          * Sets the maximum X-axis rotation, or clears it with null.
          *
          * @param {?number} [value=null]
          */
-        setMaxXAxis(value?: number): void;
+        setMaxXAxis(value?: number | null): void;
 
         /**
          * Sets the minimum Z-axis rotation, or clears it with null.
          *
          * @param {?number} [value=null]
          */
-        setMinZAxis(value?: number): void;
+        setMinZAxis(value?: number | null): void;
 
         /**
          * Sets the maximum Z-axis rotation, or clears it with null.
          *
          * @param {?number} [value=null]
          */
-        setMaxZAxis(value?: number): void;
+        setMaxZAxis(value?: number | null): void;
 
         /**
          * Sets the minimum X-position, or clears it with null.
          *
          * @param {?number} [value=null]
          */
-        setMinXPos(value?: number): void;
+        setMinXPos(value?: number | null): void;
 
         /**
          * Sets the maximum X-position, or clears it with null.
          *
          * @param {?number} [value=null]
          */
-        setMaxXPos(value?: number): void;
+        setMaxXPos(value?: number | null): void;
 
         /**
          * Sets the minimum Y-position, or clears it with null.
          *
          * @param {?number} [value=null]
          */
-        setMinYPos(value?: number): void;
+        setMinYPos(value?: number | null): void;
 
         /**
          * Sets the maximum Y-position, or clears it with null.
          *
          * @param {?number} [value=null]
          */
-        setMaxYPos(value?: number): void;
+        setMaxYPos(value?: number | null): void;
 
         /**
          * Sets the minimum zoom, or clears it with null.
          *
          * @param {?number} [value=null]
          */
-        setMinZoom(value?: number): void
+        setMinZoom(value?: number | null): void;
 
         /**
          * Sets the maximum zoom, or clears it with null.
          *
          * @param {?number} [value=null]
          */
-        setMaxZoom(value?: number): void;
+        setMaxZoom(value?: number | null): void;
     }
 
 declare class GameArea {
