@@ -373,6 +373,23 @@ note) has a git-native source of truth to draw from.
   safe (`tryFrom()` + a guarded `decodeEffectQueue()` helper), applied to
   `PlantingPhase` and the parallel `WeatherPhaseBonus` substate read, with
   a regression test (`PlantingServerErrorHardeningTest`). `49f5648`.
+- **`v2.0.3`** — 2026-09-26, PATCH (bug fix only). Fixed the ACTUAL cause of
+  the planting "server error" cluster (Trello TuFvhs3g; BGA #245224 et al.) —
+  which v2.0.2's persisted-enum hardening did NOT address. Pinned by Marty's
+  repro: it crashes specifically for a player who claimed the **Tomato**
+  character (2-player game, keep starting cards, pick Tomato, plant a card →
+  immediate server error). Cause: `PlantCards::getFamily()` match()'d its
+  argument against the plant_type constants with no default arm, but the
+  Tomato plant-time hook (`queueCharacterPlantingEffects`) passes the planted
+  card's raw `type` — the card NAME (`'Cutetus'`), not a plant_type — so a
+  card name fell through to an uncaught `\UnhandledMatchError` → generic
+  server error on the first plant. Fix: `getFamily()` now resolves
+  card-name-OR-plant_type via `resolvePlantType()` (exactly like
+  `isBaby()`/`isTreevolved()`), with a descriptive-throw default arm matching
+  `getBabyType()`'s existing pattern — the mapping stays exhaustive and
+  deterministic, no fallback family. Also covers two other card-name callers
+  (`playerHasGrowableAdultOfFamily`, the `level_up_matching_adult` resolver).
+  Regression test `TomatoPlantingCrashTest`. `6ae6685`.
 - **Release notes:** commit messages in this repo are verbose
   multi-paragraph explanations — too long to concatenate mechanically
   into 250 characters. At tag time, list commits since the last tag
