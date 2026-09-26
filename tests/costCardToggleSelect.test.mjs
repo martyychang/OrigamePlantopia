@@ -104,5 +104,15 @@ t('the card being planted is never selectable as its own payment', () => {
     assert.ok(els['card_1'].onclick, 'other cards should be clickable');
 });
 
+// Trello InZoBHJY: three visually-distinct highlight colors so the card
+// being planted is never confused with the cost cards.
+t('distinct highlight colors: plant card blue, selected-cost green, available-cost red', () => {
+    const { ctx, els } = buildCtx([1, 2, 3], { selectedCardToPlant: 2, selected: [1] });
+    ctx.highlightHandCardsForCost(2, () => {});
+    assert.match(els['card_2'].style.boxShadow, /#3498db/i, 'plant card should be blue');
+    assert.match(els['card_1'].style.boxShadow, /#27ae60/i, 'selected cost card should be green');
+    assert.match(els['card_3'].style.boxShadow, /#e74c3c/i, 'available cost card should be red');
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

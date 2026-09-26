@@ -393,12 +393,26 @@ class PlantingPhase {
         this.cleanupUI();
         const hand = this.game.gamedatas.hand;
         Object.values(hand).forEach(c => {
-            if (c.id == this.selectedCardToPlant) return; // can't pay with the card being planted
             const el = document.getElementById(`card_${c.id}`);
             if (!el) return;
+
+            // The card being planted keeps its OWN distinct highlight (blue,
+            // matching the "Plant" action button) so it's never confused with
+            // the cost cards, and it's not clickable — you can't pay for a
+            // plant with itself (Trello InZoBHJY). It still gets the class so
+            // cleanupUI() resets this highlight when the flow ends.
+            if (c.id == this.selectedCardToPlant) {
+                el.classList.add('bga-cards_selectable-card');
+                el.style.cursor = 'default';
+                el.style.boxShadow = '0 0 14px #3498db';
+                el.onclick = null;
+                return;
+            }
+
             const isSelected = this.selectedPaymentCards.includes(c.id);
             el.classList.add('bga-cards_selectable-card');
             el.style.cursor = 'pointer';
+            // Cost cards: green = selected to discard, red = available to pick.
             el.style.boxShadow = isSelected ? '0 0 12px #27ae60' : '0 0 10px #e74c3c';
             el.onclick = () => {
                 if (isSelected) {
