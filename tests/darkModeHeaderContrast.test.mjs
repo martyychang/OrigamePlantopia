@@ -42,10 +42,16 @@ function check(label, cond, detail) {
 // The three specific headers Marty flagged must still render inside a
 // container that sets color explicitly (not just "some rgba block
 // somewhere has color" — tie it to the actual reported headers).
+// The header TEXT is now wrapped in the gettext helper (e.g.
+// `<h3>${_('Bonus Weather')}</h3>`, and the Garden one interpolates the
+// player name through _()), so match the header word(s) anywhere inside
+// the <h3> ([^<]* on each side) rather than as the h3's entire literal
+// content — the assertion that matters is the explicit `color:` on the
+// right container, not the exact i18n wrapping around the text.
 const headerChecks = [
-    { label: "<Player>'s Garden", re: /<div id="player-table-\$\{player\.id\}" style="[^"]*color:\s*#[0-9a-fA-F]{3,6}[^"]*">\s*<h3>\$\{player\.name\}'s Garden<\/h3>/ },
-    { label: 'Bonus Weather', re: /<div id="bonus-weather-section" style="[^"]*color:\s*#[0-9a-fA-F]{3,6}[^"]*">\s*<h3[^>]*>Bonus Weather<\/h3>/ },
-    { label: 'Public Weather Cards', re: /<div id="public-weather-section" style="[^"]*color:\s*#[0-9a-fA-F]{3,6}[^"]*">\s*<h3[^>]*>Public Weather Cards<\/h3>/ },
+    { label: "<Player>'s Garden", re: /<div id="player-table-\$\{player\.id\}" style="[^"]*color:\s*#[0-9a-fA-F]{3,6}[^"]*">\s*<h3>[^<]*Garden[^<]*<\/h3>/ },
+    { label: 'Bonus Weather', re: /<div id="bonus-weather-section" style="[^"]*color:\s*#[0-9a-fA-F]{3,6}[^"]*">\s*<h3[^>]*>[^<]*Bonus Weather[^<]*<\/h3>/ },
+    { label: 'Public Weather Cards', re: /<div id="public-weather-section" style="[^"]*color:\s*#[0-9a-fA-F]{3,6}[^"]*">\s*<h3[^>]*>[^<]*Public Weather Cards[^<]*<\/h3>/ },
 ];
 for (const { label, re } of headerChecks) {
     check(`"${label}" header's container has an explicit dark color`, re.test(src));

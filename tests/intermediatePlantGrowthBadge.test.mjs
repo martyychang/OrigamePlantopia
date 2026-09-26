@@ -44,6 +44,7 @@ const plantCardBodyBody = extractMethod('plantCardBody');
 const isAdultBody = extractMethod('isAdult');
 const isBabyTypeBody = extractMethod('isBabyType');
 const getFamilyBody = extractMethod('getFamily');
+const escapeAttrBody = extractMethod('escapeAttr');
 
 const script = `
 window.onerror = (msg, src, line, col, err) => {
@@ -68,9 +69,11 @@ const game = {
     bga: { players: { getCurrentPlayerId: () => 9 }, states: { getCurrentMainStateName: () => 'WeatherPhaseBonus' } },
     plantingPhase: {},
     refreshAllPlayerPanels: () => {},
+    muteMoveSound: () => {},
     isAdult: new Function('plantType', ${JSON.stringify(isAdultBody)}),
     isBabyType: new Function('plantType', ${JSON.stringify(isBabyTypeBody)}),
     getFamily: new Function('plantType', ${JSON.stringify(getFamilyBody)}),
+    escapeAttr: new Function('str', ${JSON.stringify(escapeAttrBody)}),
     plantCardBody: new Function('cardKey', 'cardInfo', '{ showCost = false, levelLabel = null } = {}', ${JSON.stringify(plantCardBodyBody)}),
 };
 game.notif_plantGrown = new Function('args', ${JSON.stringify(notifPlantGrownBody)}).bind(game);

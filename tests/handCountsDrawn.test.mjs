@@ -41,6 +41,7 @@ function buildGame(gamedatas, currentPlayerId) {
         bga: { players: { getCurrentPlayerId: () => currentPlayerId } },
         renderHand() {},
         refreshAllPlayerPanels() {},
+        muteMoveSound() {},
     };
     game.notif_cardsDrawn = new Function('args', extractMethod('notif_cardsDrawn')).bind(game);
     game.notif_playerDrewCard = new Function('args', extractMethod('notif_playerDrewCard')).bind(game);

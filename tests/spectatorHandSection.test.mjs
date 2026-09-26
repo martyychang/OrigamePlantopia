@@ -58,6 +58,9 @@ const spectatorHandBlock = extractSpectatorHandBlock();
 const renderHandBody = extractMethod('renderHand');
 
 const script = `
+// BGA exposes gettext as a global _(). Stub it as identity so extracted
+// method bodies that call _('...') for i18n run in this bare test page.
+window._ = (s) => s;
 window.onerror = (msg, src, line, col, err) => {
     document.getElementById('results').innerHTML += 'FAIL — uncaught error: ' + msg + ' (line ' + line + ':' + col + ')' + (err && err.stack ? '<br>' + String(err.stack).replace(/\\n/g, ' | ') : '') + '<br>';
 };

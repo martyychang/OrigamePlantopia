@@ -71,15 +71,15 @@ const addCharacterTooltipBody = extractMethod('addCharacterTooltip');
 const renderCharactersBody = extractMethod('renderCharacters');
 const notifCharacterClaimedBody = extractMethod('notif_characterClaimed');
 const notifCharacterReturnedBody = extractMethod('notif_characterReturned');
-// renderPlayerPanel now also wires Lv. 3 tooltips (Trello
-// https://trello.com/c/xYfPLZuI) via these three — stub them for real so
-// renderPlayerPanel doesn't throw on a missing method.
-const plantCountsTableHtmlBody = extractMethod('plantCountsTableHtml');
-const level3CellIdBody = extractMethod('level3CellId');
-const level3CardsByColumnBody = extractMethod('level3CardsByColumn');
-const addLevel3TooltipBody = extractMethod('addLevel3Tooltip');
+// renderPlayerPanel embeds the treevolved subpanel (Trello aPeeyKyv,
+// which replaced the old plant-counts table) and wires a hover tooltip
+// per treevolved slot — extract those so renderPlayerPanel runs for real.
 const getFamilyBody = extractMethod('getFamily');
-const plantCountColumns = extractStaticField('PLANT_COUNT_COLUMNS');
+const escapeAttrBody = extractMethod('escapeAttr');
+const treevolvedPanelHtmlBody = extractMethod('treevolvedPanelHtml');
+const treevolvedCardsBody = extractMethod('treevolvedCards');
+const treevolvedSlotIdBody = extractMethod('treevolvedSlotId');
+const addPlantTooltipBody = extractMethod('addPlantTooltip');
 
 const script = `
 function log(line) { document.getElementById('results').innerHTML += line + '<br>'; }
@@ -87,11 +87,13 @@ function check(label, cond, detail) {
     log((cond ? 'ok' : 'FAIL') + ' — ' + label + (detail !== undefined ? ' (' + JSON.stringify(detail) + ')' : ''));
 }
 
+// BGA exposes gettext as a global _(); identity stub for the i18n calls
+// in extracted bodies (treevolvedPanelHtml's "Adult Plants:", etc.).
+window._ = (s) => s;
+
 // renderPlayerPanel references the static Game.PANEL_ICON_TOOLTIPS map —
-// empty is fine here, we're not asserting plant-stat tooltip text. It
-// also now reads Game.PLANT_COUNT_COLUMNS for the Lv. 3 tooltip wiring
-// (Trello https://trello.com/c/xYfPLZuI) — that one needs the real data.
-const Game = { PANEL_ICON_TOOLTIPS: {}, PLANT_COUNT_COLUMNS: ${plantCountColumns} };
+// empty is fine here, we're not asserting the tooltip text.
+const Game = { PANEL_ICON_TOOLTIPS: {} };
 
 const tooltipCalls = [];
 const game = {
@@ -114,10 +116,11 @@ game.getFamily = new Function('plantType', ${JSON.stringify(getFamilyBody)});
 game.computePlayerStats = new Function('playerId', ${JSON.stringify(computePlayerStatsBody)}).bind(game);
 game.addCharacterTooltip = new Function('nodeId', 'cardInfo', ${JSON.stringify(addCharacterTooltipBody)}).bind(game);
 game.renderCharacters = new Function('cards', 'containerId', ${JSON.stringify(renderCharactersBody)}).bind(game);
-game.level3CellId = new Function('playerId', 'columnIcon', ${JSON.stringify(level3CellIdBody)}).bind(game);
-game.level3CardsByColumn = new Function('playerId', ${JSON.stringify(level3CardsByColumnBody)}).bind(game);
-game.addLevel3Tooltip = new Function('nodeId', 'cards', ${JSON.stringify(addLevel3TooltipBody)}).bind(game);
-game.plantCountsTableHtml = new Function('s', 'playerId', ${JSON.stringify(plantCountsTableHtmlBody)}).bind(game);
+game.escapeAttr = new Function('str', ${JSON.stringify(escapeAttrBody)}).bind(game);
+game.treevolvedCards = new Function('playerId', ${JSON.stringify(treevolvedCardsBody)}).bind(game);
+game.treevolvedSlotId = new Function('playerId', 'cardId', ${JSON.stringify(treevolvedSlotIdBody)}).bind(game);
+game.treevolvedPanelHtml = new Function('playerId', ${JSON.stringify(treevolvedPanelHtmlBody)}).bind(game);
+game.addPlantTooltip = new Function('nodeId', 'cardInfo', ${JSON.stringify(addPlantTooltipBody)}).bind(game);
 game.renderPlayerPanel = new Function('playerId', ${JSON.stringify(renderPlayerPanelBody)}).bind(game);
 game.notif_characterClaimed = new Function('args', ${JSON.stringify(notifCharacterClaimedBody)}).bind(game);
 game.notif_characterReturned = new Function('args', ${JSON.stringify(notifCharacterReturnedBody)}).bind(game);

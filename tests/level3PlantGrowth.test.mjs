@@ -74,30 +74,9 @@ function extractClass(name) {
     return src.slice(startIdx, i);
 }
 
-// Static class fields (e.g. `static NAME = [...];`) aren't methods, so
-// extractMethod's regex doesn't fit — brace/bracket-match from the `=`
-// instead, same technique used in tests/plantCountsTable.test.mjs.
-function extractStaticField(name) {
-    const marker = `static ${name} = `;
-    const startIdx = src.indexOf(marker);
-    if (startIdx === -1) throw new Error(`extractStaticField failed for ${name}`);
-    const valueStart = startIdx + marker.length;
-    let depth = 0;
-    let started = false;
-    let i = valueStart;
-    for (; i < src.length; i++) {
-        const ch = src[i];
-        if (ch === '{' || ch === '[') { depth++; started = true; }
-        else if (ch === '}' || ch === ']') { depth--; if (started && depth === 0) { i++; break; } }
-    }
-    return src.slice(valueStart, i);
-}
-
-const plantCountColumns = extractStaticField('PLANT_COUNT_COLUMNS');
 const notifPlantGrownBody = extractMethod('notif_plantGrown');
-const computePlayerStatsBody = extractMethod('computePlayerStats');
-const level3CardsByColumnBody = extractMethod('level3CardsByColumn');
 const plantCardBodyBody = extractMethod('plantCardBody');
+const escapeAttrBody = extractMethod('escapeAttr');
 const isAdultBody = extractMethod('isAdult');
 const isBabyTypeBody = extractMethod('isBabyType');
 const getFamilyBody = extractMethod('getFamily');
@@ -108,9 +87,6 @@ function _(s) { return s; }
 window.onerror = (msg, src, line, col, err) => {
     document.getElementById('results').innerHTML += 'FAIL — uncaught error: ' + msg + ' (line ' + line + ':' + col + ')' + (err && err.stack ? '<br>' + String(err.stack).replace(/\\n/g, ' | ') : '') + '<br>';
 };
-
-// level3CardsByColumn references the static Game.PLANT_COUNT_COLUMNS field.
-const Game = { PLANT_COUNT_COLUMNS: ${plantCountColumns} };
 
 // A single game object plays the role of "this" inside both the Game-class
 // notif_plantGrown/computePlayerStats/level3CardsByColumn methods AND (via
@@ -142,14 +118,14 @@ const game = {
     plantingPhase: {},
     refreshAllPlayerPanels: () => {},
     addPlantTooltip: () => {},
+    muteMoveSound: () => {},
     isAdult: new Function('plantType', ${JSON.stringify(isAdultBody)}),
     isBabyType: new Function('plantType', ${JSON.stringify(isBabyTypeBody)}),
     getFamily: new Function('plantType', ${JSON.stringify(getFamilyBody)}),
+    escapeAttr: new Function('str', ${JSON.stringify(escapeAttrBody)}),
     plantCardBody: new Function('cardKey', 'cardInfo', '{ showCost = false, levelLabel = null } = {}', ${JSON.stringify(plantCardBodyBody)}),
 };
 game.notif_plantGrown = new Function('args', ${JSON.stringify(notifPlantGrownBody)}).bind(game);
-game.computePlayerStats = new Function('playerId', ${JSON.stringify(computePlayerStatsBody)}).bind(game);
-game.level3CardsByColumn = new Function('playerId', ${JSON.stringify(level3CardsByColumnBody)}).bind(game);
 
 function escapeHtml(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -186,26 +162,14 @@ check('gamedatas.plantsLevel3[501].location_arg is the PLAYER id (7), not the st
     game.gamedatas.plantsLevel3[501] && game.gamedatas.plantsLevel3[501].location_arg == 7,
     game.gamedatas.plantsLevel3[501]);
 
-// ── Consumer 1: player panel counter (computePlayerStats) ──
-const stats = game.computePlayerStats(7);
-check('computePlayerStats(7) counts the level-3 Baby Cactus (index 3 = 1, not 0)',
-    JSON.stringify(stats.plants.cactus.baby) === JSON.stringify([0, 0, 0, 1]),
-    stats.plants.cactus.baby);
-
-// ── Consumer 2: player panel Lv. 3 tooltip (level3CardsByColumn) — new
-//    with xYfPLZuI, and depends on the SAME location_arg translation, so
-//    a regression there would silently empty this out too. ──
-const byColumn = game.level3CardsByColumn(7);
-check('level3CardsByColumn(7) places the Level 3 Cattus under baby_cactus',
-    byColumn.baby_cactus.length === 1 && byColumn.baby_cactus[0].id === 501,
-    byColumn.baby_cactus);
-check('no OTHER column picked it up (family/maturity bucketing is exact)',
-    Object.entries(byColumn).filter(([k]) => k !== 'baby_cactus').every(([, v]) => v.length === 0),
-    byColumn);
-
-// ── Consumer 3: selectable as a Treevolve sacrifice, now via the modal
+// ── Consumer: still selectable as a Treevolve sacrifice, via the modal
 //    (PlantingPhase.renderSacrificeModal, part of the extracted class
-//    below) instead of clicking directly in the garden. ──
+//    below), which draws its candidate list from the same translated
+//    plantsLevel3 data — a broken location_arg would silently drop the
+//    plant. (The old player-panel Lv. 3 table consumers —
+//    computePlayerStats' per-family/level breakdown and level3CardsByColumn
+//    — were removed with the treevolved-subpanel redesign, Trello aPeeyKyv,
+//    so there's nothing left to assert there.) ──
 const PlantingPhase = new Function('return (' + ${JSON.stringify(plantingPhaseClassSrc)} + ');')();
 const buttonLog = [];
 const bga = {
