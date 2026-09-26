@@ -359,6 +359,20 @@ note) has a git-native source of truth to draw from.
   needing to be called via `this.bga.gameui`, not `this` — see the
   dedicated AGENTS.md section on this); added a visible "Adult Plants:"
   label to the treevolved subpanel (aPeeyKyv follow-up).
+- **`v2.0.2`** — 2026-09-25, PATCH (bug fix only, no new features or
+  external milestone). Fixed the Planting Phase "server error" cluster
+  (Trello TuFvhs3g; 6 BGA table reports #240245/#240541/#240860/#240892/
+  #244040/#245224): paying a plant's cost by discarding cards could throw
+  BGA's generic red "server error" instead of a clean rejection. Root
+  cause was uncaught fatals on the planting hot path — `enum::from()` on
+  the persisted `player_planting_status` column raises a `\ValueError` on
+  any off-enum value (cases are 0/1/3; 2 is undefined), and
+  `count(json_decode())` on a malformed pending-effects column raises a
+  `\TypeError` on PHP 8; both surface as a generic server error rather
+  than a clean `UserException`. Fix makes every persisted-state read fail
+  safe (`tryFrom()` + a guarded `decodeEffectQueue()` helper), applied to
+  `PlantingPhase` and the parallel `WeatherPhaseBonus` substate read, with
+  a regression test (`PlantingServerErrorHardeningTest`). `49f5648`.
 - **Release notes:** commit messages in this repo are verbose
   multi-paragraph explanations — too long to concatenate mechanically
   into 250 characters. At tag time, list commits since the last tag
