@@ -272,16 +272,17 @@ class PlantingPhase {
                             return;
                         }
                     }
-                    if (this.selectedPaymentCards.length < cost) {
-                        this.bga.statusBar.setTitle(_('Select ${cost} more card(s) to discard as cost').replace('${cost}', cost - this.selectedPaymentCards.length));
-                        this.highlightHandCardsForCost(id => {
-                            if (!this.selectedPaymentCards.includes(id)) {
-                                this.selectedPaymentCards.push(id);
-                                this.updateStatusBar();
-                            }
-                        });
+                    // Toggle-select the discard cost (click to add, click a
+                    // selected card to remove — Trello hsdoZGId). Confirm is
+                    // an explicit button, like Grow, rather than auto-firing
+                    // the instant the cost is met — otherwise the final
+                    // selection would confirm before it could be deselected.
+                    this.highlightHandCardsForCost(cost, () => this.updateStatusBar());
+                    if (this.selectedPaymentCards.length === cost) {
+                        this.bga.statusBar.setTitle(_('Confirm — discard ${cost} card(s) to plant').replace('${cost}', cost));
+                        this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmPlant(), { color: 'green' });
                     } else {
-                        this.confirmPlant();
+                        this.bga.statusBar.setTitle(_('Select ${cost} more card(s) to discard as cost').replace('${cost}', cost - this.selectedPaymentCards.length));
                     }
                 } else {
                     // Treevolved plant - need to select a plant to sacrifice
@@ -324,17 +325,13 @@ class PlantingPhase {
                 let pCardInfo = this.game.getPlantCard(this.selectedPlantToGrow);
                 const cost = this.game.gamedatas.plantCardTypes[pCardInfo.type].cost;
                 
-                if (this.selectedPaymentCards.length < cost) {
-                    this.bga.statusBar.setTitle(_('Select ${cost} more card(s) to discard as fertilizer').replace('${cost}', cost - this.selectedPaymentCards.length));
-                    this.highlightHandCardsForCost(id => {
-                        if (!this.selectedPaymentCards.includes(id)) {
-                            this.selectedPaymentCards.push(id);
-                            this.updateStatusBar();
-                        }
-                    });
-                } else {
+                // Toggle-select the fertilizer cost, same as planting (Trello hsdoZGId).
+                this.highlightHandCardsForCost(cost, () => this.updateStatusBar());
+                if (this.selectedPaymentCards.length === cost) {
                     this.bga.statusBar.setTitle(_('Confirm Growth'));
                     this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmGrow(), { color: 'green' });
+                } else {
+                    this.bga.statusBar.setTitle(_('Select ${cost} more card(s) to discard as fertilizer').replace('${cost}', cost - this.selectedPaymentCards.length));
                 }
             }
         }
@@ -382,18 +379,37 @@ class PlantingPhase {
         return empty ? empty.id : null;
     }
 
-    highlightHandCardsForCost(callback) {
+    /**
+     * Highlight hand cards for a discard cost / fertilizer payment with
+     * TOGGLE selection (Trello hsdoZGId): an unselected card is clickable to
+     * add it (up to `cost`), and an already-selected card is clickable to
+     * DESELECT it. Selected cards get a distinct green highlight so the
+     * player can see (and undo) their choices; unselected ones are red.
+     * Clicking a new card while already at the `cost` cap is a no-op — the
+     * player deselects one first. `onChange` is called after any toggle
+     * (the caller re-renders the status bar / Confirm button from it).
+     */
+    highlightHandCardsForCost(cost, onChange) {
         this.cleanupUI();
         const hand = this.game.gamedatas.hand;
         Object.values(hand).forEach(c => {
-            if (c.id != this.selectedCardToPlant && !this.selectedPaymentCards.includes(c.id)) {
-                const el = document.getElementById(`card_${c.id}`);
-                if (el) {
-                    el.classList.add('bga-cards_selectable-card');
-                    el.style.boxShadow = '0 0 10px #e74c3c';
-                    el.onclick = () => callback(c.id);
+            if (c.id == this.selectedCardToPlant) return; // can't pay with the card being planted
+            const el = document.getElementById(`card_${c.id}`);
+            if (!el) return;
+            const isSelected = this.selectedPaymentCards.includes(c.id);
+            el.classList.add('bga-cards_selectable-card');
+            el.style.cursor = 'pointer';
+            el.style.boxShadow = isSelected ? '0 0 12px #27ae60' : '0 0 10px #e74c3c';
+            el.onclick = () => {
+                if (isSelected) {
+                    this.selectedPaymentCards = this.selectedPaymentCards.filter(x => x !== c.id);
+                } else if (this.selectedPaymentCards.length < cost) {
+                    this.selectedPaymentCards.push(c.id);
+                } else {
+                    return; // already at the cost cap — deselect one first
                 }
-            }
+                onChange();
+            };
         });
     }
 
