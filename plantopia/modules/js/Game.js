@@ -1951,9 +1951,18 @@ export class Game {
         this.renderCharacters(Object.values(this.gamedatas.availableCharacters || {}), 'available-characters-container');
         this.renderPlayerPanel(args.player_id);
 
-        // Re-evaluate current state handlers (adds clickable return if it's ours)
+        // Re-evaluate the SetupDecisions handler with the LOCAL player's REAL
+        // active status. A claim is broadcast to EVERY client, so each one
+        // re-runs this handler — but it must pass this browser's own
+        // multiactive status, NOT `local === claimer`. The old expression
+        // (getCurrentPlayerId() === args.player_id) made the second, still-
+        // choosing player's client compute `false` the instant the FIRST
+        // player claimed, dropping her out of the character-selection UI into
+        // the blank "${actplayer} is making setup decisions" wait screen until
+        // a page reload re-derived it (Trello DhFTEXOU). isCurrentPlayerActive()
+        // is BGA's authoritative per-browser tracking of the multiactive set.
         if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions') {
-            this.setupDecisions.onEnteringState(null, this.bga.players.getCurrentPlayerId() === args.player_id);
+            this.setupDecisions.onEnteringState(null, this.bga.players.isCurrentPlayerActive());
         }
     }
 
@@ -1968,9 +1977,13 @@ export class Game {
         this.renderCharacters(Object.values(this.gamedatas.availableCharacters), 'available-characters-container');
         this.renderPlayerPanel(args.player_id);
 
-        // Re-evaluate current state handlers (adds clickable claim)
+        // Same fix as notif_characterClaimed (Trello DhFTEXOU): re-run the
+        // handler with the LOCAL player's real active status, not a hardcoded
+        // `true`. A return is broadcast to everyone, and a client whose player
+        // is already done must not be forced back into the active-selection
+        // render.
         if (this.bga.states.getCurrentMainStateName() === 'SetupDecisions') {
-            this.setupDecisions.onEnteringState(null, true);
+            this.setupDecisions.onEnteringState(null, this.bga.players.isCurrentPlayerActive());
         }
     }
 
