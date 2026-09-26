@@ -304,7 +304,11 @@ class PlantingPhase {
                     // selection would confirm before it could be deselected.
                     this.highlightHandCardsForCost(cost, () => this.updateStatusBar());
                     if (this.selectedPaymentCards.length === cost) {
-                        this.bga.statusBar.setTitle(_('Confirm — discard ${cost} card(s) to plant').replace('${cost}', cost));
+                        // A free plant (cost 0) reads awkwardly as "discard 0
+                        // card(s)" — say so plainly instead (Marty, 09-26).
+                        this.bga.statusBar.setTitle(cost === 0
+                            ? _('Confirm — free to plant')
+                            : _('Confirm — discard ${cost} card(s) to plant').replace('${cost}', cost));
                         // Keep an explicit Confirm button, and auto-confirm 3s
                         // later (Trello hsdoZGId follow-up). Deselecting a card
                         // drops below the cost, so updateStatusBar rebuilds
