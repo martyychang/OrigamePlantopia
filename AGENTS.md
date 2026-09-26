@@ -390,6 +390,19 @@ note) has a git-native source of truth to draw from.
   deterministic, no fallback family. Also covers two other card-name callers
   (`playerHasGrowableAdultOfFamily`, the `level_up_matching_adult` resolver).
   Regression test `TomatoPlantingCrashTest`. `6ae6685`.
+- **`v2.0.4`** — 2026-09-26, PATCH (bug fix only). Fixed player 2 getting
+  stuck on "⏳ is making setup decisions" after player 1 picks a character in
+  a 2-player game with characters enabled (Trello DhFTEXOU). SetupDecisions
+  is a `MULTIPLE_ACTIVE_PLAYER` state; a character claim broadcasts to every
+  client, and `notif_characterClaimed` re-ran the setup handler with
+  `isCurrentPlayerActive = (getCurrentPlayerId() === args.player_id)` — so the
+  second, still-choosing player's client computed `false` the instant the
+  first player claimed and fell into the non-active "${actplayer} is making
+  setup decisions" wait screen (blank name, because `${actplayer}` is empty in
+  a multiactive state); a page reload re-derived the real state.
+  `notif_characterReturned` had the mirror bug (a hardcoded `true`). Fix: both
+  re-run with the authoritative `this.bga.players.isCurrentPlayerActive()`.
+  Regression test `setupDecisionsCharacterActivation.test.mjs`. `4a4ca11`.
 - **Release notes:** commit messages in this repo are verbose
   multi-paragraph explanations — too long to concatenate mechanically
   into 250 characters. At tag time, list commits since the last tag
