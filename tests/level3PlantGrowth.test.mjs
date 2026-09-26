@@ -77,6 +77,7 @@ function extractClass(name) {
 const notifPlantGrownBody = extractMethod('notif_plantGrown');
 const plantCardBodyBody = extractMethod('plantCardBody');
 const escapeAttrBody = extractMethod('escapeAttr');
+const renderLevel3PlantBody = extractMethod('renderLevel3Plant');
 const isAdultBody = extractMethod('isAdult');
 const isBabyTypeBody = extractMethod('isBabyType');
 const getFamilyBody = extractMethod('getFamily');
@@ -125,6 +126,7 @@ const game = {
     escapeAttr: new Function('str', ${JSON.stringify(escapeAttrBody)}),
     plantCardBody: new Function('cardKey', 'cardInfo', '{ showCost = false, levelLabel = null } = {}', ${JSON.stringify(plantCardBodyBody)}),
 };
+game.renderLevel3Plant = new Function('card', 'playerId', ${JSON.stringify(renderLevel3PlantBody)}).bind(game);
 game.notif_plantGrown = new Function('args', ${JSON.stringify(notifPlantGrownBody)}).bind(game);
 
 function escapeHtml(s) {
@@ -154,8 +156,16 @@ game.notif_plantGrown({ card_id: 501, level: 3, max_level: true, player_id: 7 })
 // ── Level 3 plants are hidden from the garden entirely (Trello
 //    https://trello.com/c/xYfPLZuI) — the DOM element must be gone, not
 //    just re-styled/re-parented into a visible "tilted" row. ──
-check('the on-planter DOM element is removed once the plant graduates to Level 3',
-    !document.getElementById('garden_plant_501'));
+// On graduation the plant leaves its planter and re-renders into its
+// owner's dedicated horizontal level-3 row (Trello n6kh9pTk restored this
+// visible display; xYfPLZuI had removed it entirely).
+const graduated = document.getElementById('garden_plant_501');
+check('the graduated Level 3 card re-renders into the player\\'s level-3 row (not removed, not left on the planter)',
+    !!graduated && graduated.parentElement && graduated.parentElement.id === 'player-garden-level3-7');
+check('the graduated card is no longer inside the planter slot',
+    !document.getElementById('planter-slot_5001').querySelector('#garden_plant_501'));
+check('the level-3 card is laid out 90°-tilted (horizontal)',
+    !!graduated && /rotate\\(90deg\\)/.test(graduated.getAttribute('style') || ''));
 
 // ── location_arg translation still correct (7CO2tan1's root-cause fix) ──
 check('gamedatas.plantsLevel3[501].location_arg is the PLAYER id (7), not the stale planter id (5001)',
@@ -204,6 +214,7 @@ check('the modal is removed after confirming', !document.getElementById('sacrifi
 const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head><body>
 <div id="planter-slot_5001"></div>
+<div id="player-garden-level3-7"></div>
 <div id="game-area"></div>
 <div id="results"></div>
 <script>${script}</script>

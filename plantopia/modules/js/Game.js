@@ -1183,6 +1183,7 @@ export class Game {
                 <div id="player-table-${player.id}" style="border: 1px solid #ccc; margin: 10px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px; color: #333;">
                     <h3>${_("${playerName}'s Garden").replace('${playerName}', player.name)}</h3>
                     <div id="player-garden-planters-${player.id}" class="plantopia-overflow-row" style="margin-top: 10px; min-height: 300px;"></div>
+                    <div id="player-garden-level3-${player.id}" class="plantopia-overflow-row" style="margin-top: 10px;"></div>
                     <div id="player-garden-bonus-${player.id}" class="plantopia-overflow-row" style="margin-top: 10px;"></div>
                 </div>
             `);
@@ -1200,10 +1201,17 @@ export class Game {
             const playedBonus = Object.values(gamedatas.weatherPlayedBonus || {}).filter(c => c.location_arg == player.id);
             this.renderPlayedBonusWeather(playedBonus, `player-garden-planters-${player.id}`);
 
-            // Level 3 (Treevolved) plants are NOT rendered into the garden
-            // at all — see the comment above the player-table template.
-            // gamedatas.plantsLevel3 is still tracked and drives the player
-            // panel's Lv. 3 counts + hover tooltips (renderPlayerPanel).
+            // Level 3 (Treevolved) plants render on their OWN horizontal
+            // row beneath the planters, laid out 90°-tilted the way the
+            // physical game lays maxed plants under the garden (Trello
+            // n6kh9pTk — Daryl wanted them visible again; restores the row
+            // removed by xYfPLZuI so players can read their maxed plants and
+            // scoring can be eyeballed). The treevolved subpanel in the
+            // player panel still shows adult plants at every level as a
+            // compact icon summary — this is the full, readable view.
+            Object.values(gamedatas.plantsLevel3 || {})
+                .filter(c => c.location_arg == player.id)
+                .forEach(card => this.renderLevel3Plant(card, player.id));
         });
 
         // Render plants on planters (done after all planters are created)
@@ -2299,13 +2307,14 @@ export class Game {
             }
 
             if (args.max_level) {
-                // Graduate off the planter to Level 3 (Treevolved). Unlike
-                // before https://trello.com/c/xYfPLZuI, this no longer
-                // re-parents the card into a visible garden row — Level 3
-                // plants aren't rendered in the garden at all now, only
-                // surfaced via a tooltip on the player panel's treevolved
-                // subpanel (see renderPlayerPanel / treevolvedPanelHtml) —
-                // so the DOM element is simply removed.
+                // Graduate off the planter to Level 3 (Treevolved). The
+                // on-planter element is removed and the card is re-rendered
+                // into its owner's dedicated horizontal level-3 row (Trello
+                // n6kh9pTk restored this visible display, which xYfPLZuI had
+                // dropped in favor of a panel-only tooltip). Re-rendering
+                // fresh from data — rather than re-parenting + restyling the
+                // old node — keeps a single code path shared with setup
+                // (renderLevel3Plant).
                 const card = this.gamedatas.plantsOnPlanters[cardId];
                 delete this.gamedatas.plantsOnPlanters[cardId];
 
@@ -2331,6 +2340,7 @@ export class Game {
                 this.gamedatas.plantsLevel3[cardId] = card;
 
                 if (el) el.remove();
+                this.renderLevel3Plant(card, args.player_id);
             }
         }
         this.refreshAllPlayerPanels();
@@ -2415,6 +2425,30 @@ export class Game {
                 this.plantingPhase.onPlayerActivationChange(null, true);
             }
         }
+    }
+
+    /**
+     * Render one Level 3 (Treevolved) plant into its owner's dedicated
+     * horizontal level-3 row (`player-garden-level3-<playerId>`), laid out
+     * 90°-tilted the way maxed plants sit under the garden in the physical
+     * game. Shared by setup() and notif_plantGrown's max_level graduation,
+     * so both paths produce the identical tile. Restores the display removed
+     * by Trello xYfPLZuI, per Trello n6kh9pTk. Wires the same hover tooltip
+     * (addPlantTooltip) the treevolved subpanel uses. The element keeps the
+     * `garden_plant_<id>` id convention so the existing sacrifice/plant
+     * cleanup in notif_plantPlanted removes it correctly when it's spent.
+     */
+    renderLevel3Plant(card, playerId) {
+        const row = document.getElementById(`player-garden-level3-${playerId}`);
+        if (!row) return;
+        const cardInfo = this.gamedatas.plantCardTypes[card.type];
+        const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Level: ${card.type_arg}` });
+        row.insertAdjacentHTML('beforeend', `
+            <div id="garden_plant_${card.id}" class="level3-tilted plantopia-card-size ${body.extraClass}" ${body.dataAttr} data-id="${card.id}" style="position: relative; border: 2px solid #2ecc71; border-radius: 5px; background-color: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                ${body.inner}
+            </div>
+        `);
+        this.addPlantTooltip(`garden_plant_${card.id}`, cardInfo);
     }
 
     renderPlantInPlanter(card, planterId) {
