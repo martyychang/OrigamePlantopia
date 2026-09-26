@@ -727,14 +727,30 @@ class PlantCards
     }
 
     /**
-     * Get the family name (cactus, flower, tree) for a plant type.
+     * Get the family name (cactus, flower, tree) for a plant — accepts
+     * EITHER a card name (e.g. 'Cutetus') or a plant_type (e.g. 'baby_cactus'),
+     * resolving via resolvePlantType() exactly like isBaby()/isTreevolved().
+     *
+     * This resolve step is load-bearing: callers pass a card's raw `type`
+     * (which is the card NAME) in several places — most importantly the
+     * Tomato character's plant-time effect, PlantingPhase::queueCharacterPlantingEffects().
+     * Before, this method match()'d the raw input against plant_type
+     * constants with NO default arm, so a card name fell through to an
+     * uncaught \UnhandledMatchError → BGA's generic "server error". That was
+     * the real cause of the Tomato-character planting crash (Trello TuFvhs3g,
+     * BGA #245224 et al.) — NOT the persisted-enum fragility hardened in
+     * v2.0.2, which is a separate latent issue. The default arm now throws a
+     * clear, catchable exception so genuinely-bad input fails loudly (and in
+     * tests) rather than as a raw match error.
      */
-    public static function getFamily(string $plantType): string
+    public static function getFamily(string $cardOrType): string
     {
+        $plantType = self::resolvePlantType($cardOrType);
         return match ($plantType) {
             self::BABY_CACTUS, self::TRV_CACTUS => 'cactus',
             self::BABY_FLOWER, self::TRV_FLOWER => 'flower',
             self::BABY_TREE,   self::TRV_TREE   => 'tree',
+            default => throw new \InvalidArgumentException("No plant family for: {$cardOrType}"),
         };
     }
 
