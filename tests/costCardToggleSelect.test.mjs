@@ -105,19 +105,21 @@ t('the card being planted is never selectable as its own payment', () => {
     assert.ok(els['card_1'].onclick, 'other cards should be clickable');
 });
 
-// Trello InZoBHJY + wSNYx34l: the standardized border scheme — no halos,
-// plain green border by default, thick orange border when selected, thick
-// blue (bonus-weather blue) border for the card being planted.
-t('standardized borders: plant card blue, selected-cost orange, available-cost green; no halos', () => {
+// Trello InZoBHJY + wSNYx34l + 5PPWbV5J: the standardized scheme is a crisp
+// zero-blur box-shadow RING (not a CSS border, so it never resizes the card):
+// thick blue for the card being planted, thick orange when selected, plain
+// green when available. No real border is set (that would shrink the face).
+t('standardized rings: plant card thick blue, selected-cost thick orange, available-cost thin green', () => {
     const { ctx, els } = buildCtx([1, 2, 3], { selectedCardToPlant: 2, selected: [1] });
     ctx.highlightHandCardsForCost(2, () => {});
-    assert.match(els['card_2'].style.border, /4px .*#3498db/i, 'plant card should be thick blue');
-    assert.match(els['card_1'].style.border, /4px .*#f1c40f/i, 'selected cost card should be thick orange');
-    assert.match(els['card_3'].style.border, /2px .*#2ecc71/i, 'available cost card should be plain green');
-    // No halo/box-shadow anywhere in the standardized scheme.
-    assert.equal(els['card_1'].style.boxShadow, 'none', 'no halo on selected card');
-    assert.equal(els['card_2'].style.boxShadow, 'none', 'no halo on plant card');
-    assert.equal(els['card_3'].style.boxShadow, 'none', 'no halo on available card');
+    assert.match(els['card_2'].style.boxShadow, /0 0 0 4px .*#3498db/i, 'plant card should be a thick blue ring');
+    assert.match(els['card_1'].style.boxShadow, /0 0 0 4px .*#f1c40f/i, 'selected cost card should be a thick orange ring');
+    assert.match(els['card_3'].style.boxShadow, /0 0 0 2px .*#2ecc71/i, 'available cost card should be a thin green ring');
+    // No CSS border is applied — a real border would eat into the fixed
+    // border-box and shrink the card face (Trello 5PPWbV5J).
+    assert.equal(els['card_1'].style.border, '', 'no layout border on selected card');
+    assert.equal(els['card_2'].style.border, '', 'no layout border on plant card');
+    assert.equal(els['card_3'].style.border, '', 'no layout border on available card');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

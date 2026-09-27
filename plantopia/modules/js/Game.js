@@ -230,7 +230,10 @@ class PlantingPhase {
     cleanupUI() {
         document.querySelectorAll('.bga-cards_selectable-card').forEach(el => {
             el.classList.remove('bga-cards_selectable-card');
-            el.style.boxShadow = 'none';
+            // Drop the selection ring but keep the card's subtle depth shadow,
+            // so a deselected/idle card looks identical to a freshly rendered
+            // one (Trello 5PPWbV5J).
+            el.style.boxShadow = '2px 2px 5px rgba(0,0,0,0.1)';
             el.style.border = '';
             el.onclick = null;
         });
@@ -240,23 +243,31 @@ class PlantingPhase {
         if (sacrificeContainer) sacrificeContainer.remove();
     }
 
-    // Standardized selectable-card highlighting (Trello wSNYx34l). One scheme
-    // for every plant-card selection, whether from the hand or from drawn
-    // cards: a plain green border by default, a thicker orange border when
-    // selected, and a thicker blue border (the bonus-weather blue) for the
-    // single card being planted. No halo/box-shadow — that blur effect was the
-    // old per-context scheme this card removed. Pass state 'default',
-    // 'selected', or 'planting'.
+    // Standardized selectable-card highlighting (Trello wSNYx34l, sizing fix
+    // 5PPWbV5J). One scheme for every plant-card selection, whether from the
+    // hand or from drawn cards: a plain green ring by default, a thicker orange
+    // ring when selected, and a thicker blue ring (the bonus-weather blue) for
+    // the single card being planted. Pass state 'default', 'selected', or
+    // 'planting'.
+    //
+    // Drawn as a zero-blur box-shadow RING outside the card box, never a CSS
+    // border. Cards are `box-sizing: border-box` at a fixed 120x180
+    // (.plantopia-card-size), so a real border would eat into the content box
+    // and shrink the card face as it thickens (2px → 4px). A spread box-shadow
+    // sits outside the box: it follows the border-radius, is crisp (0 blur, not
+    // a halo), and takes no layout space — so the card face and every
+    // neighbour stay put regardless of ring thickness. The card's own subtle
+    // depth shadow is preserved underneath.
     markSelectableCard(el, state = 'default') {
         if (!el) return;
-        const border = {
-            default: '2px solid #2ecc71',   // plain green — the default for any selectable card
-            selected: '4px solid #f1c40f',   // thick orange — a card picked to pay a cost
-            planting: '4px solid #3498db',   // thick blue (bonus-weather blue) — the card being planted
-        }[state] || '2px solid #2ecc71';
+        const ring = {
+            default: '0 0 0 2px #2ecc71',   // plain green — the default for any selectable card
+            selected: '0 0 0 4px #f1c40f',   // thick orange — a card picked to pay a cost
+            planting: '0 0 0 4px #3498db',   // thick blue (bonus-weather blue) — the card being planted
+        }[state] || '0 0 0 2px #2ecc71';
         el.classList.add('bga-cards_selectable-card');
-        el.style.boxShadow = 'none';
-        el.style.border = border;
+        el.style.border = '';
+        el.style.boxShadow = `${ring}, 2px 2px 5px rgba(0,0,0,0.1)`;
     }
 
     updateStatusBar() {
@@ -522,7 +533,7 @@ class PlantingPhase {
             const typeInfo = this.game.gamedatas.plantCardTypes[pl.type];
             const body = this.game.plantCardBody(pl.type, typeInfo, { levelLabel: `Level: ${pl.type_arg}` });
             list.insertAdjacentHTML('beforeend', `
-                <div id="sacrifice_${pl.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer;">
+                <div id="sacrifice_${pl.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer;">
                     ${body.inner}
                 </div>
             `);
@@ -530,6 +541,7 @@ class PlantingPhase {
             this.game.addPlantTooltip(`sacrifice_${pl.id}`, typeInfo);
 
             const el = document.getElementById(`sacrifice_${pl.id}`);
+            this.markSelectableCard(el, 'default');
             el.onclick = () => {
                 if (selectedId === pl.id) {
                     selectedId = null;
@@ -779,7 +791,7 @@ class PlantingPhase {
             const cardInfo = this.game.gamedatas.plantCardTypes[c.type];
             const body = this.game.plantCardBody(c.type, cardInfo, { showCost: true });
             list.insertAdjacentHTML('beforeend', `
-                <div id="draft_${c.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer;">
+                <div id="draft_${c.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer;">
                     ${body.inner}
                 </div>
             `);
@@ -787,6 +799,7 @@ class PlantingPhase {
             this.game.addPlantTooltip(`draft_${c.id}`, cardInfo);
 
             const el = document.getElementById(`draft_${c.id}`);
+            this.markSelectableCard(el, 'default');
             el.onclick = () => {
                 if (this.selectedDraftCards.includes(c.id)) {
                     this.selectedDraftCards = this.selectedDraftCards.filter(id => id !== c.id);
