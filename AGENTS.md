@@ -403,6 +403,24 @@ note) has a git-native source of truth to draw from.
   `notif_characterReturned` had the mirror bug (a hardcoded `true`). Fix: both
   re-run with the authoritative `this.bga.players.isCurrentPlayerActive()`.
   Regression test `setupDecisionsCharacterActivation.test.mjs`. `4a4ca11`.
+- **`v2.1.0`** — 2026-09-27, MINOR (planting-UX features + test-suite
+  repair, no external status change). Four player-facing improvements to
+  the Planting Phase: (1) Level 3 (maxed) plants are laid out horizontally
+  in the garden again, in their own row, instead of stacking (Trello
+  n6kh9pTk); (2) a card selected to pay a plant/grow cost can be clicked
+  again to deselect it — the discard/fertilizer picker toggles instead of
+  being add-only (Trello hsdoZGId); (3) the card being planted now gets a
+  distinct blue highlight so it's never confused with the red/green cost
+  cards (Trello InZoBHJY); (4) the cost-payment **Confirm** button now
+  auto-confirms after the framework's short delay, matching the Weather
+  Phase "Proceed to Grow Plants" button, and a free plant reads "free to
+  plant" instead of "discard 0 card(s)" (Trello hsdoZGId follow-up). Note:
+  an attempt to force an exact 3-second auto-confirm via a self-managed
+  timer was reverted (`17f1094`) — it had no observable effect in-game and
+  the framework's `autoclick` exposes no duration knob; troubleshooting a
+  custom timer is filed as a non-urgent backlog card. Also repaired the JS
+  test suite (8 rotted `.test.mjs` files greened, dead-feature test
+  removed — Trello JYvNpbx7); suite now 20 JS + PHP green. `17f1094`.
 - **Release notes:** commit messages in this repo are verbose
   multi-paragraph explanations — too long to concatenate mechanically
   into 250 characters. At tag time, list commits since the last tag
