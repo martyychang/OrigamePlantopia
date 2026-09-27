@@ -139,11 +139,6 @@ class PlantingPhase {
         this.selectedPlanter = null;
         this.selectedPaymentCards = [];
         this.selectedPlantToGrow = null;
-        // Pending auto-confirm timer id (see scheduleAutoConfirm). The
-        // framework's `autoclick: true` auto-fires after its own fixed delay,
-        // which Marty found too slow — this is a self-managed 3s timer so we
-        // control the duration exactly (Trello hsdoZGId).
-        this.autoConfirmTimer = null;
         // Purely local to this state-class instance — see the identical
         // field on WeatherPhaseBonus and "Client-Side: isCurrentPlayerActive
         // Is the Only Truth" in AGENTS.md (https://trello.com/c/DCpOIanp).
@@ -233,7 +228,6 @@ class PlantingPhase {
     }
 
     cleanupUI() {
-        this.clearAutoConfirm();
         document.querySelectorAll('.bga-cards_selectable-card').forEach(el => {
             el.classList.remove('bga-cards_selectable-card');
             el.style.boxShadow = 'none';
@@ -245,26 +239,7 @@ class PlantingPhase {
         if (sacrificeContainer) sacrificeContainer.remove();
     }
 
-    // Auto-fire a cost-payment Confirm after exactly 3 seconds. Any status-bar
-    // rebuild (e.g. deselecting a card so the cost is no longer met) clears the
-    // pending timer, so it only ever fires while the full cost stays selected.
-    scheduleAutoConfirm(cb) {
-        this.clearAutoConfirm();
-        this.autoConfirmTimer = setTimeout(() => {
-            this.autoConfirmTimer = null;
-            cb();
-        }, 3000);
-    }
-
-    clearAutoConfirm() {
-        if (this.autoConfirmTimer) {
-            clearTimeout(this.autoConfirmTimer);
-            this.autoConfirmTimer = null;
-        }
-    }
-
     updateStatusBar() {
-        this.clearAutoConfirm();
         this.bga.statusBar.removeActionButtons();
 
         if (!this.selectedAction) {
@@ -309,12 +284,13 @@ class PlantingPhase {
                         this.bga.statusBar.setTitle(cost === 0
                             ? _('Confirm — free to plant')
                             : _('Confirm — discard ${cost} card(s) to plant').replace('${cost}', cost));
-                        // Keep an explicit Confirm button, and auto-confirm 3s
-                        // later (Trello hsdoZGId follow-up). Deselecting a card
-                        // drops below the cost, so updateStatusBar rebuilds
-                        // without this button and clears the pending timer.
-                        this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmPlant(), { color: 'green' });
-                        this.scheduleAutoConfirm(() => this.confirmPlant());
+                        // Keep an explicit Confirm button, and auto-confirm
+                        // after the framework's small delay — same as the
+                        // Weather Phase "Proceed to Grow Plants" button
+                        // (Trello hsdoZGId follow-up). Deselecting a card drops
+                        // below the cost, so updateStatusBar rebuilds without
+                        // this button, cancelling the pending auto-fire.
+                        this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmPlant(), { color: 'green', autoclick: true });
                     } else {
                         this.bga.statusBar.setTitle(_('Select ${cost} more card(s) to discard as cost').replace('${cost}', cost - this.selectedPaymentCards.length));
                     }
@@ -363,9 +339,8 @@ class PlantingPhase {
                 this.highlightHandCardsForCost(cost, () => this.updateStatusBar());
                 if (this.selectedPaymentCards.length === cost) {
                     this.bga.statusBar.setTitle(_('Confirm Growth'));
-                    // Auto-confirm after 3s, same as planting (above).
-                    this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmGrow(), { color: 'green' });
-                    this.scheduleAutoConfirm(() => this.confirmGrow());
+                    // Auto-confirm after the framework's small delay, same as planting (above).
+                    this.bga.statusBar.addActionButton(_('Confirm'), () => this.confirmGrow(), { color: 'green', autoclick: true });
                 } else {
                     this.bga.statusBar.setTitle(_('Select ${cost} more card(s) to discard as fertilizer').replace('${cost}', cost - this.selectedPaymentCards.length));
                 }
