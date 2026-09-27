@@ -1755,7 +1755,7 @@ export class Game {
                 const cardInfo = this.gamedatas.plantCardTypes[card.type] || { name: card.type };
                 const body = this.plantCardBody(card.type, cardInfo, { showCost: true });
                 handContainer.insertAdjacentHTML('beforeend', `
-                    <div id="card_${card.id}" class="plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; text-align: center; background-color: #e8f8f5; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
+                    <div id="card_${card.id}" class="plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border-radius: 10px; padding: 10px; text-align: center; background-color: #e8f8f5; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;">
                         ${body.inner}
                     </div>
                 `);
