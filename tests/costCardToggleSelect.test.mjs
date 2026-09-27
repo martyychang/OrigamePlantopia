@@ -52,6 +52,7 @@ function buildCtx(handIds, { selectedCardToPlant = null, selected = [] } = {}) {
         cleanupUI() {},
         game: { gamedatas: { hand } },
     };
+    ctx.markSelectableCard = new Function('el', 'state', extractMethod('markSelectableCard')).bind(ctx);
     ctx.highlightHandCardsForCost = new Function('cost', 'onChange', extractMethod('highlightHandCardsForCost')).bind(ctx);
     return { ctx, els };
 }
@@ -104,14 +105,19 @@ t('the card being planted is never selectable as its own payment', () => {
     assert.ok(els['card_1'].onclick, 'other cards should be clickable');
 });
 
-// Trello InZoBHJY: three visually-distinct highlight colors so the card
-// being planted is never confused with the cost cards.
-t('distinct highlight colors: plant card blue, selected-cost green, available-cost red', () => {
+// Trello InZoBHJY + wSNYx34l: the standardized border scheme — no halos,
+// plain green border by default, thick orange border when selected, thick
+// blue (bonus-weather blue) border for the card being planted.
+t('standardized borders: plant card blue, selected-cost orange, available-cost green; no halos', () => {
     const { ctx, els } = buildCtx([1, 2, 3], { selectedCardToPlant: 2, selected: [1] });
     ctx.highlightHandCardsForCost(2, () => {});
-    assert.match(els['card_2'].style.boxShadow, /#3498db/i, 'plant card should be blue');
-    assert.match(els['card_1'].style.boxShadow, /#27ae60/i, 'selected cost card should be green');
-    assert.match(els['card_3'].style.boxShadow, /#e74c3c/i, 'available cost card should be red');
+    assert.match(els['card_2'].style.border, /4px .*#3498db/i, 'plant card should be thick blue');
+    assert.match(els['card_1'].style.border, /4px .*#f1c40f/i, 'selected cost card should be thick orange');
+    assert.match(els['card_3'].style.border, /2px .*#2ecc71/i, 'available cost card should be plain green');
+    // No halo/box-shadow anywhere in the standardized scheme.
+    assert.equal(els['card_1'].style.boxShadow, 'none', 'no halo on selected card');
+    assert.equal(els['card_2'].style.boxShadow, 'none', 'no halo on plant card');
+    assert.equal(els['card_3'].style.boxShadow, 'none', 'no halo on available card');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

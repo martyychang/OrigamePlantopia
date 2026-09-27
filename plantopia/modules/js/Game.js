@@ -231,12 +231,32 @@ class PlantingPhase {
         document.querySelectorAll('.bga-cards_selectable-card').forEach(el => {
             el.classList.remove('bga-cards_selectable-card');
             el.style.boxShadow = 'none';
+            el.style.border = '';
             el.onclick = null;
         });
         const draftContainer = document.getElementById('draft-container');
         if (draftContainer) draftContainer.remove();
         const sacrificeContainer = document.getElementById('sacrifice-container');
         if (sacrificeContainer) sacrificeContainer.remove();
+    }
+
+    // Standardized selectable-card highlighting (Trello wSNYx34l). One scheme
+    // for every plant-card selection, whether from the hand or from drawn
+    // cards: a plain green border by default, a thicker orange border when
+    // selected, and a thicker blue border (the bonus-weather blue) for the
+    // single card being planted. No halo/box-shadow — that blur effect was the
+    // old per-context scheme this card removed. Pass state 'default',
+    // 'selected', or 'planting'.
+    markSelectableCard(el, state = 'default') {
+        if (!el) return;
+        const border = {
+            default: '2px solid #2ecc71',   // plain green — the default for any selectable card
+            selected: '4px solid #f1c40f',   // thick orange — a card picked to pay a cost
+            planting: '4px solid #3498db',   // thick blue (bonus-weather blue) — the card being planted
+        }[state] || '2px solid #2ecc71';
+        el.classList.add('bga-cards_selectable-card');
+        el.style.boxShadow = 'none';
+        el.style.border = border;
     }
 
     updateStatusBar() {
@@ -363,8 +383,7 @@ class PlantingPhase {
         Object.values(hand).forEach(c => {
             const el = document.getElementById(`card_${c.id}`);
             if (el) {
-                el.classList.add('bga-cards_selectable-card');
-                el.style.boxShadow = '0 0 10px #27ae60';
+                this.markSelectableCard(el, 'default');
                 el.onclick = () => callback(c.id);
             }
         });
@@ -394,8 +413,9 @@ class PlantingPhase {
      * Highlight hand cards for a discard cost / fertilizer payment with
      * TOGGLE selection (Trello hsdoZGId): an unselected card is clickable to
      * add it (up to `cost`), and an already-selected card is clickable to
-     * DESELECT it. Selected cards get a distinct green highlight so the
-     * player can see (and undo) their choices; unselected ones are red.
+     * DESELECT it. Selected cards get the thick orange border so the player
+     * can see (and undo) their choices; unselected ones keep the plain green
+     * border (standardized scheme, Trello wSNYx34l).
      * Clicking a new card while already at the `cost` cap is a no-op — the
      * player deselects one first. `onChange` is called after any toggle
      * (the caller re-renders the status bar / Confirm button from it).
@@ -407,24 +427,22 @@ class PlantingPhase {
             const el = document.getElementById(`card_${c.id}`);
             if (!el) return;
 
-            // The card being planted keeps its OWN distinct highlight (blue,
-            // matching the "Plant" action button) so it's never confused with
-            // the cost cards, and it's not clickable — you can't pay for a
-            // plant with itself (Trello InZoBHJY). It still gets the class so
-            // cleanupUI() resets this highlight when the flow ends.
+            // The card being planted keeps its OWN distinct highlight (the
+            // thick bonus-weather blue border) so it's never confused with the
+            // cost cards, and it's not clickable — you can't pay for a plant
+            // with itself (Trello InZoBHJY / wSNYx34l). It still gets the class
+            // so cleanupUI() resets this highlight when the flow ends.
             if (c.id == this.selectedCardToPlant) {
-                el.classList.add('bga-cards_selectable-card');
+                this.markSelectableCard(el, 'planting');
                 el.style.cursor = 'default';
-                el.style.boxShadow = '0 0 14px #3498db';
                 el.onclick = null;
                 return;
             }
 
             const isSelected = this.selectedPaymentCards.includes(c.id);
-            el.classList.add('bga-cards_selectable-card');
+            // Cost cards: orange border = selected to discard, plain green = available to pick.
+            this.markSelectableCard(el, isSelected ? 'selected' : 'default');
             el.style.cursor = 'pointer';
-            // Cost cards: green = selected to discard, red = available to pick.
-            el.style.boxShadow = isSelected ? '0 0 12px #27ae60' : '0 0 10px #e74c3c';
             el.onclick = () => {
                 if (isSelected) {
                     this.selectedPaymentCards = this.selectedPaymentCards.filter(x => x !== c.id);
@@ -504,7 +522,7 @@ class PlantingPhase {
             const typeInfo = this.game.gamedatas.plantCardTypes[pl.type];
             const body = this.game.plantCardBody(pl.type, typeInfo, { levelLabel: `Level: ${pl.type_arg}` });
             list.insertAdjacentHTML('beforeend', `
-                <div id="sacrifice_${pl.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer; box-shadow: 0 0 10px #27ae60;">
+                <div id="sacrifice_${pl.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer;">
                     ${body.inner}
                 </div>
             `);
@@ -515,16 +533,14 @@ class PlantingPhase {
             el.onclick = () => {
                 if (selectedId === pl.id) {
                     selectedId = null;
-                    el.style.boxShadow = '0 0 10px #27ae60';
-                    el.style.border = '2px solid #2ecc71';
+                    this.markSelectableCard(el, 'default');
                 } else {
                     if (selectedId != null) {
                         const prevEl = document.getElementById(`sacrifice_${selectedId}`);
-                        if (prevEl) { prevEl.style.boxShadow = '0 0 10px #27ae60'; prevEl.style.border = '2px solid #2ecc71'; }
+                        if (prevEl) this.markSelectableCard(prevEl, 'default');
                     }
                     selectedId = pl.id;
-                    el.style.boxShadow = '0 0 15px #f1c40f';
-                    el.style.border = '4px solid #f1c40f';
+                    this.markSelectableCard(el, 'selected');
                 }
                 updateConfirmButton();
             };
@@ -542,8 +558,7 @@ class PlantingPhase {
         plants.forEach(pl => {
             const el = document.getElementById(`garden_plant_${pl.id}`);
             if (el) {
-                el.classList.add('bga-cards_selectable-card');
-                el.style.boxShadow = '0 0 10px #27ae60';
+                this.markSelectableCard(el, 'default');
                 el.onclick = () => callback(pl.id);
             }
         });
@@ -596,23 +611,18 @@ class PlantingPhase {
             this.highlightHandCardsForSelection(id => {
                 if (this.selectedPaymentCards.includes(id)) {
                     this.selectedPaymentCards = this.selectedPaymentCards.filter(c => c !== id);
-                    document.getElementById(`card_${id}`).style.boxShadow = '0 0 10px #e74c3c';
+                    this.markSelectableCard(document.getElementById(`card_${id}`), 'default');
                 } else {
                     this.selectedPaymentCards.push(id);
-                    document.getElementById(`card_${id}`).style.boxShadow = '0 0 10px #2ecc71';
+                    this.markSelectableCard(document.getElementById(`card_${id}`), 'selected');
                 }
-                
+
                 this.bga.statusBar.removeActionButtons();
                 if (this.selectedPaymentCards.length === effect.qty || this.selectedPaymentCards.length === Object.keys(this.game.gamedatas.hand).length) {
                     this.bga.statusBar.addActionButton(_('Confirm Discard'), () => {
                         this.bga.actions.performAction("actResolveDiscard", { cardIdsStr: this.selectedPaymentCards.join(';') });
                     }, { color: 'red' });
                 }
-            });
-            // Initial highlight
-            Object.values(this.game.gamedatas.hand).forEach(c => {
-                const el = document.getElementById(`card_${c.id}`);
-                if (el) el.style.boxShadow = '0 0 10px #e74c3c';
             });
         } else if (effect.type === 'gain_weather') {
             this.bga.statusBar.setTitle(_('Choose a Bonus Weather card to gain'));
@@ -699,8 +709,7 @@ class PlantingPhase {
         babyIds.forEach(id => {
             const el = document.getElementById(`card_${id}`);
             if (el) {
-                el.classList.add('bga-cards_selectable-card');
-                el.style.boxShadow = '0 0 10px #f1c40f';
+                this.markSelectableCard(el, 'default');
                 el.style.cursor = 'pointer';
                 el.onclick = () => this.toggleBananaBabySelection(id, babyIds);
             }
@@ -710,13 +719,11 @@ class PlantingPhase {
     toggleBananaBabySelection(cardId, eligibleIds) {
         if (this.selectedPaymentCards.includes(cardId)) {
             this.selectedPaymentCards = this.selectedPaymentCards.filter(c => c !== cardId);
-            const el = document.getElementById(`card_${cardId}`);
-            if (el) el.style.boxShadow = '0 0 10px #f1c40f';
+            this.markSelectableCard(document.getElementById(`card_${cardId}`), 'default');
         } else {
             if (this.selectedPaymentCards.length >= 2) return; // hard cap
             this.selectedPaymentCards.push(cardId);
-            const el = document.getElementById(`card_${cardId}`);
-            if (el) el.style.boxShadow = '0 0 15px #27ae60';
+            this.markSelectableCard(document.getElementById(`card_${cardId}`), 'selected');
         }
 
         this.bga.statusBar.removeActionButtons();
@@ -772,7 +779,7 @@ class PlantingPhase {
             const cardInfo = this.game.gamedatas.plantCardTypes[c.type];
             const body = this.game.plantCardBody(c.type, cardInfo, { showCost: true });
             list.insertAdjacentHTML('beforeend', `
-                <div id="draft_${c.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer; box-shadow: 0 0 10px #27ae60;">
+                <div id="draft_${c.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer;">
                     ${body.inner}
                 </div>
             `);
@@ -783,13 +790,11 @@ class PlantingPhase {
             el.onclick = () => {
                 if (this.selectedDraftCards.includes(c.id)) {
                     this.selectedDraftCards = this.selectedDraftCards.filter(id => id !== c.id);
-                    el.style.boxShadow = '0 0 10px #27ae60';
-                    el.style.border = '2px solid #2ecc71';
+                    this.markSelectableCard(el, 'default');
                 } else {
                     if (this.selectedDraftCards.length < keepQty) {
                         this.selectedDraftCards.push(c.id);
-                        el.style.boxShadow = '0 0 15px #f1c40f';
-                        el.style.border = '4px solid #f1c40f';
+                        this.markSelectableCard(el, 'selected');
                     }
                 }
                 updateConfirmButton();
