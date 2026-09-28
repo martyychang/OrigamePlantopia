@@ -87,11 +87,11 @@ function check(label, cond, detail) {
 }
 
 // The real DOM element as it would exist mid-game: rendered by
-// renderPlantInPlanter at planting time, still showing "Level: 0" and
+// renderPlantInPlanter at planting time, still showing "Lv 0" and
 // data-level="0", sitting inside its planter slot.
 document.getElementById('planter-slot_5002').insertAdjacentHTML('beforeend', \`
     <div id="garden_plant_701" class="plantopia-plant-on-planter plantopia-card-size plantopia-baby-card" data-card-type="PepperTree" data-id="701" data-level="0">
-        <div class="plant-level-indicator">Level: 0</div>
+        <div class="plant-level-indicator">Lv 0</div>
     </div>
 \`);
 
@@ -103,16 +103,16 @@ check('card element stays on the planter (not moved to a tilted row)',
     el && el.parentElement && el.parentElement.id === 'planter-slot_5002');
 check('data-level attribute updates to 1 (drives the sliding-reveal animation)',
     el && el.getAttribute('data-level') === '1', el ? el.getAttribute('data-level') : null);
-check('in-card annotation now reads "Level: 1", not the stale "Level: 0"',
-    el && el.innerHTML.includes('Level: 1') && !el.innerHTML.includes('Level: 0'),
+check('in-card annotation now reads "Lv 1", not the stale "Lv 0"',
+    el && el.innerHTML.includes('Lv 1') && !el.innerHTML.includes('Lv 0'),
     el ? el.innerHTML : null);
 
 // Grow again, 1 -> 2, still on the planter — the OTHER symptom Marty
 // reported ("from level 1 to level 2").
 game.gamedatas.plantsOnPlanters[701].type_arg = 1;
 game.notif_plantGrown({ card_id: 701, level: 2, max_level: false, player_id: 9 });
-check('in-card annotation now reads "Level: 2", not stale',
-    el && el.innerHTML.includes('Level: 2') && !el.innerHTML.includes('Level: 1') && !el.innerHTML.includes('Level: 0'),
+check('in-card annotation now reads "Lv 2", not stale',
+    el && el.innerHTML.includes('Lv 2') && !el.innerHTML.includes('Lv 1') && !el.innerHTML.includes('Lv 0'),
     el ? el.innerHTML : null);
 `;
 

@@ -531,7 +531,7 @@ class PlantingPhase {
 
         candidates.forEach(pl => {
             const typeInfo = this.game.gamedatas.plantCardTypes[pl.type];
-            const body = this.game.plantCardBody(pl.type, typeInfo, { levelLabel: `Level: ${pl.type_arg}` });
+            const body = this.game.plantCardBody(pl.type, typeInfo, { levelLabel: `Lv ${pl.type_arg}` });
             list.insertAdjacentHTML('beforeend', `
                 <div id="sacrifice_${pl.id}" class="bga-cards_selectable-card plant-card plantopia-card-size ${body.extraClass}" ${body.dataAttr} aria-label="${body.ariaLabel}" style="position: relative; border-radius: 10px; padding: 10px; background-color: #e8f8f5; color: black; display: flex; flex-direction: column; justify-content: center; cursor: pointer;">
                     ${body.inner}
@@ -1666,7 +1666,7 @@ export class Game {
      * card_type column value (e.g. "Geometree") — NOT the translated
      * cardInfo.name, since the CSS sprite is keyed by the untranslated
      * card identity. levelLabel is an optional in-card indicator
-     * (e.g. "Level: 2") for the planter view. See
+     * (e.g. "Lv 2") for the planter view. See
      * https://trello.com/c/XynmHHxj and https://trello.com/c/iKxuW468.
      */
     plantCardBody(cardKey, cardInfo, { showCost = false, levelLabel = null } = {}) {
@@ -1681,7 +1681,7 @@ export class Game {
         const ariaLabel = this.escapeAttr(cardInfo.name);
         if (spriteClass) {
             const badge = levelLabel
-                ? `<div class="plant-level-indicator" style="position: absolute; bottom: 4px; right: 4px; background: rgba(255,255,255,0.88); color: #196f3d; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">${levelLabel}</div>`
+                ? `<div class="plant-level-indicator" style="position: absolute; top: 50%; left: 4px; transform: translateY(-50%) rotate(-90deg); transform-origin: center; white-space: nowrap; background: rgba(255,255,255,0.88); color: #196f3d; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">${levelLabel}</div>`
                 : '';
             return {
                 extraClass: spriteClass,
@@ -2345,10 +2345,10 @@ export class Game {
                 // transition animates the move. See https://trello.com/c/gcQP1950.
                 el.setAttribute('data-level', String(Math.max(0, Math.min(3, level))));
 
-                // Regenerate the "Level: N" text badge on EVERY growth step,
+                // Regenerate the "Lv N" text badge on EVERY growth step,
                 // not just the level-3/graduation one below — it's baked
                 // into this element's innerHTML once, by plantCardBody, at
-                // planting time ("Level: 0"), and the data-level attribute
+                // planting time ("Lv 0"), and the data-level attribute
                 // update above only drives the sliding-reveal CSS
                 // animation, it never touches that baked-in text. See
                 // https://trello.com/c/UlEhJIr5. (The max_level branch
@@ -2357,10 +2357,10 @@ export class Game {
                 // https://trello.com/c/7CO2tan1 — which is exactly why
                 // level-3/tilted cards already showed the right number
                 // while every intermediate step, 0→1 and 1→2, stayed
-                // frozen at "Level: 0".)
+                // frozen at "Lv 0".)
                 const cardInfo = this.gamedatas.plantCardTypes[this.gamedatas.plantsOnPlanters[cardId].type];
                 if (cardInfo) {
-                    const body = this.plantCardBody(this.gamedatas.plantsOnPlanters[cardId].type, cardInfo, { levelLabel: `Level: ${level}` });
+                    const body = this.plantCardBody(this.gamedatas.plantsOnPlanters[cardId].type, cardInfo, { levelLabel: `Lv ${level}` });
                     el.innerHTML = body.inner;
                 }
             }
@@ -2501,7 +2501,7 @@ export class Game {
         const row = document.getElementById(`player-garden-level3-${playerId}`);
         if (!row) return;
         const cardInfo = this.gamedatas.plantCardTypes[card.type];
-        const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Level: ${card.type_arg}` });
+        const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Lv ${card.type_arg}` });
         row.insertAdjacentHTML('beforeend', `
             <div id="garden_plant_${card.id}" class="level3-tilted plantopia-card-size ${body.extraClass}" ${body.dataAttr} data-id="${card.id}" style="position: relative; border: 2px solid #2ecc71; border-radius: 5px; background-color: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 ${body.inner}
@@ -2523,7 +2523,7 @@ export class Game {
         // planter's current-level number peeks out underneath while
         // higher numbers stay covered. See https://trello.com/c/gcQP1950.
         const level = Math.max(0, Math.min(3, parseInt(card.type_arg, 10) || 0));
-        const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Level: ${level}` });
+        const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Lv ${level}` });
         slotEl.insertAdjacentHTML('beforeend', `
             <div id="garden_plant_${card.id}"
                  class="plantopia-plant-on-planter plantopia-card-size ${body.extraClass}"
