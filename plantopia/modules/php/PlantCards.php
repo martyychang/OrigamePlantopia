@@ -262,7 +262,7 @@ class PlantCards
                 'cost' => 1,
                 'cost_unit' => self::COST_CARD,
                 'growth' => ['wind' => 0, 'rain' => 1, 'sun' => 1],
-                'points_per_level' => 1,
+                'points_per_level' => 2, // card art shows 2 rainbow leaves (Trello jrwRThpC)
                 'flavor_text' => clienttranslate('Hot and spicy!'),
                 'card_effect' => clienttranslate('Immediately gain a Bonus Wind card and gain 1 card.'),
                 'planting_effect' => [
