@@ -860,15 +860,22 @@ class WeatherPhaseChoose {
              return;
         }
         
-        Object.values(weatherHand).forEach(card => {
-            if (card.type === 'bonus') return;
+        // Always present the weather buttons in a fixed order — Sun (0),
+        // Rain (1), Wind (2), left to right — regardless of the arbitrary
+        // order weatherHand happens to iterate in (Trello P3xyqIfJ: the order
+        // was random per player and per phase). type_arg is 0/1/2 for
+        // Sun/Rain/Wind, so sorting by it gives exactly that order; multiple
+        // cards of the same condition stay grouped together.
+        Object.values(weatherHand)
+            .filter(card => card.type !== 'bonus')
+            .sort((a, b) => a.type_arg - b.type_arg)
+            .forEach(card => {
+                let label = '🌬️ Wind';
+                if (card.type_arg == 0) label = '☀️ Sun';
+                if (card.type_arg == 1) label = '💧 Rain';
 
-            let label = '🌬️ Wind';
-            if (card.type_arg == 0) label = '☀️ Sun';
-            if (card.type_arg == 1) label = '💧 Rain';
-
-            this.bga.statusBar.addActionButton(_(label), () => this.onChooseWeather(card.id), { color: 'blue' });
-        });
+                this.bga.statusBar.addActionButton(_(label), () => this.onChooseWeather(card.id), { color: 'blue' });
+            });
     }
 
     onLeavingState(args, isCurrentPlayerActive) {
