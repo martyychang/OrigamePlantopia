@@ -137,16 +137,16 @@ class PlantingPhase extends GameState
                 if ((int)$sacrificedPlant['location_arg'] !== $playerId) throw new UserException(clienttranslate("This plant is not in your garden."));
             }
 
-            // Check if it matches the required cost_unit (e.g. BABY_CACTUS)
+            // Must be a BABY plant of the exact required type (cost_unit is a
+            // baby plant_type, e.g. BABY_CACTUS). The rulebook is explicit:
+            // "Adult Plants require you to pay a Baby Plant from your Garden of
+            // a specific type and a minimum Level" — an already-Treevolved
+            // (adult) plant is NOT a valid sacrifice, even of the matching
+            // family (Trello Ir4kdb7k). Matching plant_type to cost_unit
+            // enforces both the family and the baby-only rule in one check.
             $sacrificedMaterial = Game::$PLANT_CARD_TYPES[$sacrificedPlant['type']];
             if ($sacrificedMaterial['plant_type'] !== $costUnit) {
-                // Technically rulebook says: "pay a Baby or Treevolved Plant from your Garden of a specific type and a minimum level"
-                // The cost_unit is the required baby type. Both the baby and treevolved versions of that family are acceptable.
-                $requiredFamily = PlantCards::getFamily($costUnit);
-                $sacrificedFamily = PlantCards::getFamily($sacrificedMaterial['plant_type']);
-                if ($requiredFamily !== $sacrificedFamily) {
-                    throw new UserException(clienttranslate("You must sacrifice a plant of the correct family."));
-                }
+                throw new UserException(clienttranslate("You must sacrifice a Baby Plant of the required type."));
             }
 
             // Check level requirement

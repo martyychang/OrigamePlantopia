@@ -503,8 +503,13 @@ class PlantingPhase {
             ...Object.values(this.game.gamedatas.plantsLevel3 || {}).filter(pl => pl.location_arg == pId),
         ].filter(pl => {
             const typeInfo = this.game.gamedatas.plantCardTypes[pl.type];
-            return typeInfo && pl.type_arg >= trvCardInfo.cost
-                && this.game.getFamily(typeInfo.plant_type) === this.game.getFamily(trvCardInfo.cost_unit);
+            // Only a BABY plant of the exact required type at/above the minimum
+            // level qualifies — never an already-Treevolved (adult) plant, even
+            // of the matching family (Trello Ir4kdb7k; rulebook: "pay a Baby
+            // Plant from your Garden of a specific type and a minimum Level").
+            // cost_unit is always the required baby plant_type (e.g. baby_flower).
+            return typeInfo && typeInfo.plant_type === trvCardInfo.cost_unit
+                && pl.type_arg >= trvCardInfo.cost;
         });
 
         let selectedId = null;
@@ -517,6 +522,13 @@ class PlantingPhase {
         `);
 
         const list = document.getElementById('sacrifice-cards-list');
+
+        // No qualifying Baby plant to sacrifice — say so plainly instead of
+        // showing an empty picker (Trello Ir4kdb7k).
+        if (candidates.length === 0) {
+            list.insertAdjacentHTML('beforeend',
+                `<div style="padding: 10px 4px; font-style: italic;">${_('No qualifying plant available')}</div>`);
+        }
 
         const updateConfirmButton = () => {
             this.bga.statusBar.removeActionButtons();
