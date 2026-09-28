@@ -45,11 +45,11 @@ $game->plantCards->seed('Buttercup', 1, 'planter', $planterId, 1);
 
 $scores = $game->calculateAllScores();
 
-// Points contributed: Suckulent (level3, points_per_level=2) = 3*2=6; Symmetree (level3, treat_as trv_tree=>2, points_per_level=2) = 3*2=6;
+// Points contributed: Suckulent (level3, points_per_level=2) = 3*2=6; Symmetree (level3, points_per_level=3 per card art, Trello jrwRThpC) = 3*3=9;
 // Buttercup (level 1, points_per_level=1) = 1*1=1.
 // per_level3 bonus: 2 level-3 plants (Suckulent + Symmetree) * 2 pts (Suckulent's bonus_scoring) = 4.
-// Total = 6 + 6 + 1 + 4 = 17.
-check('per_level3 counts every level-3 plant (2 of them), scored at 2 pts each = 4, on top of level-based points', (int)round($scores[$playerId]) === 17, 'got ' . ($scores[$playerId] ?? 'null'));
+// Total = 6 + 9 + 1 + 4 = 20.
+check('per_level3 counts every level-3 plant (2 of them), scored at 2 pts each = 4, on top of level-based points', (int)round($scores[$playerId]) === 20, 'got ' . ($scores[$playerId] ?? 'null'));
 
 // Isolate: a player with NO level-3 plants gets 0 from the per_level3 clause.
 $game2 = new Game();
