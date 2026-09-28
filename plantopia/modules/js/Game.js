@@ -525,7 +525,7 @@ class PlantingPhase {
                 this.bga.statusBar.addActionButton(_('Confirm'), () => {
                     document.getElementById('sacrifice-container').remove();
                     onSelect(selectedId);
-                }, { color: 'blue' });
+                }, { color: 'blue', autoclick: true });
             }
         };
 
@@ -783,7 +783,7 @@ class PlantingPhase {
                 this.bga.statusBar.addActionButton(_('Confirm'), () => {
                     this.bga.actions.performAction("actResolveDraft", { cardIdsStr: this.selectedDraftCards.join(';') });
                     document.getElementById('draft-container').remove();
-                }, { color: 'blue' });
+                }, { color: 'blue', autoclick: true });
             }
         };
 
