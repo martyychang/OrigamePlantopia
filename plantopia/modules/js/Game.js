@@ -1016,29 +1016,22 @@ class WeatherPhaseBonus {
             }, { color: 'blue' });
             this.bga.statusBar.addActionButton(_('Proceed to Grow Plants'), () => this.proceedToGrowPlants(), { color: 'green' });
         } else {
-            // No Bonus Weather to play — "Proceed to Grow Plants" would be
-            // the player's ONLY option, so per Trello 7R6Ov64N, skip making
-            // them click it themselves. Follow-up per the card's later
-            // discussion: this MUST still be a real, rendered button whose
-            // own callback fires performAction — per AGENTS.md's Pre-
-            // Release Checklist ("Every performAction() call site is bound
-            // to a real click handler... none fire from setTimeout/
-            // setInterval/automatically") and because calling
-            // performAction directly from inside onEnteringState's own
-            // synchronous call chain can race the framework's still-
-            // mid-transition interface lock — every player's Bonus Weather
-            // stash is typically empty on round 1 of any game, so BOTH
-            // players hit this branch and its now-simultaneous auto-fire
-            // at once, which is exactly the scenario that produced the
-            // "server reported an error" / permanently-stuck "waiting"
-            // report on this card. autoclick is the framework's own
-            // sanctioned mechanism for this (see bga-framework.d.ts:
-            // "if the button should be auto clicked after a small delay
-            // (for Confirmation buttons)") — it fires the SAME click
-            // handler used above, just synthetically, so there's no
-            // separate code path to keep in sync.
+            // No Bonus Weather to play — "Proceed to Grow Plants" is the
+            // player's only option. It used to auto-click (Trello 7R6Ov64N)
+            // so players didn't have to click their one option, but that
+            // rushed players past the Weather Phase before they could see
+            // what weather was played and why their plants grew — so the
+            // auto-proceed is now DISABLED and the player clicks it manually
+            // (Trello BV5CFDI6). A real user click is safe re: the 7R6Ov64N
+            // server-error race: that race came from firing performAction
+            // automatically from inside onEnteringState's own synchronous
+            // call chain (both players' empty-stash branches auto-firing mid-
+            // transition at once). A manual click happens well after the
+            // state transition settles, so there's no simultaneous auto-fire
+            // to race — this is just the normal "bind performAction to a real
+            // click handler" pattern from AGENTS.md's Pre-Release Checklist.
             this.bga.statusBar.setTitle(_('${you} must proceed to Grow Plants'));
-            this.bga.statusBar.addActionButton(_('Proceed to Grow Plants'), () => this.proceedToGrowPlants(), { color: 'green', autoclick: true });
+            this.bga.statusBar.addActionButton(_('Proceed to Grow Plants'), () => this.proceedToGrowPlants(), { color: 'green' });
         }
     }
 
