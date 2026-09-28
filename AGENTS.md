@@ -421,6 +421,31 @@ note) has a git-native source of truth to draw from.
   custom timer is filed as a non-urgent backlog card. Also repaired the JS
   test suite (8 rotted `.test.mjs` files greened, dead-feature test
   removed — Trello JYvNpbx7); suite now 20 JS + PHP green. `17f1094`.
+- **`v2.2.0`** — 2026-09-28, MINOR (two new features + scoring-correctness
+  fixes + a UI/UX polish sweep from a round of player feedback / manual QA;
+  no external status change). **New features:** end-game score breakdown
+  published as per-player stats — per family (tree/flower/cactus) the
+  baby/adult/bonus points + a family total, plus the three cross-family
+  totals, at the top of the end-game stats table (Trello bbJp2j8q); and the
+  game log now names specific weather cards — deck flips, character-weather
+  reveals (and by whom), and bonus plays (Trello I8q5jUkM). **Scoring
+  correctness:** seven tree `points_per_level` values were a point below the
+  card art and are corrected, with a test locking every card to its depicted
+  value (Trello jrwRThpC); and planting a Treevolved plant now only accepts a
+  **Baby** plant of the required type as the sacrifice — never another adult —
+  fixed in both the client picker and the server validation to match the
+  rulebook (Trello Ir4kdb7k). **UI/UX sweep:** selectable-card highlighting
+  standardized as a zero-blur box-shadow ring that never resizes the card
+  (Trello wSNYx34l, 5PPWbV5J); idle hand cards and planted garden plants carry
+  no resting border (ojiekWr4, NPjdtrY3); every exact-"Confirm" button
+  auto-confirms (Trello uo9guHhd); auto-proceed on "Proceed to Grow Plants"
+  disabled so players can read the weather before growing (Trello BV5CFDI6);
+  weather choice buttons always ordered Sun → Rain → Wind (Trello P3xyqIfJ);
+  the plant level indicator is a rotated, family-tinted "Lv N" badge at the
+  left edge (Trello vL45rEZX); and the permanent blue border on the Bonus
+  Weather reserve cards is removed (Trello 4GgCFSsx). **Deploy note:** the new
+  stats need a Studio "Reload statistics configuration" (like gameoptions).
+  Suite: 31 PHP + 25 JS. `f52ba68`.
 - **Release notes:** commit messages in this repo are verbose
   multi-paragraph explanations — too long to concatenate mechanically
   into 250 characters. At tag time, list commits since the last tag
