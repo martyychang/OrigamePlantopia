@@ -1692,8 +1692,18 @@ export class Game {
         // announce for the primary interactive surface of the game.
         const ariaLabel = this.escapeAttr(cardInfo.name);
         if (spriteClass) {
+            // Tint the (still translucent) level-badge background to match the
+            // family colour of the top-left half-circle cost indicator on the
+            // card art — light blue (tree), pink (flower), green (cactus).
+            // Sampled from img/plants_baby.png (Trello vL45rEZX follow-up).
+            const FAMILY_BADGE_BG = {
+                tree:   'rgba(218, 241, 252, 0.88)',
+                flower: 'rgba(252, 224, 223, 0.88)',
+                cactus: 'rgba(238, 243, 206, 0.88)',
+            };
+            const badgeBg = FAMILY_BADGE_BG[this.getFamily(cardInfo.plant_type)] || 'rgba(255, 255, 255, 0.88)';
             const badge = levelLabel
-                ? `<div class="plant-level-indicator" style="position: absolute; top: 50%; left: 4px; transform: translateY(-50%) rotate(-90deg); transform-origin: center; white-space: nowrap; background: rgba(255,255,255,0.88); color: #196f3d; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">${levelLabel}</div>`
+                ? `<div class="plant-level-indicator" style="position: absolute; top: 50%; left: -6px; transform: translateY(-50%) rotate(-90deg); transform-origin: center; white-space: nowrap; background: ${badgeBg}; color: #196f3d; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">${levelLabel}</div>`
                 : '';
             return {
                 extraClass: spriteClass,
