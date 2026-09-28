@@ -493,7 +493,8 @@ Use reverse-DNS-style naming: `meeple_ff0000_7`, `card_yellow_magic_2`
 - Each stat has: `id`, `name`, `type` ("int", "float", or "bool"); IDs must be ≥10 and are never reused once shipped
 - Table and player stat IDs are independent namespaces (a table stat can reuse a player stat's ID)
 - Initialized via `$this->tableStats->init(...)` / `$this->playerStats->init(...)` in `setupNewGame()`, updated via `->set()`/`->inc()` during play
-- One table stat (`total_rounds`) + 10 player stats defined, tracking the player panel exactly — see `Game::updatePlayerPanelStats()`, called once per round from `WeatherPhaseGrow`
+- One table stat (`total_rounds`) + 10 player stats tracking the player panel exactly — see `Game::updatePlayerPanelStats()`, called once per round from `WeatherPhaseGrow`
+- Plus 15 player stats (ids 30–44) for the end-game score breakdown (Trello bbJp2j8q): per family (tree/flower/cactus) the baby/adult/bonus points + a family total, and the cross-family totals. Defined first in the `player` block so they show at the top of the end-game stats table. Computed and `->set()` inside `Game::calculateAllScores()` (so the final EndScore pass leaves the finished values); the three sources always sum to the player's score. **Note:** like `gameoptions`, adding stats needs BGA Studio to reload the stats config — Marty clicks "Reload statistics configuration" in Control Panel (or a new game), else the new stats won't appear.
 
 ---
 

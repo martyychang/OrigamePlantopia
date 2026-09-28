@@ -455,6 +455,12 @@ class Game extends \Bga\GameFramework\Table
 
         $this->tableStats->init('total_rounds', 0);
         $this->playerStats->init([
+            // End-game score breakdown (Trello bbJp2j8q)
+            'tree_baby_score', 'tree_adult_score', 'tree_bonus_score', 'tree_total_score',
+            'flower_baby_score', 'flower_adult_score', 'flower_bonus_score', 'flower_total_score',
+            'cactus_baby_score', 'cactus_adult_score', 'cactus_bonus_score', 'cactus_total_score',
+            'total_baby_score', 'total_adult_score', 'total_bonus_score',
+            // At-a-glance panel stats
             'hand_count', 'bonus_weather_sun', 'bonus_weather_rain', 'bonus_weather_wind',
             'baby_cactus_count', 'adult_cactus_count',
             'baby_flower_count', 'adult_flower_count',
@@ -565,14 +571,32 @@ class Game extends \Bga\GameFramework\Table
                 'plant_types' => [],
             ];
 
+            // End-game score breakdown by family (tree/flower/cactus) and
+            // source (baby-plant level points / adult-plant level points /
+            // bonus). Feeds the per-player end-game stats (Trello bbJp2j8q).
+            // Kept in lockstep with the $score accumulation below so the three
+            // sources always sum to the player's total score.
+            $breakdown = [
+                'tree'   => ['baby' => 0, 'adult' => 0, 'bonus' => 0],
+                'flower' => ['baby' => 0, 'adult' => 0, 'bonus' => 0],
+                'cactus' => ['baby' => 0, 'adult' => 0, 'bonus' => 0],
+            ];
+
             foreach ($playerPlants as $plant) {
                 $plantInfo = self::$PLANT_CARD_TYPES[$plant['type']];
                 $level = (int)$plant['type_arg'];
                 if ($plant['location'] === 'garden_level3') {
                     $level = 3;
                 }
-                
-                $score += $level * $plantInfo['points_per_level'];
+
+                $levelPoints = $level * $plantInfo['points_per_level'];
+                $score += $levelPoints;
+                // Attribute the level points to this plant's own family and
+                // maturity (treat_as only affects bonus counts, not the
+                // level-based score — see the $score line above).
+                $family = PlantCards::getFamily($plantInfo['plant_type']);
+                $maturity = (strpos($plantInfo['plant_type'], 'baby_') === 0) ? 'baby' : 'adult';
+                $breakdown[$family][$maturity] += $levelPoints;
                 if ($level === 3) {
                     $counts['level3']++;
                 }
@@ -595,20 +619,45 @@ class Game extends \Bga\GameFramework\Table
             foreach ($playerPlants as $plant) {
                 $plantInfo = self::$PLANT_CARD_TYPES[$plant['type']];
                 $bonus = $plantInfo['bonus_scoring'] ?? [];
-                
-                if (isset($bonus['fixed_points'])) $score += $bonus['fixed_points'];
-                if (isset($bonus['per_two_cards_in_hand'])) $score += floor($cardsInHand / 2) * $bonus['per_two_cards_in_hand'];
-                if (isset($bonus['per_level3'])) $score += $counts['level3'] * $bonus['per_level3'];
-                if (isset($bonus['per_baby_tree'])) $score += $counts['baby_tree'] * $bonus['per_baby_tree'];
-                if (isset($bonus['per_trv_tree'])) $score += $counts['trv_tree'] * $bonus['per_trv_tree'];
-                if (isset($bonus['per_baby_cactus'])) $score += $counts['baby_cactus'] * $bonus['per_baby_cactus'];
-                if (isset($bonus['per_trv_cactus'])) $score += $counts['trv_cactus'] * $bonus['per_trv_cactus'];
-                if (isset($bonus['per_baby_flower'])) $score += $counts['baby_flower'] * $bonus['per_baby_flower'];
-                if (isset($bonus['per_trv_flower'])) $score += $counts['trv_flower'] * $bonus['per_trv_flower'];
-                if (isset($bonus['per_plant_type'])) $score += count($counts['plant_types']) * $bonus['per_plant_type'];
+
+                $cardBonus = 0;
+                if (isset($bonus['fixed_points'])) $cardBonus += $bonus['fixed_points'];
+                if (isset($bonus['per_two_cards_in_hand'])) $cardBonus += floor($cardsInHand / 2) * $bonus['per_two_cards_in_hand'];
+                if (isset($bonus['per_level3'])) $cardBonus += $counts['level3'] * $bonus['per_level3'];
+                if (isset($bonus['per_baby_tree'])) $cardBonus += $counts['baby_tree'] * $bonus['per_baby_tree'];
+                if (isset($bonus['per_trv_tree'])) $cardBonus += $counts['trv_tree'] * $bonus['per_trv_tree'];
+                if (isset($bonus['per_baby_cactus'])) $cardBonus += $counts['baby_cactus'] * $bonus['per_baby_cactus'];
+                if (isset($bonus['per_trv_cactus'])) $cardBonus += $counts['trv_cactus'] * $bonus['per_trv_cactus'];
+                if (isset($bonus['per_baby_flower'])) $cardBonus += $counts['baby_flower'] * $bonus['per_baby_flower'];
+                if (isset($bonus['per_trv_flower'])) $cardBonus += $counts['trv_flower'] * $bonus['per_trv_flower'];
+                if (isset($bonus['per_plant_type'])) $cardBonus += count($counts['plant_types']) * $bonus['per_plant_type'];
+
+                $score += $cardBonus;
+                // Bonus points are attributed to the family of the card that
+                // generates them (e.g. Boba Tree's per-Tree bonus -> tree).
+                $breakdown[PlantCards::getFamily($plantInfo['plant_type'])]['bonus'] += $cardBonus;
             }
-            
+
             $scores[$playerId] = $score;
+
+            // Publish the end-game score breakdown as per-player stats
+            // (Trello bbJp2j8q). Set on every calculateAllScores() pass so the
+            // final EndScore pass leaves the finished-game values in place.
+            $totalBaby = $totalAdult = $totalBonus = 0;
+            foreach (['tree', 'flower', 'cactus'] as $fam) {
+                $b = $breakdown[$fam];
+                $famTotal = $b['baby'] + $b['adult'] + $b['bonus'];
+                $this->playerStats->set("{$fam}_baby_score",  (int)$b['baby'],  $playerId);
+                $this->playerStats->set("{$fam}_adult_score", (int)$b['adult'], $playerId);
+                $this->playerStats->set("{$fam}_bonus_score", (int)$b['bonus'], $playerId);
+                $this->playerStats->set("{$fam}_total_score", (int)$famTotal,   $playerId);
+                $totalBaby  += $b['baby'];
+                $totalAdult += $b['adult'];
+                $totalBonus += $b['bonus'];
+            }
+            $this->playerStats->set('total_baby_score',  (int)$totalBaby,  $playerId);
+            $this->playerStats->set('total_adult_score', (int)$totalAdult, $playerId);
+            $this->playerStats->set('total_bonus_score', (int)$totalBonus, $playerId);
 
             // Tiebreaker rules (https://trello.com/c/DTEJePl6):
             //   1. Most Adult Plants in Garden wins a tie.

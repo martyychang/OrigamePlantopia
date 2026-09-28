@@ -18,6 +18,23 @@
     // family and maturity. Updated once per round alongside total_rounds
     // (see Game::updatePlayerPanelStats()). Per https://trello.com/c/7kdTOK4l.
     "player": {
+        // End-game score breakdown by family and source (Trello bbJp2j8q).
+        // Defined first so they appear at the top of the end-game stats table.
+        "tree_baby_score":    { "id": 30, "name": "Tree — Baby Plant Score",  "type": "int" },
+        "tree_adult_score":   { "id": 31, "name": "Tree — Adult Plant Score", "type": "int" },
+        "tree_bonus_score":   { "id": 32, "name": "Tree — Bonus Score",       "type": "int" },
+        "tree_total_score":   { "id": 33, "name": "Tree — Total Score",       "type": "int" },
+        "flower_baby_score":  { "id": 34, "name": "Flower — Baby Plant Score",  "type": "int" },
+        "flower_adult_score": { "id": 35, "name": "Flower — Adult Plant Score", "type": "int" },
+        "flower_bonus_score": { "id": 36, "name": "Flower — Bonus Score",       "type": "int" },
+        "flower_total_score": { "id": 37, "name": "Flower — Total Score",       "type": "int" },
+        "cactus_baby_score":  { "id": 38, "name": "Cactus — Baby Plant Score",  "type": "int" },
+        "cactus_adult_score": { "id": 39, "name": "Cactus — Adult Plant Score", "type": "int" },
+        "cactus_bonus_score": { "id": 40, "name": "Cactus — Bonus Score",       "type": "int" },
+        "cactus_total_score": { "id": 41, "name": "Cactus — Total Score",       "type": "int" },
+        "total_baby_score":   { "id": 42, "name": "Total Plant Score from Baby Plants",   "type": "int" },
+        "total_adult_score":  { "id": 43, "name": "Total Plant Score from Adult Plants",  "type": "int" },
+        "total_bonus_score":  { "id": 44, "name": "Total Bonus Score",                    "type": "int" },
         "hand_count": {
             "id": 20,
             "name": "Cards in hand",
