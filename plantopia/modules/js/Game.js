@@ -2503,7 +2503,7 @@ export class Game {
         const cardInfo = this.gamedatas.plantCardTypes[card.type];
         const body = this.plantCardBody(card.type, cardInfo, { levelLabel: `Lv ${card.type_arg}` });
         row.insertAdjacentHTML('beforeend', `
-            <div id="garden_plant_${card.id}" class="level3-tilted plantopia-card-size ${body.extraClass}" ${body.dataAttr} data-id="${card.id}" style="position: relative; border: 2px solid #2ecc71; border-radius: 5px; background-color: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div id="garden_plant_${card.id}" class="level3-tilted plantopia-card-size ${body.extraClass}" ${body.dataAttr} data-id="${card.id}" style="position: relative; border-radius: 5px; background-color: #e8f8f5; text-align: center; display: flex; flex-direction: column; justify-content: center; transform: rotate(90deg); margin: 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 ${body.inner}
             </div>
         `);
@@ -2530,7 +2530,7 @@ export class Game {
                  ${body.dataAttr} aria-label="${body.ariaLabel}"
                  data-id="${card.id}"
                  data-level="${level}"
-                 style="border: 2px solid #2ecc71; border-radius: 10px; padding: 10px; text-align: center; background-color: #e8f8f5; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);">
+                 style="border-radius: 10px; padding: 10px; text-align: center; background-color: #e8f8f5; display: flex; flex-direction: column; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);">
                 ${body.inner}
             </div>
         `);
