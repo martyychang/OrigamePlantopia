@@ -1869,7 +1869,11 @@ export class Game {
                         if (m) cardEl.setAttribute(m[1], m[2]);
                     }
                     cardEl.style.position = 'relative';
-                    cardEl.style.border = '2px solid #3498db';
+                    // No permanent blue border on the publicly-visible Bonus
+                    // Weather reserve cards (Trello 4GgCFSsx) — the light-blue
+                    // background already reads as weather; the border was just
+                    // visual noise. Selection highlights (gain_weather) still
+                    // apply their own box-shadow when relevant.
                     cardEl.style.borderRadius = '10px';
                     cardEl.style.padding = '10px';
                     cardEl.style.textAlign = 'center';
