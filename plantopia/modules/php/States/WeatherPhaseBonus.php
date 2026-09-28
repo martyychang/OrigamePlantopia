@@ -105,10 +105,12 @@ class WeatherPhaseBonus extends GameState
                 "card" => $card
             ]);
 
-            $this->bga->notify->all("playerPlayedBonus", clienttranslate('${player_name} played a bonus weather card.'), [
+            $this->bga->notify->all("playerPlayedBonus", clienttranslate('${player_name} played ${weather_name}.'), [
                 "player_id" => $playerId,
                 "player_name" => $this->game->getPlayerNameById($playerId),
-                "card" => $card
+                "card" => $card,
+                "weather_name" => \Bga\Games\Plantopia\WeatherCards::describeCard($card),
+                "i18n" => ["weather_name"],
             ]);
         }
         

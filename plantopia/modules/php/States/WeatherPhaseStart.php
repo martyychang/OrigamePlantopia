@@ -44,8 +44,9 @@ class WeatherPhaseStart extends GameState
                 $flipped2 = $this->game->weatherCards->pickCardsForLocation($cardsToFlip - count($flipped), 'deck', 'weather_public', 0);
                 $flipped = array_merge($flipped, $flipped2);
             }
-            $this->bga->notify->all("weatherDeckFlipped", clienttranslate('Weather cards were flipped from the deck.'), [
-                "cards" => $flipped
+            $this->bga->notify->all("weatherDeckFlipped", clienttranslate('Weather cards flipped from the deck: ${weather_names}.'), [
+                "cards" => $flipped,
+                "weather_names" => \Bga\Games\Plantopia\WeatherCards::describeCards($flipped),
             ]);
         }
 

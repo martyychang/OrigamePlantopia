@@ -14,6 +14,7 @@ declare(strict_types=1);
  */
 
 require __DIR__ . '/harness.php';
+require __DIR__ . '/../../plantopia/modules/php/WeatherCards.php';
 require __DIR__ . '/../../plantopia/modules/php/WeatherPhaseBonusSubstate.php';
 require __DIR__ . '/../../plantopia/modules/php/States/WeatherPhaseBonus.php';
 require __DIR__ . '/../../plantopia/modules/php/States/WeatherPhaseReveal.php';

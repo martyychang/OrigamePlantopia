@@ -127,4 +127,22 @@ class WeatherCards
         }
         return null;
     }
+
+    /**
+     * Human-readable name for a single weather card row (from Deck), e.g.
+     * "Carrot Sun" or "Bonus Wind". Used to name specific weather cards in
+     * the game log (Trello I8q5jUkM). $card has 'type' (character or 'bonus')
+     * and 'type_arg' (the condition 0/1/2).
+     */
+    public static function describeCard(array $card): string
+    {
+        $info = self::getCardInfo($card['type'], (int)$card['type_arg']);
+        return $info['name'] ?? (string)$card['type'];
+    }
+
+    /** Comma-joined names for a list of weather card rows. */
+    public static function describeCards(array $cards): string
+    {
+        return implode(', ', array_map([self::class, 'describeCard'], $cards));
+    }
 }
