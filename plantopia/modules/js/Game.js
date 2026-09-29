@@ -1862,6 +1862,13 @@ export class Game {
                     const body = this.weatherCardBody(card, cardInfo);
                     const cardEl = document.createElement('div');
                     cardEl.id = `weather_${card.id}`;
+                    // data-id is read by the gain_weather effect handler
+                    // (renderPendingEffect) when the player clicks a reserve
+                    // card to gain it — without it, actResolveGainWeather was
+                    // sent with an empty cardId and the framework threw
+                    // "parameter cardId is mandatory" (Trello XNjeXYlL / BGA
+                    // #678759, e.g. planting Geometree and using its ability).
+                    cardEl.dataset.id = card.id;
                     cardEl.className = `weather-card plantopia-card-size ${body.extraClass}`.trim();
                     if (body.dataAttr) {
                         // body.dataAttr looks like 'data-weather-condition="sun"'
