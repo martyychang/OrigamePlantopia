@@ -446,6 +446,21 @@ note) has a git-native source of truth to draw from.
   Weather reserve cards is removed (Trello 4GgCFSsx). **Deploy note:** the new
   stats need a Studio "Reload statistics configuration" (like gameoptions).
   Suite: 31 PHP + 25 JS. `f52ba68`.
+- **`v2.2.1`** — 2026-09-30, PATCH (bug fixes + grow-UX polish from the
+  post-2.2.0 QA round, no new features). Fixed the **"unable to obtain
+  bonus weather cards" server error** — a gain-Bonus-Weather ability (e.g.
+  Geometree) sent `actResolveGainWeather` with an empty `cardId` because the
+  reserve cards were rendered without a `data-id` that the handler reads;
+  49 hits / 3 users since 9/11 (Trello XNjeXYlL, BGA #678759). Also named the
+  specific gained card in the action log ("gained Bonus Wind." instead of the
+  generic message — same card). **Grow-selection highlight:** the plant
+  selection ring is no longer clipped on its sides — the planter slot switched
+  from `overflow:hidden` to `visible`, and the garden row got a small
+  left/right inset so the first/last card's ring shows past the row's own
+  `overflow-x` edge (Trello rLBD1c1c). And Carrot's "grow a Baby Plant"
+  ability now highlights **only** eligible Baby plants, not every plant,
+  mirroring the server's target check (Trello jnO2GRJA). Suite: 31 PHP + 27 JS.
+  `aacef34`.
 - **Release notes:** commit messages in this repo are verbose
   multi-paragraph explanations — too long to concatenate mechanically
   into 250 characters. At tag time, list commits since the last tag
