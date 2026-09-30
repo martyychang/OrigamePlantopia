@@ -92,5 +92,14 @@ $heldConditions = array_map(fn($c) => (int)$c['type_arg'], $held);
 sort($heldConditions);
 check('the 2 held cards are one Sun (0) and one Wind (2), matching the 2 distinct picks', $heldConditions === [WeatherCards::CONDITION_SUN, WeatherCards::CONDITION_WIND], json_encode($heldConditions));
 
+// The game log must name the SPECIFIC gained card, not "a Bonus Weather Card"
+// (Trello XNjeXYlL follow-up — Marty 2026-09-30).
+$gainedNames = [];
+foreach ($bga->notify->log as $e) {
+    if ($e['name'] === 'playerGainedWeather') $gainedNames[] = $e['args']['weather_name'] ?? null;
+}
+check('each gain is logged with the specific card name (Bonus Sun then Bonus Wind), not a generic message',
+    $gainedNames === ['Bonus Sun', 'Bonus Wind'], json_encode($gainedNames));
+
 echo "\n" . ($failures === 0 ? "ALL CHECKS PASSED\n" : "$failures CHECK(S) FAILED\n");
 exit($failures === 0 ? 0 : 1);

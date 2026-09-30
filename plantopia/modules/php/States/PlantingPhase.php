@@ -850,9 +850,11 @@ class PlantingPhase extends GameState
         // The market just lost this card — broadcast the updated count. See
         // https://trello.com/c/uiJWdVTg.
         $bonusMarket = $this->game->weatherCards->getCardsOfTypeInLocation('bonus', null, 'bonus_deck');
-        $this->bga->notify->all("playerGainedWeather", clienttranslate('${player_name} gained a Bonus Weather Card.'), [
+        $this->bga->notify->all("playerGainedWeather", clienttranslate('${player_name} gained ${weather_name}.'), [
             "player_id" => $playerId,
             "card" => $card,
+            "weather_name" => \Bga\Games\Plantopia\WeatherCards::describeCard($card),
+            "i18n" => ["weather_name"],
             "bonusMarket" => $bonusMarket,
         ]);
 
