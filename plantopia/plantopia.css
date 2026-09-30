@@ -107,6 +107,13 @@
     gap: 10px;
     overflow-x: auto;
     flex-wrap: nowrap;
+    /* Small horizontal inset so the selection ring (a box-shadow) on the
+       FIRST/LAST card isn't clipped by this row's own overflow-x edge — the
+       clip region is the padding box, so a few px of side padding keeps the
+       edge cards' rings visible (Trello rLBD1c1c: left ring was cut off on
+       the leftmost garden plant even after the planter-slot overflow fix). */
+    padding-left: 6px;
+    padding-right: 6px;
 }
 .plantopia-overflow-row > * {
     flex-shrink: 0;
