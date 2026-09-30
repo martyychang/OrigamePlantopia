@@ -571,12 +571,16 @@ class PlantingPhase {
         });
     }
 
-    highlightPlantsToGrow(callback) {
+    // isEligible(pl) optionally narrows which growable plants are highlighted,
+    // so the green highlight matches the server's target restriction (e.g.
+    // Carrot's level_up only grows a Baby Plant — Trello jnO2GRJA). Default:
+    // every non-maxed plant on the player's own planters.
+    highlightPlantsToGrow(callback, isEligible = () => true) {
         this.cleanupUI();
         const pId = this.bga.players.getCurrentPlayerId();
         const plants = Object.values(this.game.gamedatas.plantsOnPlanters || {}).filter(pl => {
             const planter = this.game.gamedatas.planters[pl.location_arg];
-            return planter && planter.location_arg == pId && pl.type_arg < 3;
+            return planter && planter.location_arg == pId && pl.type_arg < 3 && isEligible(pl);
         });
 
         plants.forEach(pl => {
@@ -660,10 +664,27 @@ class PlantingPhase {
             });
             this.addSkipEffectButton();
         } else if (effect.type === 'level_up') {
-            this.bga.statusBar.setTitle(_('Choose a plant in your garden to grow'));
+            // Only highlight plants that satisfy the effect's target — mirrors
+            // the server's playerHasLevelUpTarget (Trello jnO2GRJA):
+            //   baby_plant  → only Baby Plants (Carrot)
+            //   other_plant → any growable plant except the source card
+            //   any_plant   → any growable plant
+            const target = effect.target;
+            const sourceId = effect.source_card_id;
+            const isEligible = (pl) => {
+                if (target === 'baby_plant') {
+                    const info = this.game.gamedatas.plantCardTypes[pl.type];
+                    return !!info && this.isBaby(info.plant_type);
+                }
+                if (target === 'other_plant') return pl.id != sourceId;
+                return true; // any_plant
+            };
+            this.bga.statusBar.setTitle(target === 'baby_plant'
+                ? _('Choose a Baby Plant in your garden to grow')
+                : _('Choose a plant in your garden to grow'));
             this.highlightPlantsToGrow(id => {
                 this.bga.actions.performAction("actResolveLevelUp", { plantCardId: id });
-            });
+            }, isEligible);
             this.addSkipEffectButton();
         } else if (effect.type === 'level_up_family') {
             // Modeled after WeatherPhaseChoose's Sun/Rain/Wind buttons (Trello
