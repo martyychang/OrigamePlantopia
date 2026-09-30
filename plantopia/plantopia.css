@@ -261,13 +261,17 @@
    being clipped — even at its highest reveal position. Extra headroom
    = 120px (300 total - 180 planter), comfortably more than the 106px
    the tallest case (level 2) actually needs; see the offset math below.
-   overflow: hidden stays on as a safety net, not because clipping is
-   expected in normal use. */
+   overflow is left VISIBLE: the offset math above keeps every plant well
+   within the slot, so nothing needs clipping in normal use — and clipping
+   (overflow: hidden) cut off the left/right of the plant's selection ring,
+   since the card fills the slot's width exactly while its extra height let
+   the top/bottom of the ring show (Trello rLBD1c1c: grow-selection highlight
+   appeared only top and bottom). */
 .plantopia-planter-slot {
     position: relative;
     width: 120px;
     height: 300px;
-    overflow: hidden;
+    overflow: visible;
 }
 .plantopia-planter-card {
     background-image: url('img/planter.png');
