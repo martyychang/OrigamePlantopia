@@ -1964,7 +1964,7 @@ export class Game {
         const faceDown = this.gamedatas.weatherFaceDownCount || 0;
         for (let i = 0; i < faceDown; i++) {
             container.insertAdjacentHTML('beforeend', `
-                <div class="weather-card weather-card-back plantopia-card-size" aria-label="${_('Face-down Weather card — revealed with everyone\'s cards')}" title="${_('Face-down — revealed at the end of the Weather Phase selection')}">?</div>
+                <div class="weather-card weather-card-back plantopia-card-size" aria-label="${_('Face-down Weather card — revealed with everyone\'s cards')}" title="${_('Face-down — revealed at the end of the Weather Phase selection')}"></div>
             `);
         }
 

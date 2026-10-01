@@ -174,20 +174,14 @@
 .plantopia-baby-card[data-card-type="Cattus"] { background-position: 66.6667% 100%; }
 .plantopia-baby-card[data-card-type="Cutetus"] { background-position: 100% 100%; }
 
-/* Face-down Weather card placeholder (Trello jVMK0VRz) — the deck's
-   face-down card shown during the choose phase before it's flipped at reveal.
-   Interim CSS back; swap for Daryl's card-back art (img/weather_back.png, the
-   Drive link on the card) when it's added to the repo. */
+/* Face-down Weather card (Trello jVMK0VRz) — the deck's face-down card shown
+   as the official Plantopia card back during the choose phase, before it's
+   flipped face-up at reveal. Art: img/weather_back.png (from Daryl). */
 .weather-card-back {
-    background: repeating-linear-gradient(45deg, #6b8e5a, #6b8e5a 10px, #5a7a4b 10px, #5a7a4b 20px);
-    border: 2px solid #4b6b3d;
+    background-image: url('img/weather_back.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
     border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 36px;
-    font-weight: bold;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 }
 
