@@ -28,9 +28,14 @@ class WeatherPhaseReveal extends GameState
         // to name every revealed card and its revealer in the game log
         // (Trello I8q5jUkM).
         $chosen = $this->game->weatherCards->getCardsInLocation('weather_chosen');
+        // The face-down deck card(s) drawn in WeatherPhaseStart (2p/3p) are
+        // flipped now, together with the players' chosen cards, so the total
+        // revealed is always 5 (Trello jVMK0VRz).
+        $faceDown = $this->game->weatherCards->getCardsInLocation('weather_facedown');
 
-        // 1. Move all chosen cards to public
+        // 1. Move all chosen + face-down deck cards to public
         $this->game->weatherCards->moveAllCardsInLocation('weather_chosen', 'weather_public');
+        $this->game->weatherCards->moveAllCardsInLocation('weather_facedown', 'weather_public');
 
         // 3. Notify reveal
         $publicCards = $this->game->weatherCards->getCardsInLocation('weather_public');
@@ -39,6 +44,18 @@ class WeatherPhaseReveal extends GameState
             "cards" => $publicCards,
             "flipped" => []
         ]);
+
+        // Name the face-down deck card(s) now revealed.
+        foreach ($faceDown as $card) {
+            $this->bga->notify->all(
+                "message",
+                clienttranslate('The face-down Weather card was ${weather_name}.'),
+                [
+                    "weather_name" => \Bga\Games\Plantopia\WeatherCards::describeCard($card),
+                    "i18n"         => ["weather_name"],
+                ]
+            );
+        }
 
         // Name each revealed character weather card and who revealed it. Uses
         // the generic "message" notification (no client handler needed).

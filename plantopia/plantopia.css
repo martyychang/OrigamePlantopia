@@ -174,6 +174,23 @@
 .plantopia-baby-card[data-card-type="Cattus"] { background-position: 66.6667% 100%; }
 .plantopia-baby-card[data-card-type="Cutetus"] { background-position: 100% 100%; }
 
+/* Face-down Weather card placeholder (Trello jVMK0VRz) — the deck's
+   face-down card shown during the choose phase before it's flipped at reveal.
+   Interim CSS back; swap for Daryl's card-back art (img/weather_back.png, the
+   Drive link on the card) when it's added to the repo. */
+.weather-card-back {
+    background: repeating-linear-gradient(45deg, #6b8e5a, #6b8e5a 10px, #5a7a4b 10px, #5a7a4b 20px);
+    border: 2px solid #4b6b3d;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 36px;
+    font-weight: bold;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
 /* Bonus Weather card art (Trello https://trello.com/c/NFy9xgyq). The
    img/weather_bonus.png sprite has 3 cols × 1 row of 200×300 cells.
    Cards are addressed by data-weather-condition (sun/rain/wind) instead of

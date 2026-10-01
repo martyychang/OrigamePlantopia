@@ -355,6 +355,10 @@ class Game extends \Bga\GameFramework\Table
         $result['weatherHand'] = $this->weatherCards->getCardsInLocation('hand', $currentPlayerId);
         $result['weatherChosen'] = $this->weatherCards->getCardsInLocation('weather_chosen', $currentPlayerId);
         $result['weatherPublic'] = $this->weatherCards->getCardsInLocation('weather_public');
+        // Count only — the face-down deck card(s) drawn in 2p/3p are hidden
+        // until WeatherPhaseReveal, so the client shows card-backs, not the
+        // identity (Trello jVMK0VRz).
+        $result['weatherFaceDownCount'] = count($this->weatherCards->getCardsInLocation('weather_facedown'));
         $result['weatherPublicBonus'] = $this->weatherCards->getCardsInLocation('weather_public_bonus');
         // Bonus weather cards a player has *played* this round. Read by
         // WeatherPhaseGrow for growth contribution and cleared back to

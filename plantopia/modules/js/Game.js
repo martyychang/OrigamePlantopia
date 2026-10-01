@@ -1958,6 +1958,16 @@ export class Game {
             `);
         });
 
+        // Face-down deck card(s), 2p/3p (Trello jVMK0VRz): shown as card-backs
+        // during the choose phase; they flip face-up at reveal (when they move
+        // into weatherPublic and weatherFaceDownCount drops to 0).
+        const faceDown = this.gamedatas.weatherFaceDownCount || 0;
+        for (let i = 0; i < faceDown; i++) {
+            container.insertAdjacentHTML('beforeend', `
+                <div class="weather-card weather-card-back plantopia-card-size" aria-label="${_('Face-down Weather card — revealed with everyone\'s cards')}" title="${_('Face-down — revealed at the end of the Weather Phase selection')}">?</div>
+            `);
+        }
+
         document.querySelectorAll('#weather-public-container .weather-card').forEach(card => {
             card.addEventListener('mouseenter', () => card.style.transform = 'translateY(-10px)');
             card.addEventListener('mouseleave', () => card.style.transform = 'translateY(0)');
@@ -2257,7 +2267,18 @@ export class Game {
     async notif_weatherRevealed(args) {
         this.muteMoveSound();
         this.gamedatas.weatherPublic = args.cards;
+        // The face-down deck card(s) are now part of weatherPublic (face-up),
+        // so clear the card-back count (Trello jVMK0VRz).
+        this.gamedatas.weatherFaceDownCount = 0;
         this.renderPublicWeather(this.gamedatas.weatherPublic);
+    }
+
+    async notif_weatherFaceDownDrawn(args) {
+        this.muteMoveSound();
+        // A face-down deck card was drawn (2p/3p) — show it as a card-back
+        // until reveal (Trello jVMK0VRz).
+        this.gamedatas.weatherFaceDownCount = args.count;
+        this.renderPublicWeather(this.gamedatas.weatherPublic || {});
     }
 
     async notif_cardsDrawn(args) {
