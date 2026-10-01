@@ -461,6 +461,17 @@ note) has a git-native source of truth to draw from.
   ability now highlights **only** eligible Baby plants, not every plant,
   mirroring the server's target check (Trello jnO2GRJA). Suite: 31 PHP + 27 JS.
   `aacef34`.
+- **`v2.2.2`** — 2026-10-01, PATCH (rules-correctness fix). **Always reveal
+  exactly 5 Weather Cards per round, regardless of player count** (Trello
+  jVMK0VRz) — 2p/3p were revealing only 4 because the deck's face-DOWN card was
+  never drawn. WeatherPhaseStart now draws the deck's share as face-up +
+  face-down (2p: 2+1, 3p: 1+1, 4p: 1+0, 5p: 0); the face-down card is held
+  hidden in a new `weather_facedown` location (shown as the Plantopia card back
+  during the choose phase via `getAllDatas`' `weatherFaceDownCount`) and
+  WeatherPhaseReveal flips it into `weather_public` with everyone's chosen
+  cards, naming it in the log. Added the real card-back art
+  (`img/weather_back.png`, rendered from Daryl's file). Suite: 32 PHP + 27 JS.
+  `f3d4d9b`.
 - **Release notes:** commit messages in this repo are verbose
   multi-paragraph explanations — too long to concatenate mechanically
   into 250 characters. At tag time, list commits since the last tag
