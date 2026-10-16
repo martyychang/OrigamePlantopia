@@ -49,6 +49,10 @@ const RECOGNIZED_PLANTING_EFFECT_KEYS = [
     'level_up', 'level_up_qty',
     'level_up_family',
     'gain_action',
+    // Optional map (effectDefKey => priority): priority > 0 defers that
+    // effect until after a granted Planting Phase action resolves. Wired in
+    // queueEffects(). See trello.com/c/vJ4qfqoR (Arrowhead rulebook order).
+    'effect_priority',
 ];
 
 // gain_weather_type values PlantingPhase::weatherCondition() can map to a

@@ -26,7 +26,7 @@ class PlantingPhaseStart extends GameState
         // Reset player planting statuses for the new round and clear the
         // per-round Banana ability flag so the Banana character can use the
         // discard-2-babies-for-extra-action ability once this Planting Phase.
-        $this->game->DbQuery("UPDATE player SET player_planting_status = 0, player_banana_used = 0");
+        $this->game->DbQuery("UPDATE player SET player_planting_status = 0, player_banana_used = 0, player_deferred_effects = '[]'");
 
         return PlantingPhaseUpkeep::class;
     }

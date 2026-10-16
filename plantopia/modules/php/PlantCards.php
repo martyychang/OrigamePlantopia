@@ -445,6 +445,12 @@ class PlantCards
                     'gain_action' => true,
                     'level_up' => self::LEVEL_UP_ANY,
                     'level_up_qty' => 1,
+                    // Rulebook order: "carry out a Planting Phase action AND
+                    // grow any plant by 1 Level" — the granted action (and
+                    // anything it spawns) resolves FIRST, then the grow.
+                    // priority > 0 defers that effect until turn-end; see
+                    // queueEffects()/tryMarkPlayerDone(). trello.com/c/vJ4qfqoR.
+                    'effect_priority' => ['level_up' => 1],
                 ],
                 'bonus_scoring' => [],
             ],

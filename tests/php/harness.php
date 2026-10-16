@@ -655,6 +655,9 @@ namespace Bga\Games\Plantopia {
             if (preg_match('/SELECT player_pending_effects FROM player WHERE player_id = (\d+)/', $sql, $m)) {
                 return $this->players[(int)$m[1]]['player_pending_effects'] ?? '[]';
             }
+            if (preg_match('/SELECT player_deferred_effects FROM player WHERE player_id = (\d+)/', $sql, $m)) {
+                return $this->players[(int)$m[1]]['player_deferred_effects'] ?? '[]';
+            }
             if (preg_match('/SELECT player_planting_status FROM player WHERE player_id = (\d+)/', $sql, $m)) {
                 return $this->players[(int)$m[1]]['player_planting_status'] ?? 0;
             }

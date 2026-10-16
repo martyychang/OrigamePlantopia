@@ -71,6 +71,15 @@ ALTER TABLE `player` ADD `player_planting_status` INT UNSIGNED NOT NULL DEFAULT 
 
 ALTER TABLE `player` ADD `player_pending_effects` TEXT NULL COMMENT 'JSON array of pending effects to resolve';
 
+-- Effects deferred until AFTER a card's granted Planting Phase action (and
+-- anything that action spawns) fully resolves. Kept in a SEPARATE column
+-- from player_pending_effects because the main queue is reset per planting
+-- action; deferred effects must survive across the granted action and are
+-- injected back into the main queue at turn-end (tryMarkPlayerDone). Used by
+-- the rulebook "carry out a Planting Phase action AND <effect>" order — e.g.
+-- Arrowhead (action first, then grow). See trello.com/c/vJ4qfqoR.
+ALTER TABLE `player` ADD `player_deferred_effects` TEXT NULL COMMENT 'JSON array of effects deferred until after a granted planting action resolves';
+
 -- See WeatherPhaseBonusSubstate (modules/php/, same reason as above).
 -- Deliberately a SEPARATE column
 -- from player_planting_status even though both are "readiness gate"

@@ -585,20 +585,36 @@ class PlantingPhase extends GameState
 
     private function queueEffects(int $playerId, array $effectDef, int $sourceCardId)
     {
-        $currentJson = $this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId");
-        $queue = $this->decodeEffectQueue($currentJson);
-        
+        $queue = $this->decodeEffectQueue($this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId"));
+        $deferred = $this->decodeEffectQueue($this->game->getUniqueValueFromDb("SELECT player_deferred_effects FROM player WHERE player_id = $playerId"));
+
+        // effect_priority (optional, keyed by effectDef key): priority 0 (the
+        // default for any unlisted key) resolves inline now; priority > 0
+        // DEFERS the effect until after this card's granted Planting Phase
+        // action and anything it spawns fully resolve (injected back at
+        // tryMarkPlayerDone). This is how the rulebook "carry out a Planting
+        // Phase action AND <effect>" order is honoured without changing any
+        // card that doesn't opt in. See trello.com/c/vJ4qfqoR.
+        $priorities = $effectDef['effect_priority'] ?? [];
+        $push = function (string $key, array $entry) use (&$queue, &$deferred, $priorities) {
+            if (($priorities[$key] ?? 0) > 0) {
+                $deferred[] = $entry;
+            } else {
+                $queue[] = $entry;
+            }
+        };
+
         if (isset($effectDef['draw_cards'])) {
-            $queue[] = ['type' => 'draw_cards', 'qty' => $effectDef['draw_cards']];
+            $push('draw_cards', ['type' => 'draw_cards', 'qty' => $effectDef['draw_cards']]);
         }
         if (isset($effectDef['draft_cards'])) {
-            $queue[] = ['type' => 'draft_cards', 'draw' => $effectDef['draft_cards'], 'keep' => $effectDef['keep_cards']];
+            $push('draft_cards', ['type' => 'draft_cards', 'draw' => $effectDef['draft_cards'], 'keep' => $effectDef['keep_cards']]);
         }
         if (isset($effectDef['discard_cards'])) {
-            $queue[] = ['type' => 'discard_cards', 'qty' => $effectDef['discard_cards']];
+            $push('discard_cards', ['type' => 'discard_cards', 'qty' => $effectDef['discard_cards']]);
         }
         if (isset($effectDef['gain_weather_type'])) {
-            $queue[] = ['type' => 'gain_weather', 'weather_type' => $effectDef['gain_weather_type'], 'qty' => $effectDef['gain_weather_qty'] ?? 1];
+            $push('gain_weather_type', ['type' => 'gain_weather', 'weather_type' => $effectDef['gain_weather_type'], 'qty' => $effectDef['gain_weather_qty'] ?? 1]);
         }
         // gain_weather_types (plural) is for a card that grants several
         // DIFFERENT specific types in one effect (e.g. Gum Tree: a Bonus
@@ -609,20 +625,20 @@ class PlantingPhase extends GameState
         // https://trello.com/c/L56GTT7Q.
         if (isset($effectDef['gain_weather_types'])) {
             foreach ($effectDef['gain_weather_types'] as $weatherType) {
-                $queue[] = ['type' => 'gain_weather', 'weather_type' => $weatherType, 'qty' => 1];
+                $push('gain_weather_types', ['type' => 'gain_weather', 'weather_type' => $weatherType, 'qty' => 1]);
             }
         }
         if (isset($effectDef['level_up'])) {
-            $queue[] = ['type' => 'level_up', 'target' => $effectDef['level_up'], 'qty' => $effectDef['level_up_qty'] ?? 1, 'source_card_id' => $sourceCardId];
+            $push('level_up', ['type' => 'level_up', 'target' => $effectDef['level_up'], 'qty' => $effectDef['level_up_qty'] ?? 1, 'source_card_id' => $sourceCardId]);
         }
         if (isset($effectDef['level_up_family'])) {
-            $queue[] = ['type' => 'level_up_family', 'qty' => 1];
+            $push('level_up_family', ['type' => 'level_up_family', 'qty' => 1]);
         }
         if (isset($effectDef['gain_action'])) {
-            $queue[] = ['type' => 'gain_action'];
+            $push('gain_action', ['type' => 'gain_action']);
         }
-        
-        $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "' WHERE player_id = $playerId");
+
+        $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "', player_deferred_effects = '" . json_encode($deferred) . "' WHERE player_id = $playerId");
     }
 
     private function processPendingEffects(int $playerId)
@@ -1150,6 +1166,22 @@ class PlantingPhase extends GameState
      */
     private function tryMarkPlayerDone(int $playerId): void
     {
+        // Rulebook-order deferred effects (e.g. Arrowhead's "grow any plant",
+        // held until after its granted Planting Phase action) resolve HERE —
+        // the moment the granted action and everything it spawned have drained
+        // and the player would otherwise finish. Move them into the main queue
+        // and process; processPendingEffects() re-enters tryMarkPlayerDone()
+        // once they drain, at which point deferred is empty and the normal
+        // banana/done flow proceeds. See trello.com/c/vJ4qfqoR.
+        $deferred = $this->decodeEffectQueue($this->game->getUniqueValueFromDb("SELECT player_deferred_effects FROM player WHERE player_id = $playerId"));
+        if (count($deferred) > 0) {
+            $queue = $this->decodeEffectQueue($this->game->getUniqueValueFromDb("SELECT player_pending_effects FROM player WHERE player_id = $playerId"));
+            $queue = array_merge($queue, $deferred);
+            $this->game->DbQuery("UPDATE player SET player_pending_effects = '" . json_encode($queue) . "', player_deferred_effects = '[]' WHERE player_id = $playerId");
+            $this->processPendingEffects($playerId);
+            return;
+        }
+
         if (!$this->isBananaEligible($playerId)) {
             $this->markPlayerDone($playerId);
             return;
