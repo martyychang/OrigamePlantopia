@@ -22,11 +22,17 @@ function extractMethod(name) {
     return src.slice(start, i);
 }
 
+// effectSourceName lives in class PlantingPhase, where game data is reached
+// via this.game.gamedatas (NOT this.gamedatas). Mirror that exactly — a stub
+// shaped as { gamedatas: ... } would hide the real-context crash (Trello
+// BN4nL8Zj: 'Cannot read properties of undefined (reading plantCardTypes)').
 const ctx = {
-    gamedatas: {
-        plantCardTypes: {
-            Buttercup: { name: 'Buttercup', plant_type: 'baby_flower' },
-            Geometree: { name: 'Geometree', plant_type: 'trv_tree' },
+    game: {
+        gamedatas: {
+            plantCardTypes: {
+                Buttercup: { name: 'Buttercup', plant_type: 'baby_flower' },
+                Geometree: { name: 'Geometree', plant_type: 'trv_tree' },
+            },
         },
     },
 };

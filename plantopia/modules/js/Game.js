@@ -614,7 +614,7 @@ class PlantingPhase {
      */
     effectSourceName(effect) {
         const t = effect && effect.source_type;
-        const info = t ? (this.gamedatas.plantCardTypes || {})[t] : null;
+        const info = t ? (this.game.gamedatas.plantCardTypes || {})[t] : null;
         return (info && info.name) ? info.name : '';
     }
 
