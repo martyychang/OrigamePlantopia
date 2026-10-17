@@ -1799,14 +1799,36 @@ export class Game {
         return ['banana', 'carrot', 'mushroom', 'potato', 'tomato'].includes(type);
     }
 
+    /**
+     * Hand display order (Trello uaWJEFry): plant cards sorted by family in
+     * the rulebook's order (Tree → Flower → Cactus), Baby before Adult within
+     * each family, then by card name ascending. Returns a NEW sorted array of
+     * the hand's plant-card objects; does not mutate the input. An unknown
+     * plant_type sorts last (defensive — all real plant cards are one of the
+     * six buckets).
+     */
+    sortedHandCards(handData) {
+        const ORDER = ['baby_tree', 'trv_tree', 'baby_flower', 'trv_flower', 'baby_cactus', 'trv_cactus'];
+        const types = this.gamedatas.plantCardTypes || {};
+        const rank = (card) => {
+            const i = ORDER.indexOf((types[card.type] || {}).plant_type);
+            return i === -1 ? ORDER.length : i;
+        };
+        const nameOf = (card) => (types[card.type] || {}).name || card.type;
+        return Object.values(handData || {}).slice().sort((a, b) => {
+            const d = rank(a) - rank(b);
+            return d !== 0 ? d : nameOf(a).localeCompare(nameOf(b));
+        });
+    }
+
     renderHand(handData, weatherHandData) {
         const handContainer = document.getElementById('my-hand-container');
         if (!handContainer) return;
 
         handContainer.innerHTML = ''; // Clear current hand
-        
+
         if (handData) {
-            Object.values(handData).forEach(card => {
+            this.sortedHandCards(handData).forEach(card => {
                 // Get the card name from the material data provided by getAllDatas
                 const cardInfo = this.gamedatas.plantCardTypes[card.type] || { name: card.type };
                 const body = this.plantCardBody(card.type, cardInfo, { showCost: true });

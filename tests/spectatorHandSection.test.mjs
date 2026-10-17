@@ -56,6 +56,7 @@ function extractSpectatorHandBlock() {
 
 const spectatorHandBlock = extractSpectatorHandBlock();
 const renderHandBody = extractMethod('renderHand');
+const sortedHandCardsBody = extractMethod('sortedHandCards'); // renderHand() calls this.sortedHandCards()
 
 const script = `
 // BGA exposes gettext as a global _(). Stub it as identity so extracted
@@ -78,6 +79,7 @@ function freshGame(isSpectator) {
         isBabyType: () => false,
         plantCardBody: () => ({ extraClass: '', dataAttr: '', inner: '' }),
         addPlantTooltip: () => {},
+        sortedHandCards: new Function('handData', ${JSON.stringify(sortedHandCardsBody)}),
         renderHand: new Function('handData', 'weatherHandData', ${JSON.stringify(renderHandBody)}),
     };
 }
