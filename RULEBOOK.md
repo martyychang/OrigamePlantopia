@@ -141,7 +141,7 @@ There are 3 ways to embark on a visit to Plantopia by yourself\! Learn about the
 
 ### **Plant Cards and Effects**
 
-* **Arrowhead / Impossible Tree:** Immediately carry out a Planting Phase action and grow any plant by 1 Level.  
+* **Arrowhead:** Immediately carry out a Planting Phase action and grow any plant by 1 Level.  
 * **Battus:** Gain 1 Point per 2 cards in hand at the end of the game (including all Weather Cards).  
 * **Boba Tree:** Gain 2 Points for every Baby Tree or Treevolved Tree at the end of the game (including itself).  
 * **Bufftus:** Gain 2 Points for every different plant type. (6 types: Baby Tree, Treevolved Tree, Baby Flower, Treevolved Flower, Baby Cactus, Treevolved Cactus)  
