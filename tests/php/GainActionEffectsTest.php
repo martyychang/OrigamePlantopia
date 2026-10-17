@@ -99,6 +99,7 @@ $state->actPlant($arrowheadId, $arrowheadPlanterId, (string)$sacA);
 check('main queue empty — gain_action resolved first, not blocked by the grow', count(json_decode($game->players[1]['player_pending_effects'], true)) === 0, $game->players[1]['player_pending_effects']);
 $deferred = json_decode($game->players[1]['player_deferred_effects'], true);
 check('grow is deferred (held, not resolved)', count($deferred) === 1 && $deferred[0]['type'] === 'level_up', json_encode($deferred));
+check('deferred grow carries source_type for the prompt prefix (Trello XKfMDTCy)', ($deferred[0]['source_type'] ?? null) === 'Arrowhead', json_encode($deferred));
 check('player is Ready (0) to take the granted planting action', (int)$game->players[1]['player_planting_status'] === 0);
 check('grow target NOT yet leveled (grow waits until after the action)', (int)$game->plantCards->getCard($growTargetId)['type_arg'] === 0);
 check('server sent "playerGainedAction"', in_array('playerGainedAction', array_map(fn($e) => $e['name'], $bga->notify->log), true));

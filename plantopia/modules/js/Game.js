@@ -607,6 +607,18 @@ class PlantingPhase {
     }
 
     /**
+     * Display name of the plant whose effect is being resolved, from the
+     * effect's server-stamped source_type (Trello XKfMDTCy). Returns '' when
+     * there's no originating plant (the draw-5 action's draft, or a character
+     * ability), so those prompts stay unprefixed.
+     */
+    effectSourceName(effect) {
+        const t = effect && effect.source_type;
+        const info = t ? (this.gamedatas.plantCardTypes || {})[t] : null;
+        return (info && info.name) ? info.name : '';
+    }
+
+    /**
      * Surface a "Skip" button on the current pending-effect prompt so the
      * player can bail out of a planting effect they don't want to resolve.
      * The server-side actSkipPendingEffect validates the effect type is
@@ -640,12 +652,19 @@ class PlantingPhase {
     renderPendingEffect(effect) {
         this.resetSelection();
         this.selectedPaymentCards = [];
-        
+
+        // Prefix each plant-effect prompt with the originating plant's name so
+        // it's clear which card is resolving (Trello XKfMDTCy), e.g.
+        // "Buttercup: Choose a plant in your garden to grow". Empty for the
+        // draw-5 action and character abilities (no source plant).
+        const srcName = this.effectSourceName(effect);
+        const prefix = srcName ? srcName + ': ' : '';
+
         if (effect.type === 'draft_cards') {
-            this.bga.statusBar.setTitle(_('Choose ${keep} card(s) to keep').replace('${keep}', effect.keep));
+            this.bga.statusBar.setTitle(prefix + _('Choose ${keep} card(s) to keep').replace('${keep}', effect.keep));
             this.renderDraftModal(effect.keep);
         } else if (effect.type === 'discard_cards') {
-            this.bga.statusBar.setTitle(_('Discard ${qty} card(s) from your hand').replace('${qty}', effect.qty));
+            this.bga.statusBar.setTitle(prefix + _('Discard ${qty} card(s) from your hand').replace('${qty}', effect.qty));
             this.highlightHandCardsForSelection(id => {
                 if (this.selectedPaymentCards.includes(id)) {
                     this.selectedPaymentCards = this.selectedPaymentCards.filter(c => c !== id);
@@ -663,7 +682,7 @@ class PlantingPhase {
                 }
             });
         } else if (effect.type === 'gain_weather') {
-            this.bga.statusBar.setTitle(_('Choose a Bonus Weather card to gain'));
+            this.bga.statusBar.setTitle(prefix + _('Choose a Bonus Weather card to gain'));
             document.querySelectorAll('#bonus-weather-container .weather-card').forEach(el => {
                 el.classList.add('bga-cards_selectable-card');
                 el.style.boxShadow = '0 0 10px #f1c40f';
@@ -692,7 +711,7 @@ class PlantingPhase {
             // Clarify how many levels this grow effect gives (Trello NGVQocFa):
             // card-effect grows vary (Arrowhead +1, Buttercup +2), so name it.
             const levels = this.growLevelsLabel(effect.qty);
-            this.bga.statusBar.setTitle((target === 'baby_plant'
+            this.bga.statusBar.setTitle(prefix + (target === 'baby_plant'
                 ? _('Choose a Baby Plant in your garden to grow by ${levels}')
                 : _('Choose a plant in your garden to grow by ${levels}'))
                 .replace('${levels}', levels));
@@ -705,7 +724,7 @@ class PlantingPhase {
             // https://trello.com/c/XZgYk9h9) — every button blue with an
             // emoji, instead of a different color per family (which read as
             // confusing rather than informative; see the card's screenshot).
-            this.bga.statusBar.setTitle(_('Choose a plant family to grow'));
+            this.bga.statusBar.setTitle(prefix + _('Choose a plant family to grow'));
             this.bga.statusBar.addActionButton(_('🌲 Tree'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'tree' }), { color: 'blue' });
             this.bga.statusBar.addActionButton(_('🌹 Flower'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'flower' }), { color: 'blue' });
             this.bga.statusBar.addActionButton(_('🌵 Cactus'), () => this.bga.actions.performAction("actResolveLevelUpFamily", { family: 'cactus' }), { color: 'blue' });

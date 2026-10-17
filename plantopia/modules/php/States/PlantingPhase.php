@@ -596,7 +596,16 @@ class PlantingPhase extends GameState
         // Phase action AND <effect>" order is honoured without changing any
         // card that doesn't opt in. See trello.com/c/vJ4qfqoR.
         $priorities = $effectDef['effect_priority'] ?? [];
-        $push = function (string $key, array $entry) use (&$queue, &$deferred, $priorities) {
+        // Stamp the originating plant's type on every effect so the client can
+        // prefix each resolution prompt with the plant's name (Trello XKfMDTCy).
+        // Character-ability effects (Carrot/Tomato/Banana) don't go through
+        // queueEffects, so they stay unprefixed — this is scoped to plant-card
+        // effects only.
+        $sourceType = $this->game->plantCards->getCard($sourceCardId)['type'] ?? null;
+        $push = function (string $key, array $entry) use (&$queue, &$deferred, $priorities, $sourceType) {
+            if ($sourceType !== null) {
+                $entry['source_type'] = $sourceType;
+            }
             if (($priorities[$key] ?? 0) > 0) {
                 $deferred[] = $entry;
             } else {
