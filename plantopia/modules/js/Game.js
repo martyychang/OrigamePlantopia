@@ -597,6 +597,16 @@ class PlantingPhase {
     }
 
     /**
+     * Pluralized level count for grow-effect prompts — "1 level" / "N levels"
+     * (Trello NGVQocFa). Keeps the unit word translatable; defaults to 1 for a
+     * missing/invalid qty.
+     */
+    growLevelsLabel(qty) {
+        const n = Math.max(1, parseInt(qty, 10) || 1);
+        return n === 1 ? _('1 level') : _('${n} levels').replace('${n}', n);
+    }
+
+    /**
      * Surface a "Skip" button on the current pending-effect prompt so the
      * player can bail out of a planting effect they don't want to resolve.
      * The server-side actSkipPendingEffect validates the effect type is
@@ -679,9 +689,13 @@ class PlantingPhase {
                 if (target === 'other_plant') return pl.id != sourceId;
                 return true; // any_plant
             };
-            this.bga.statusBar.setTitle(target === 'baby_plant'
-                ? _('Choose a Baby Plant in your garden to grow')
-                : _('Choose a plant in your garden to grow'));
+            // Clarify how many levels this grow effect gives (Trello NGVQocFa):
+            // card-effect grows vary (Arrowhead +1, Buttercup +2), so name it.
+            const levels = this.growLevelsLabel(effect.qty);
+            this.bga.statusBar.setTitle((target === 'baby_plant'
+                ? _('Choose a Baby Plant in your garden to grow by ${levels}')
+                : _('Choose a plant in your garden to grow by ${levels}'))
+                .replace('${levels}', levels));
             this.highlightPlantsToGrow(id => {
                 this.bga.actions.performAction("actResolveLevelUp", { plantCardId: id });
             }, isEligible);
